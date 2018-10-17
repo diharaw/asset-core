@@ -1,4 +1,5 @@
 #include <assimp_importer.h>
+#include <common/asset_desc.h>
 
 #include <iostream>
 #include <vector>

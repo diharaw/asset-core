@@ -213,7 +213,7 @@ namespace filesystem
 #ifdef WIN32
 	size_t get_file_size(const std::string& _fileName)
 	{
-		struct stat st;
+        struct stat st;
 		if (stat(_fileName.c_str(), &st) != 0) {
 			return 0;
 		}

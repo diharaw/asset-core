@@ -6,8 +6,8 @@ IF(APPLE)
 	set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
 ENDIF()
 
-file(GLOB_RECURSE AST_OFFLINE_SOURCE src/offline/*.cpp
-						  	 		 include/offline/*.h)
+file(GLOB_RECURSE AST_OFFLINE_SOURCE ${CMAKE_SOURCE_DIR}/src/offline/*.cpp
+									 ${CMAKE_SOURCE_DIR}/include/offline/*.h)
 
 add_library(AssetCoreOffline ${AST_OFFLINE_SOURCE})
 
