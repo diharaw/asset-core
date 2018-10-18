@@ -129,6 +129,7 @@ namespace ast
         std::string                     name;
         std::vector<VertexDesc>         vertices;
         std::vector<SkeletalVertexDesc> skeletal_vertices;
+        std::vector<uint32_t>           indices;
         std::vector<SubMeshDesc>        submeshes;
         std::vector<MaterialDesc>       materials;
         glm::vec3                       max_extents;

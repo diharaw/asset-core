@@ -2,6 +2,7 @@
 #include <offline/filesystem.h>
 #include <json.hpp>
 #include <iostream>
+#include <fstream>
 
 namespace ast
 {
@@ -54,6 +55,23 @@ namespace ast
         "BLEND_MODE_ADDITIVE",
         "BLEND_MODE_MASKED",
         "BLEND_MODE_TRANSLUCENT"
+    };
+    
+    struct BINMeshFileHeader
+    {
+        uint32_t   mesh_count;
+        uint32_t   material_count;
+        uint32_t   vertex_count;
+        uint32_t   skeletal_vertex_count;
+        uint32_t   index_count;
+        glm::vec3  max_extents;
+        glm::vec3  min_extents;
+        char       name[50];
+    };
+    
+    struct BINMeshMaterialJson
+    {
+        char material[50];
     };
     
     bool export_material(const std::string& path, const MaterialDesc& desc)
@@ -130,11 +148,13 @@ namespace ast
         
         std::string output_str = doc.dump(4);
         
-        if (filesystem::write_begin(output_path))
+        std::fstream f(output_path, std::ios::out);
+        
+        if (f.is_open())
         {
-            filesystem::write((void*)output_str.c_str(), output_str.size(), 1, 0);
-            filesystem::write_end();
-            
+            f.write(output_str.c_str(), output_str.size());
+            f.close();
+        
             return true;
         }
         else
@@ -155,6 +175,99 @@ namespace ast
         
         filesystem::create_directory(texture_path);
         
-        return true;
+        std::string output_path = path;
+        output_path += "/";
+        output_path += desc.name;
+        output_path += ".json";
+        
+        std::fstream f(output_path, std::ios::out | std::ios::binary);
+        
+        if (f.is_open())
+        {
+            BINMeshFileHeader header;
+            
+            // Copy Name
+            strcpy(&header.name[0], desc.name.c_str());
+            header.name[desc.name.size()] = '\0';
+            
+            header.index_count = desc.indices.size();
+            header.vertex_count = desc.vertices.size();
+            header.skeletal_vertex_count = desc.skeletal_vertices.size();
+            header.material_count = desc.materials.size();
+            header.mesh_count = desc.submeshes.size();
+            header.max_extents = desc.max_extents;
+            header.min_extents = desc.min_extents;
+            
+            size_t offset = 0;
+            
+            // Write mesh header
+            f.write((char*)&header, sizeof(BINMeshFileHeader));
+            offset += sizeof(BINMeshFileHeader);
+            f.seekg(offset);
+            
+            // Write vertices
+            if (desc.vertices.size() > 0)
+            {
+                f.write((char*)&desc.vertices[0], sizeof(VertexDesc) * desc.vertices.size());
+                offset += sizeof(VertexDesc) * desc.vertices.size();
+                f.seekg(offset);
+            }
+            
+            // Write skeletal vertices
+            if (desc.skeletal_vertices.size() > 0)
+            {
+                f.write((char*)&desc.skeletal_vertices[0], sizeof(SkeletalVertexDesc) * desc.skeletal_vertices.size());
+                offset += sizeof(SkeletalVertexDesc) * desc.skeletal_vertices.size();
+                f.seekg(offset);
+            }
+            
+            // Write indices
+            if (desc.indices.size() > 0)
+            {
+                f.write((char*)&desc.indices[0], sizeof(uint32_t) * desc.indices.size());
+                offset += sizeof(uint32_t) * desc.indices.size();
+                f.seekg(offset);
+            }
+            
+            // Write mesh headers
+            if (desc.submeshes.size() > 0)
+            {
+                f.write((char*)&desc.submeshes[0], sizeof(SubMeshDesc) * desc.submeshes.size());
+                offset += sizeof(SubMeshDesc) * desc.submeshes.size();
+                f.seekg(offset);
+            }
+            
+            // Export materials
+            std::vector<BINMeshMaterialJson> mats;
+            
+            for (const auto& material : desc.materials)
+            {
+                if (export_material(material_path, material))
+                {
+                    std::string mat_out_path = "materials/";
+                    mat_out_path += material.name;
+                    mat_out_path += ".json";
+                    
+                    BINMeshMaterialJson mat;
+                    
+                    strcpy(&mat.material[0], mat_out_path.c_str());
+                    mat.material[mat_out_path.size()] = '\0';
+                    
+                    mats.push_back(mat);
+                }
+            }
+            
+            // Write material paths
+            if (mats.size() > 0)
+                f.write((char*)&mats[0], sizeof(BINMeshMaterialJson) * mats.size());
+
+            f.close();
+            
+            return true;
+        }
+        else
+            std::cout << "Failed to write Mesh!" << std::endl;
+        
+        return false;
     }
 }
