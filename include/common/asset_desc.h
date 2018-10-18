@@ -25,7 +25,7 @@ namespace ast
         PROPERTY_ALBEDO = 0,
         PROPERTY_EMISSIVE,
         PROPERTY_METALNESS,
-        PROPERTY_ROUGHNESS.
+        PROPERTY_ROUGHNESS,
         PROPERTY_SPECULAR,
         PROPERTY_GLOSSINESS
     };
@@ -102,14 +102,16 @@ namespace ast
     struct MaterialDesc
     {
         std::string                   name;
-        std::vector<TextureDesc>      textures;
-        std::vector<MaterialProperty> properties;
         bool                          metallic_workflow;
         bool                          double_sided;
         std::string                   vertex_shader_func;
         std::string                   fragment_shader_func;
         BlendMode                     blend_mode;
         DisplacementType              displacement_type;
+        ShadingModel                  shading_model;
+        LightingModel                 lighting_model;
+        std::vector<TextureDesc>      textures;
+        std::vector<MaterialProperty> properties;
     };
     
     struct SubMeshDesc

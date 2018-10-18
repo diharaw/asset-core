@@ -1,5 +1,6 @@
-#include <assimp_importer.h>
+#include <offline/assimp_importer.h>
 #include <common/asset_desc.h>
+#include <offline/exporter.h>
 
 #include <iostream>
 #include <vector>

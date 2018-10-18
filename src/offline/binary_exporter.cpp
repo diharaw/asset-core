@@ -1,7 +1,7 @@
-#include <binary_exporter.h>
-#include <assimp_importer.h>
-#include <filesystem.h>
-#include <timer.h>
+#include <offline/binary_exporter.h>
+#include <offline/assimp_importer.h>
+#include <offline/filesystem.h>
+#include <offline/timer.h>
 #include <iostream>
 
 namespace binary_exporter

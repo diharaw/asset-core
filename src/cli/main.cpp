@@ -1,5 +1,6 @@
 #include <offline/binary_exporter.h>
 #include <offline/filesystem.h>
+#include <offline/exporter.h>
 #include <stdio.h>
 
 int main(int argc, char * argv[])
