@@ -4,6 +4,9 @@
 #include <iostream>
 #include <fstream>
 
+#define WRITE_AND_OFFSET(stream, dest, size, offset) stream.write((char*)dest, size); offset += size; stream.seekg(offset);
+
+
 namespace ast
 {
     const std::string kTextureType[] =
@@ -72,6 +75,24 @@ namespace ast
     struct BINMeshMaterialJson
     {
         char material[50];
+    };
+    
+    struct BINImageHeader
+    {
+        uint8_t  type;
+        uint8_t  compression;
+        uint8_t  channel_size;
+        uint8_t  channel_count;
+        uint16_t array_slice_count;
+        uint8_t  mip_slice_count;
+        char     name[50];
+    };
+    
+    struct BINMipSliceHeader
+    {
+        uint16_t width;
+        uint16_t height;
+        int size;
     };
     
     bool export_material(const std::string& path, const MaterialDesc& desc)
@@ -178,7 +199,7 @@ namespace ast
         std::string output_path = path;
         output_path += "/";
         output_path += desc.name;
-        output_path += ".json";
+        output_path += ".ast";
         
         std::fstream f(output_path, std::ios::out | std::ios::binary);
         
@@ -201,40 +222,30 @@ namespace ast
             size_t offset = 0;
             
             // Write mesh header
-            f.write((char*)&header, sizeof(BINMeshFileHeader));
-            offset += sizeof(BINMeshFileHeader);
-            f.seekg(offset);
-            
+            WRITE_AND_OFFSET(f, (char*)&header, sizeof(BINMeshFileHeader), offset);
+     
             // Write vertices
             if (desc.vertices.size() > 0)
             {
-                f.write((char*)&desc.vertices[0], sizeof(VertexDesc) * desc.vertices.size());
-                offset += sizeof(VertexDesc) * desc.vertices.size();
-                f.seekg(offset);
+                WRITE_AND_OFFSET(f, (char*)&desc.vertices[0], sizeof(VertexDesc) * desc.vertices.size(), offset);
             }
             
             // Write skeletal vertices
             if (desc.skeletal_vertices.size() > 0)
             {
-                f.write((char*)&desc.skeletal_vertices[0], sizeof(SkeletalVertexDesc) * desc.skeletal_vertices.size());
-                offset += sizeof(SkeletalVertexDesc) * desc.skeletal_vertices.size();
-                f.seekg(offset);
+                WRITE_AND_OFFSET(f, (char*)&desc.skeletal_vertices[0], sizeof(SkeletalVertexDesc) * desc.skeletal_vertices.size(), offset);
             }
             
             // Write indices
             if (desc.indices.size() > 0)
             {
-                f.write((char*)&desc.indices[0], sizeof(uint32_t) * desc.indices.size());
-                offset += sizeof(uint32_t) * desc.indices.size();
-                f.seekg(offset);
+                WRITE_AND_OFFSET(f, (char*)&desc.indices[0], sizeof(uint32_t) * desc.indices.size(), offset);
             }
             
             // Write mesh headers
             if (desc.submeshes.size() > 0)
             {
-                f.write((char*)&desc.submeshes[0], sizeof(SubMeshDesc) * desc.submeshes.size());
-                offset += sizeof(SubMeshDesc) * desc.submeshes.size();
-                f.seekg(offset);
+                WRITE_AND_OFFSET(f, (char*)&desc.submeshes[0], sizeof(SubMeshDesc) * desc.submeshes.size(), offset);
             }
             
             // Export materials
@@ -259,7 +270,9 @@ namespace ast
             
             // Write material paths
             if (mats.size() > 0)
-                f.write((char*)&mats[0], sizeof(BINMeshMaterialJson) * mats.size());
+            {
+                WRITE_AND_OFFSET(f, (char*)&mats[0], sizeof(BINMeshMaterialJson) * mats.size(), offset);
+            }
 
             f.close();
             
@@ -267,6 +280,73 @@ namespace ast
         }
         else
             std::cout << "Failed to write Mesh!" << std::endl;
+        
+        return false;
+    }
+    
+    bool export_image(const std::string& path, const ImageDesc& desc)
+    {
+        std::string output_path = path;
+        output_path += "/";
+        output_path += desc.name;
+        output_path += ".ast";
+        
+        std::fstream f(output_path, std::ios::out | std::ios::binary);
+        
+        if (f.is_open())
+        {
+            BINImageHeader header;
+            
+            // Copy Name
+            strcpy(&header.name[0], desc.name.c_str());
+            header.name[desc.name.size()] = '\0';
+            header.type = desc.type;
+            header.compression = desc.compression;
+            header.channel_size = desc.channel_size;
+            header.channel_count = desc.channel_count;
+            header.array_slice_count = desc.array_slices.size();
+            header.mip_slice_count = desc.mip_slice_count;
+            
+            size_t offset = 0;
+            
+            // Write header
+            WRITE_AND_OFFSET(f, &header, sizeof(BINImageHeader), offset);
+            
+            for (const auto& array_slice : desc.array_slices)
+            {
+                for (const auto& mip_slice : array_slice.mip_slices)
+                {
+                    BINMipSliceHeader mip_header;
+                    
+                    mip_header.height = mip_slice.height;
+                    mip_header.width = mip_slice.width;
+                    mip_header.size = header.channel_count * header.channel_size * mip_header.height * mip_header.width;
+                    
+                    // Write mip header
+                    WRITE_AND_OFFSET(f, &mip_header, sizeof(BINMipSliceHeader), offset);
+                    
+                    // Write pixels
+                    if (header.channel_size == 1)
+                    {
+                        WRITE_AND_OFFSET(f, &mip_slice.pixels8[0], mip_header.size, offset);
+                    }
+                    else if (header.channel_size == 2)
+                    {
+                        WRITE_AND_OFFSET(f, &mip_slice.pixels16[0], mip_header.size, offset);
+                    }
+                    else if (header.channel_size == 4)
+                    {
+                        WRITE_AND_OFFSET(f, &mip_slice.pixels32[0], mip_header.size, offset);
+                    }
+                }
+            }
+            
+            f.close();
+            
+            return true;
+        }
+        else
+            std::cout << "Failed to write Image!" << std::endl;
         
         return false;
     }

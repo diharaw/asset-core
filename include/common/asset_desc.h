@@ -58,6 +58,19 @@ namespace ast
         BLEND_MODE_TRANSLUCENT
     };
     
+    enum TextureCompression
+    {
+        COMPRESSION_NONE = 0,
+        COMPREESION_DXT3,
+        COMPREESION_DXT5
+    };
+    
+    enum ImageType
+    {
+        IMAGE_2D = 0,
+        IMAGE_CUBE
+    };
+    
     struct VertexDesc
     {
         glm::vec3 position;
@@ -134,5 +147,30 @@ namespace ast
         std::vector<MaterialDesc>       materials;
         glm::vec3                       max_extents;
         glm::vec3                       min_extents;
+    };
+    
+    struct ImageMipSliceDesc
+    {
+        uint32_t              width;
+        uint32_t              height;
+        std::vector<uint8_t>  pixels8;
+        std::vector<uint16_t> pixels16;
+        std::vector<uint32_t> pixels32;
+    };
+    
+    struct ImageArraySliceDesc
+    {
+        std::vector<ImageMipSliceDesc> mip_slices;
+    };
+    
+    struct ImageDesc
+    {
+        std::string                      name;
+        ImageType                        type;
+        uint32_t                         channel_count;
+        uint32_t                         mip_slice_count;
+        uint32_t                         channel_size;
+        TextureCompression 	             compression;
+        std::vector<ImageArraySliceDesc> array_slices;
     };
 }
