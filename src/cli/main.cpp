@@ -1,6 +1,6 @@
-#include <offline/binary_exporter.h>
-#include <offline/filesystem.h>
+#include <offline/importer.h>
 #include <offline/exporter.h>
+#include <common/filesystem.h>
 #include <stdio.h>
 
 int main(int argc, char * argv[])
@@ -19,7 +19,15 @@ int main(int argc, char * argv[])
         if (argc > 2)
             output = argv[2];
         
-        binary_exporter::export_mesh(argv[1], output);
+        ast::MeshDesc mesh;
+        
+        if (ast::import_mesh(argv[1], mesh))
+        {
+            if (!ast::export_mesh(output, mesh))
+                printf("Failed to output mesh.\n");
+        }
+        else
+            printf("Failed to import mesh.\n");
     }
 
 	return 0;

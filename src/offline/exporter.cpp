@@ -1,11 +1,10 @@
 #include <offline/exporter.h>
-#include <offline/filesystem.h>
+#include <common/filesystem.h>
 #include <json.hpp>
 #include <iostream>
 #include <fstream>
 
 #define WRITE_AND_OFFSET(stream, dest, size, offset) stream.write((char*)dest, size); offset += size; stream.seekg(offset);
-
 
 namespace ast
 {
@@ -92,7 +91,7 @@ namespace ast
     {
         uint16_t width;
         uint16_t height;
-        int size;
+        uint32_t size;
     };
     
     bool export_material(const std::string& path, const MaterialDesc& desc)
@@ -135,10 +134,10 @@ namespace ast
             if (property_desc.type == PROPERTY_ALBEDO)
             {
                 auto float_array = doc.array();
-                float_array.push_back(property_desc.vec4_value.x);
-                float_array.push_back(property_desc.vec4_value.y);
-                float_array.push_back(property_desc.vec4_value.z);
-                float_array.push_back(property_desc.vec4_value.w);
+                float_array.push_back(property_desc.vec4_value[0]);
+                float_array.push_back(property_desc.vec4_value[1]);
+                float_array.push_back(property_desc.vec4_value[2]);
+                float_array.push_back(property_desc.vec4_value[3]);
                 
                 property["value"] = float_array;
             }
@@ -146,9 +145,9 @@ namespace ast
                      property_desc.type == PROPERTY_SPECULAR)
             {
                 auto float_array = doc.array();
-                float_array.push_back(property_desc.vec3_value.x);
-                float_array.push_back(property_desc.vec3_value.y);
-                float_array.push_back(property_desc.vec3_value.z);
+                float_array.push_back(property_desc.vec3_value[0]);
+                float_array.push_back(property_desc.vec3_value[1]);
+                float_array.push_back(property_desc.vec3_value[2]);
                 
                 property["value"] = float_array;
             }

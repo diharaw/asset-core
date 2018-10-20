@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+IF(APPLE)
+	set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++14")
+	set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
+ENDIF()
+
+file(GLOB_RECURSE AST_COMMON_SOURCE ${CMAKE_SOURCE_DIR}/src/common/*.cpp
+									${CMAKE_SOURCE_DIR}/include/common/*.h)
+
+add_library(AssetCoreCommon ${AST_COMMON_SOURCE})

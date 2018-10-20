@@ -18,5 +18,7 @@ include_directories("${ASSIMP_INCLUDE_DIRS}"
 					"${AST_INCLUDE_DIRS}")
 
 add_subdirectory("external/assimp")
+add_subdirectory("src/common")
 add_subdirectory("src/offline")
+add_subdirectory("src/runtime")
 add_subdirectory("src/cli")

@@ -103,12 +103,12 @@ namespace ast
         MaterialPropertyType type;
         union
         {
-            bool      bool_value;
-            int       int_value;
-            float     float_value;
-            glm::vec2 vec2_value;
-            glm::vec3 vec3_value;
-            glm::vec4 vec4_value;
+            bool  bool_value;
+            int   int_value;
+            float float_value;
+            float vec2_value[2];
+            float vec3_value[3];
+            float vec4_value[4];
         };
     };
     
