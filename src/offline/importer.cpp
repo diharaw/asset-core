@@ -7,36 +7,6 @@
 
 namespace ast
 {
-    static const aiTextureType kTextureTypes[] =
-    {
-        aiTextureType_DIFFUSE,
-        aiTextureType_SPECULAR,
-        aiTextureType_AMBIENT,
-        aiTextureType_EMISSIVE,
-        aiTextureType_HEIGHT,
-        aiTextureType_NORMALS,
-        aiTextureType_SHININESS,
-        aiTextureType_OPACITY,
-        aiTextureType_DISPLACEMENT,
-        aiTextureType_LIGHTMAP,
-        aiTextureType_REFLECTION
-    };
-    
-    static const char* kTextureTypeStrings[] =
-    {
-        "aiTextureType_DIFFUSE",
-        "aiTextureType_SPECULAR",
-        "aiTextureType_AMBIENT",
-        "aiTextureType_EMISSIVE",
-        "aiTextureType_HEIGHT",
-        "aiTextureType_NORMALS",
-        "aiTextureType_SHININESS",
-        "aiTextureType_OPACITY",
-        "aiTextureType_DISPLACEMENT",
-        "aiTextureType_LIGHTMAP",
-        "aiTextureType_REFLECTION"
-    };
-    
     std::string get_texture_path(aiMaterial* material, aiTextureType texture_type)
     {
         aiString path;
@@ -133,9 +103,10 @@ namespace ast
                         MaterialProperty property;
                         
                         property.type = PROPERTY_ALBEDO;
-                        property.vec3_value[0] = diffuse.r;
-                        property.vec3_value[1] = diffuse.g;
-                        property.vec3_value[2] = diffuse.b;
+                        property.vec4_value[0] = diffuse.r;
+                        property.vec4_value[1] = diffuse.g;
+                        property.vec4_value[2] = diffuse.b;
+                        property.vec4_value[3] = 1.0f;
                         
                         mat.properties.push_back(property);
                     }
@@ -158,9 +129,6 @@ namespace ast
                     if (roughness_path.empty())
                     {
                         float roughness = 0.0f;
-                        
-                        // Try loading in a Shininess material property
-                        temp_material->Get(AI_MATKEY_SHININESS, roughness);
                         
                         MaterialProperty property;
                         
@@ -189,12 +157,9 @@ namespace ast
                     {
                         float metalness = 0.0f;
                         
-                        // Try loading in a Shininess material property
-                        temp_material->Get(AI_MATKEY_REFLECTIVITY, metalness);
-                        
                         MaterialProperty property;
                         
-                        property.type = PROPERTY_ROUGHNESS;
+                        property.type = PROPERTY_METALNESS;
                         property.float_value = metalness;
                         
                         mat.properties.push_back(property);
@@ -225,9 +190,10 @@ namespace ast
                             MaterialProperty property;
                             
                             property.type = PROPERTY_EMISSIVE;
-                            property.vec3_value[0] = emissive.r;
-                            property.vec3_value[1] = emissive.g;
-                            property.vec3_value[2] = emissive.b;
+                            property.vec4_value[0] = emissive.r;
+                            property.vec4_value[1] = emissive.g;
+                            property.vec4_value[2] = emissive.b;
+                            property.vec4_value[3] = 1.0f;
                             
                             mat.properties.push_back(property);
                         }
@@ -245,6 +211,40 @@ namespace ast
                         mat.textures.push_back(mat_desc);
                     }
                     
+                    // Try to find Specular texture
+                    std::string specular_path = get_texture_path(temp_material, aiTextureType_SPECULAR);
+                    
+                    if (specular_path.empty())
+                    {
+                        aiColor3D specular;
+                        
+                        // Try loading in a Specular material property
+                        if (temp_material->Get(AI_MATKEY_COLOR_SPECULAR, specular))
+                        {
+                            MaterialProperty property;
+                            
+                            property.type = PROPERTY_SPECULAR;
+                            property.vec4_value[0] = specular.r;
+                            property.vec4_value[1] = specular.g;
+                            property.vec4_value[2] = specular.b;
+                            property.vec4_value[3] = 1.0f;
+                            
+                            mat.properties.push_back(property);
+                        }
+                    }
+                    else
+                    {
+                        std::replace(specular_path.begin(), specular_path.end(), '\\', '/');
+                        
+                        TextureDesc mat_desc;
+                        
+                        mat_desc.srgb = false;
+                        mat_desc.type = TEXTURE_SPECULAR;
+                        mat_desc.path = specular_path;
+                        
+                        mat.textures.push_back(mat_desc);
+                    }
+                    
                     // Try to find Normal texture
                     std::string normal_path = get_texture_path(temp_material, aiTextureType_NORMALS);
                     
@@ -254,7 +254,7 @@ namespace ast
                         
                         TextureDesc mat_desc;
                         
-                        mat_desc.srgb = true;
+                        mat_desc.srgb = false;
                         mat_desc.type = TEXTURE_NORMAL;
                         mat_desc.path = normal_path;
                         
