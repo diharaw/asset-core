@@ -12,4 +12,5 @@ file(GLOB_RECURSE AST_OFFLINE_SOURCE ${CMAKE_SOURCE_DIR}/src/offline/*.cpp
 add_library(AssetCoreOffline ${AST_OFFLINE_SOURCE})
 
 target_link_libraries(AssetCoreOffline AssetCoreCommon)
+target_link_libraries(AssetCoreOffline nvtt)
 target_link_libraries(AssetCoreOffline assimp)

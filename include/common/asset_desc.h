@@ -155,7 +155,7 @@ namespace ast
         uint32_t              height;
         std::vector<uint8_t>  pixels8;
         std::vector<uint16_t> pixels16;
-        std::vector<uint32_t> pixels32;
+        std::vector<float>    pixels32;
     };
     
     struct ImageArraySliceDesc
@@ -173,4 +173,95 @@ namespace ast
         TextureCompression 	             compression;
         std::vector<ImageArraySliceDesc> array_slices;
     };
+    
+    // --------------------------------------------------------------------------------
+    // Binary Assets
+    // --------------------------------------------------------------------------------
+    
+    static const std::string kTextureType[] =
+    {
+        "TEXTURE_ALBEDO",
+        "TEXTURE_EMISSIVE",
+        "TEXTURE_DISPLACEMENT",
+        "TEXTURE_NORMAL",
+        "TEXTURE_METALNESS",
+        "TEXTURE_ROUGHNESS",
+        "TEXTURE_SPECULAR",
+        "TEXTURE_GLOSSINESS",
+        "TEXTURE_CUSTOM"
+    };
+    
+    static const std::string kPropertyType[] =
+    {
+        "PROPERTY_ALBEDO",
+        "PROPERTY_EMISSIVE",
+        "PROPERTY_METALNESS",
+        "PROPERTY_ROUGHNESS",
+        "PROPERTY_SPECULAR",
+        "PROPERTY_GLOSSINESS"
+    };
+    
+    static const std::string kShadingModel[] =
+    {
+        "SHADING_MODEL_STANDARD",
+        "SHADING_MODEL_CLOTH",
+        "SHADING_MODEL_SUBSURFACE"
+    };
+    
+    static const std::string kLightingModel[] =
+    {
+        "LIGHTING_MODEL_LIT",
+        "LIGHTING_MODEL_UNLIT"
+    };
+    
+    static const std::string kDisplacementType[] =
+    {
+        "DISPLACEMENT_NONE",
+        "DISPLACEMENT_PARALLAX_OCCLUSION",
+        "DISPLACEMENT_TESSELLATION"
+    };
+    
+    static const std::string kBlendMode[] =
+    {
+        "BLEND_MODE_OPAQUE",
+        "BLEND_MODE_ADDITIVE",
+        "BLEND_MODE_MASKED",
+        "BLEND_MODE_TRANSLUCENT"
+    };
+    
+    struct BINMeshFileHeader
+    {
+        uint32_t   mesh_count;
+        uint32_t   material_count;
+        uint32_t   vertex_count;
+        uint32_t   skeletal_vertex_count;
+        uint32_t   index_count;
+        glm::vec3  max_extents;
+        glm::vec3  min_extents;
+        char       name[50];
+    };
+    
+    struct BINMeshMaterialJson
+    {
+        char material[50];
+    };
+    
+    struct BINImageHeader
+    {
+        uint8_t  type;
+        uint8_t  compression;
+        uint8_t  channel_size;
+        uint8_t  channel_count;
+        uint16_t array_slice_count;
+        uint8_t  mip_slice_count;
+        char     name[50];
+    };
+    
+    struct BINMipSliceHeader
+    {
+        uint16_t width;
+        uint16_t height;
+        uint32_t size;
+    };
+    
 }

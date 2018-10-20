@@ -377,4 +377,9 @@ namespace ast
     
         return false;
     }
+    
+    bool import_image(const std::string& path, ImageDesc& desc)
+    {
+        return false;
+    }
 }
