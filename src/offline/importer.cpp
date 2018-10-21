@@ -4,6 +4,21 @@
 #include <assimp/postprocess.h>
 #include <unordered_map>
 #include <common/filesystem.h>
+#include <nvtt/nvtt.h>
+#include <nvimage/Image.h>
+#include <nvimage/ImageIO.h>
+#include <nvimage/FloatImage.h>
+#include <nvimage/DirectDrawSurface.h>
+#include <nvcore/Ptr.h>
+#include <nvcore/StrLib.h>
+#include <nvcore/StdStream.h>
+#include <nvcore/FileSystem.h>
+#include <nvcore/Timer.h>
+#include <cmft/image.h>
+#include <cmft/cubemapfilter.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 namespace ast
 {
@@ -378,8 +393,19 @@ namespace ast
         return false;
     }
     
-    bool import_image(const std::string& path, ImageDesc& desc)
+    bool import_texture(const std::string& path, ImageDesc& desc)
     {
+        auto ext = filesystem::get_file_extention(path);
+        
+        if (ext == "dds")
+        {
+            // Use NVTT for DDS files
+        }
+        else
+        {
+            // Use STB for everything else
+        }
+        
         return false;
     }
 }

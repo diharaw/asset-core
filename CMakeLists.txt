@@ -10,7 +10,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(ASSIMP_INCLUDE_DIRS "external/assimp/include" "${CMAKE_CURRENT_BINARY_DIR}/external/assimp/include")
 set(JSON_INCLUDE_DIRS "external/json/single_include/nlohmann")
 set(GLM_INCLUDE_DIRS "external/glm/glm")
-set(NVTT_INCLUDE_DIRS "external/nvidia-texture-tools/src")
+set(NVTT_INCLUDE_DIRS "external/nvidia-texture-tools/src" "${CMAKE_CURRENT_BINARY_DIR}/external/nvidia-texture-tools/src")
 set(CMFT_INCLUDE_DIRS "external/cmft/include")
 set(STB_INCLUDE_DIRS "external/stb")
 set(AST_INCLUDE_DIRS "include")
@@ -20,6 +20,7 @@ include_directories("${ASSIMP_INCLUDE_DIRS}"
 					"${GLM_INCLUDE_DIRS}"
 					"${AST_INCLUDE_DIRS}"
 					"${NVTT_INCLUDE_DIRS}"
+					"${CMFT_INCLUDE_DIRS}"
 					"${STB_INCLUDE_DIRS}")
 
 add_subdirectory("external/cmft")
