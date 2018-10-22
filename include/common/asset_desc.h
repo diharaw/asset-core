@@ -58,11 +58,29 @@ namespace ast
         BLEND_MODE_TRANSLUCENT
     };
     
-    enum TextureCompression
+    enum CompressionType
     {
         COMPRESSION_NONE = 0,
-        COMPREESION_DXT3,
-        COMPREESION_DXT5
+        COMPRESSION_BC1  = 1,
+        COMPRESSION_BC1a = 2,
+        COMPRESSION_BC2  = 3,
+        COMPRESSION_BC3  = 4,
+        COMPRESSION_BC3n = 5,
+        COMPRESSION_BC4 = 6,
+        COMPRESSION_BC5 = 7,
+        COMPRESSION_BC6 = 8,
+        COMPRESSION_BC7 = 9,
+        COMPRESSION_ETC1 = 10,
+        COMPRESSION_ETC2 = 11,
+        COMPRESSION_PVR = 12
+    };
+    
+    enum PixelType
+    {
+        PIXEL_TYPE_DEFAULT = 0,
+        PIXEL_TYPE_UNORM8 = 8,
+        PIXEL_TYPE_FLOAT16 = 16,
+        PIXEL_TYPE_FLOAT32 = 32
     };
     
     enum ImageType
@@ -170,7 +188,7 @@ namespace ast
         uint32_t                         channel_count;
         uint32_t                         mip_slice_count;
         uint32_t                         channel_size;
-        TextureCompression 	             compression;
+        CompressionType 	             compression;
         std::vector<ImageArraySliceDesc> array_slices;
     };
     

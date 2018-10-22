@@ -20,6 +20,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 namespace ast
 {
     std::string get_texture_path(aiMaterial* material, aiTextureType texture_type)
@@ -393,19 +396,99 @@ namespace ast
         return false;
     }
     
-    bool import_texture(const std::string& path, ImageDesc& desc)
+    bool import_texture(const std::string& path, const PixelType& pixel_type, ImageDesc& image)
     {
         auto ext = filesystem::get_file_extention(path);
+        
+        int x, y, n, bpp;
+        void* data = nullptr;
         
         if (ext == "dds")
         {
             // Use NVTT for DDS files
+            nv::DirectDrawSurface dds;
+            
+            if (dds.load(path.c_str()))
+            {
+                if (pixel_type == PIXEL_TYPE_UNORM8)
+                    bpp = 1;
+                else if (pixel_type == PIXEL_TYPE_FLOAT16)
+                    bpp = 2;
+                else if (pixel_type == PIXEL_TYPE_FLOAT32)
+                    bpp = 4;
+                else
+                    return false;
+
+                x = dds.header.width;
+                y = dds.header.height;
+                n = dds.header.pixelSize() / (bpp * 8);
+                
+                size_t size = dds.surfaceSize(0);
+                
+                data = malloc(size);
+                dds.readSurface(0, 0, data, size);
+            }
         }
         else
         {
             // Use STB for everything else
+            if (pixel_type == PIXEL_TYPE_UNORM8)
+            {
+                data = stbi_load(path.c_str(), &x, &y, &n, 0);
+                bpp = 1;
+            }
+            else if (pixel_type == PIXEL_TYPE_FLOAT16)
+            {
+                data = stbi_load_16(path.c_str(), &x, &y, &n, 0);
+                bpp = 2;
+            }
+            else if (pixel_type == PIXEL_TYPE_FLOAT32)
+            {
+                data = stbi_loadf(path.c_str(), &x, &y, &n, 0);
+                bpp = 4;
+            }
+            else
+                return false;
         }
         
+        if (data)
+        {
+            image.type = IMAGE_2D;
+            image.name = filesystem::get_filename(path);
+            image.channel_size = bpp;
+            image.mip_slice_count = 1;
+            image.channel_count = n;
+            image.compression = COMPRESSION_NONE;
+            
+            size_t num_pixels = x * y * n;
+            size_t size_in_bytes = num_pixels * bpp;
+            
+            image.array_slices.resize(1);
+            image.array_slices[0].mip_slices.resize(1);
+            image.array_slices[0].mip_slices[0].width = x;
+            image.array_slices[0].mip_slices[0].height = y;
+            
+            if (pixel_type == PIXEL_TYPE_UNORM8)
+            {
+                image.array_slices[0].mip_slices[0].pixels8.resize(num_pixels);
+                memcpy(&image.array_slices[0].mip_slices[0].pixels8[0], data, size_in_bytes);
+            }
+            else if (pixel_type == PIXEL_TYPE_FLOAT16)
+            {
+                image.array_slices[0].mip_slices[0].pixels16.resize(num_pixels);
+                memcpy(&image.array_slices[0].mip_slices[0].pixels16[0], data, size_in_bytes);
+            }
+            else if (pixel_type == PIXEL_TYPE_FLOAT32)
+            {
+                image.array_slices[0].mip_slices[0].pixels32.resize(num_pixels);
+                memcpy(&image.array_slices[0].mip_slices[0].pixels32[0], data, size_in_bytes);
+            }
+            
+            free(data);
+            
+            return true;
+        }
+
         return false;
     }
 }
