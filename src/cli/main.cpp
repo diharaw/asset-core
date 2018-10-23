@@ -21,7 +21,11 @@ int main(int argc, char * argv[])
         
         ast::MeshDesc mesh;
         
-        if (ast::import_mesh(argv[1], mesh))
+        ast::MeshImportDesc import_desc;
+        
+        import_desc.file = argv[1];
+        
+        if (ast::import_mesh(import_desc, mesh))
         {
             if (!ast::export_mesh(output, mesh))
                 printf("Failed to output mesh.\n");

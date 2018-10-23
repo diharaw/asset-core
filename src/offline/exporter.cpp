@@ -197,7 +197,7 @@ namespace ast
         return false;
     }
     
-    bool export_image(const std::string& path, const ImageDesc& desc)
+    bool export_texture(const std::string& path, const TextureDesc& desc)
     {
         std::string output_path = path;
         output_path += "/";

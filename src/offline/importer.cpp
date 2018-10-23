@@ -54,16 +54,16 @@ namespace ast
         return false;
     }
     
-    bool import_mesh(const std::string& path, MeshDesc& desc)
+    bool import_mesh(const MeshImportDesc& desc, MeshDesc& mesh)
     {
         const aiScene* scene;
         Assimp::Importer importer;
-        scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+        scene = importer.ReadFile(desc.file.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
         
         if (scene)
         {
-            desc.name = filesystem::get_filename(path);
-            desc.submeshes.resize(scene->mNumMeshes);
+            mesh.name = filesystem::get_filename(desc.file);
+            mesh.submeshes.resize(scene->mNumMeshes);
             
             uint32_t vertex_count = 0;
             uint32_t index_count = 0;
@@ -74,12 +74,12 @@ namespace ast
             
             for (int i = 0; i < scene->mNumMeshes; i++)
             {
-                desc.submeshes[i].index_count = scene->mMeshes[i]->mNumFaces * 3;
-                desc.submeshes[i].base_index = index_count;
-                desc.submeshes[i].base_vertex = vertex_count;
+                mesh.submeshes[i].index_count = scene->mMeshes[i]->mNumFaces * 3;
+                mesh.submeshes[i].base_index = index_count;
+                mesh.submeshes[i].base_vertex = vertex_count;
                 
                 vertex_count += scene->mMeshes[i]->mNumVertices;
-                index_count += desc.submeshes[i].index_count;
+                index_count += mesh.submeshes[i].index_count;
                 
                 if (!does_material_exist(processed_mat_id, scene->mMeshes[i]->mMaterialIndex))
                 {
@@ -89,7 +89,7 @@ namespace ast
                     
                     if (mat.name.empty())
                     {
-                        mat.name = desc.name;
+                        mat.name = mesh.name;
                         mat.name += "_unnamed_material_";
                         mat.name += std::to_string(unnamed_mats++);
                     }
@@ -132,7 +132,7 @@ namespace ast
                     {
                         std::replace(albedo_path.begin(), albedo_path.end(), '\\', '/');
                         
-                        TextureDesc mat_desc;
+                        MaterialTextureDesc mat_desc;
                         
                         mat_desc.srgb = true;
                         mat_desc.type = TEXTURE_ALBEDO;
@@ -159,7 +159,7 @@ namespace ast
                     {
                         std::replace(roughness_path.begin(), roughness_path.end(), '\\', '/');
                         
-                        TextureDesc mat_desc;
+                        MaterialTextureDesc mat_desc;
                         
                         mat_desc.srgb = false;
                         mat_desc.type = TEXTURE_ROUGHNESS;
@@ -186,7 +186,7 @@ namespace ast
                     {
                         std::replace(metalness_path.begin(), metalness_path.end(), '\\', '/');
                         
-                        TextureDesc mat_desc;
+                        MaterialTextureDesc mat_desc;
                         
                         mat_desc.srgb = false;
                         mat_desc.type = TEXTURE_METALNESS;
@@ -220,7 +220,7 @@ namespace ast
                     {
                         std::replace(emissive_path.begin(), emissive_path.end(), '\\', '/');
                         
-                        TextureDesc mat_desc;
+                        MaterialTextureDesc mat_desc;
                         
                         mat_desc.srgb = false;
                         mat_desc.type = TEXTURE_EMISSIVE;
@@ -254,7 +254,7 @@ namespace ast
                     {
                         std::replace(specular_path.begin(), specular_path.end(), '\\', '/');
                         
-                        TextureDesc mat_desc;
+                        MaterialTextureDesc mat_desc;
                         
                         mat_desc.srgb = false;
                         mat_desc.type = TEXTURE_SPECULAR;
@@ -270,7 +270,7 @@ namespace ast
                     {
                         std::replace(normal_path.begin(), normal_path.end(), '\\', '/');
                         
-                        TextureDesc mat_desc;
+                        MaterialTextureDesc mat_desc;
                         
                         mat_desc.srgb = false;
                         mat_desc.type = TEXTURE_NORMAL;
@@ -286,7 +286,7 @@ namespace ast
                     {
                         std::replace(height_path.begin(), height_path.end(), '\\', '/');
                         
-                        TextureDesc mat_desc;
+                        MaterialTextureDesc mat_desc;
                         
                         mat_desc.srgb = true;
                         mat_desc.type = TEXTURE_DISPLACEMENT;
@@ -297,16 +297,16 @@ namespace ast
                         mat.displacement_type = DISPLACEMENT_PARALLAX_OCCLUSION;
                     }
                     
-                    mat_id_mapping[scene->mMeshes[i]->mMaterialIndex] = desc.materials.size();
+                    mat_id_mapping[scene->mMeshes[i]->mMaterialIndex] = mesh.materials.size();
                     
-                    desc.materials.push_back(mat);
+                    mesh.materials.push_back(mat);
                 }
                 
-                desc.submeshes[i].material_index = mat_id_mapping[scene->mMeshes[i]->mMaterialIndex];
+                mesh.submeshes[i].material_index = mat_id_mapping[scene->mMeshes[i]->mMaterialIndex];
             }
             
-            desc.vertices.resize(vertex_count);
-            desc.indices.resize(index_count);
+            mesh.vertices.resize(vertex_count);
+            mesh.indices.resize(index_count);
             
             aiMesh* temp_mesh;
             int idx = 0;
@@ -315,14 +315,14 @@ namespace ast
             for (int i = 0; i < scene->mNumMeshes; i++)
             {
                 temp_mesh = scene->mMeshes[i];
-                desc.submeshes[i].max_extents = glm::vec3(temp_mesh->mVertices[0].x, temp_mesh->mVertices[0].y, temp_mesh->mVertices[0].z);
-                desc.submeshes[i].min_extents = glm::vec3(temp_mesh->mVertices[0].x, temp_mesh->mVertices[0].y, temp_mesh->mVertices[0].z);
+                mesh.submeshes[i].max_extents = glm::vec3(temp_mesh->mVertices[0].x, temp_mesh->mVertices[0].y, temp_mesh->mVertices[0].z);
+                mesh.submeshes[i].min_extents = glm::vec3(temp_mesh->mVertices[0].x, temp_mesh->mVertices[0].y, temp_mesh->mVertices[0].z);
                 
                 for (int k = 0; k < scene->mMeshes[i]->mNumVertices; k++)
                 {
-                    desc.vertices[vertex_index].position = glm::vec3(temp_mesh->mVertices[k].x, temp_mesh->mVertices[k].y, temp_mesh->mVertices[k].z);
+                    mesh.vertices[vertex_index].position = glm::vec3(temp_mesh->mVertices[k].x, temp_mesh->mVertices[k].y, temp_mesh->mVertices[k].z);
                     glm::vec3 n = glm::vec3(temp_mesh->mNormals[k].x, temp_mesh->mNormals[k].y, temp_mesh->mNormals[k].z);
-                    desc.vertices[vertex_index].normal = n;
+                    mesh.vertices[vertex_index].normal = n;
                     
                     if (temp_mesh->mTangents)
                     {
@@ -333,61 +333,61 @@ namespace ast
                         if (glm::dot(glm::cross(n, t), b) < 0.0f)
                             t *= -1.0f; // Flip tangent
                         
-                        desc.vertices[vertex_index].tangent = t;
-                        desc.vertices[vertex_index].bitangent = b;
+                        mesh.vertices[vertex_index].tangent = t;
+                        mesh.vertices[vertex_index].bitangent = b;
                     }
                     
                     if (temp_mesh->HasTextureCoords(0))
                     {
-                        desc.vertices[vertex_index].tex_coord = glm::vec2(temp_mesh->mTextureCoords[0][k].x, temp_mesh->mTextureCoords[0][k].y);
+                        mesh.vertices[vertex_index].tex_coord = glm::vec2(temp_mesh->mTextureCoords[0][k].x, temp_mesh->mTextureCoords[0][k].y);
                     }
                     
-                    if (desc.vertices[vertex_index].position.x > desc.submeshes[i].max_extents.x)
-                        desc.submeshes[i].max_extents.x = desc.vertices[vertex_index].position.x;
-                    if (desc.vertices[vertex_index].position.y > desc.submeshes[i].max_extents.y)
-                        desc.submeshes[i].max_extents.y = desc.vertices[vertex_index].position.y;
-                    if (desc.vertices[vertex_index].position.z > desc.submeshes[i].max_extents.z)
-                        desc.submeshes[i].max_extents.z = desc.vertices[vertex_index].position.z;
+                    if (mesh.vertices[vertex_index].position.x > mesh.submeshes[i].max_extents.x)
+                        mesh.submeshes[i].max_extents.x = mesh.vertices[vertex_index].position.x;
+                    if (mesh.vertices[vertex_index].position.y > mesh.submeshes[i].max_extents.y)
+                        mesh.submeshes[i].max_extents.y = mesh.vertices[vertex_index].position.y;
+                    if (mesh.vertices[vertex_index].position.z > mesh.submeshes[i].max_extents.z)
+                        mesh.submeshes[i].max_extents.z = mesh.vertices[vertex_index].position.z;
                     
-                    if (desc.vertices[vertex_index].position.x < desc.submeshes[i].min_extents.x)
-                        desc.submeshes[i].min_extents.x = desc.vertices[vertex_index].position.x;
-                    if (desc.vertices[vertex_index].position.y < desc.submeshes[i].min_extents.y)
-                        desc.submeshes[i].min_extents.y = desc.vertices[vertex_index].position.y;
-                    if (desc.vertices[vertex_index].position.z < desc.submeshes[i].min_extents.z)
-                        desc.submeshes[i].min_extents.z = desc.vertices[vertex_index].position.z;
+                    if (mesh.vertices[vertex_index].position.x < mesh.submeshes[i].min_extents.x)
+                        mesh.submeshes[i].min_extents.x = mesh.vertices[vertex_index].position.x;
+                    if (mesh.vertices[vertex_index].position.y < mesh.submeshes[i].min_extents.y)
+                        mesh.submeshes[i].min_extents.y = mesh.vertices[vertex_index].position.y;
+                    if (mesh.vertices[vertex_index].position.z < mesh.submeshes[i].min_extents.z)
+                        mesh.submeshes[i].min_extents.z = mesh.vertices[vertex_index].position.z;
                     
                     vertex_index++;
                 }
                 
                 for (int j = 0; j < temp_mesh->mNumFaces; j++)
                 {
-                    desc.indices[idx] = temp_mesh->mFaces[j].mIndices[0];
+                    mesh.indices[idx] = temp_mesh->mFaces[j].mIndices[0];
                     idx++;
-                    desc.indices[idx] = temp_mesh->mFaces[j].mIndices[1];
+                    mesh.indices[idx] = temp_mesh->mFaces[j].mIndices[1];
                     idx++;
-                    desc.indices[idx] = temp_mesh->mFaces[j].mIndices[2];
+                    mesh.indices[idx] = temp_mesh->mFaces[j].mIndices[2];
                     idx++;
                 }
             }
             
-            desc.max_extents = desc.submeshes[0].max_extents;
-            desc.min_extents = desc.submeshes[0].min_extents;
+            mesh.max_extents = mesh.submeshes[0].max_extents;
+            mesh.min_extents = mesh.submeshes[0].min_extents;
             
-            for (int i = 0; i < desc.submeshes.size(); i++)
+            for (int i = 0; i < mesh.submeshes.size(); i++)
             {
-                if (desc.submeshes[i].max_extents.x > desc.max_extents.x)
-                    desc.max_extents.x = desc.submeshes[i].max_extents.x;
-                if (desc.submeshes[i].max_extents.y > desc.max_extents.y)
-                    desc.max_extents.y = desc.submeshes[i].max_extents.y;
-                if (desc.submeshes[i].max_extents.z > desc.max_extents.z)
-                    desc.max_extents.z = desc.submeshes[i].max_extents.z;
+                if (mesh.submeshes[i].max_extents.x > mesh.max_extents.x)
+                    mesh.max_extents.x = mesh.submeshes[i].max_extents.x;
+                if (mesh.submeshes[i].max_extents.y > mesh.max_extents.y)
+                    mesh.max_extents.y = mesh.submeshes[i].max_extents.y;
+                if (mesh.submeshes[i].max_extents.z > mesh.max_extents.z)
+                    mesh.max_extents.z = mesh.submeshes[i].max_extents.z;
                 
-                if (desc.submeshes[i].min_extents.x < desc.min_extents.x)
-                    desc.min_extents.x = desc.submeshes[i].min_extents.x;
-                if (desc.submeshes[i].min_extents.y < desc.min_extents.y)
-                    desc.min_extents.y = desc.submeshes[i].min_extents.y;
-                if (desc.submeshes[i].min_extents.z < desc.min_extents.z)
-                    desc.min_extents.z = desc.submeshes[i].min_extents.z;
+                if (mesh.submeshes[i].min_extents.x < mesh.min_extents.x)
+                    mesh.min_extents.x = mesh.submeshes[i].min_extents.x;
+                if (mesh.submeshes[i].min_extents.y < mesh.min_extents.y)
+                    mesh.min_extents.y = mesh.submeshes[i].min_extents.y;
+                if (mesh.submeshes[i].min_extents.z < mesh.min_extents.z)
+                    mesh.min_extents.z = mesh.submeshes[i].min_extents.z;
             }
             
             return true;
@@ -396,9 +396,9 @@ namespace ast
         return false;
     }
     
-    bool import_texture(const std::string& path, const PixelType& pixel_type, ImageDesc& image)
+    bool import_texture_2d(const Texture2DImportDesc& desc, TextureDesc& texture)
     {
-        auto ext = filesystem::get_file_extention(path);
+        auto ext = filesystem::get_file_extention(desc.file);
         
         int x, y, n, bpp;
         void* data = nullptr;
@@ -408,13 +408,13 @@ namespace ast
             // Use NVTT for DDS files
             nv::DirectDrawSurface dds;
             
-            if (dds.load(path.c_str()))
+            if (dds.load(desc.file.c_str()))
             {
-                if (pixel_type == PIXEL_TYPE_UNORM8)
+                if (desc.pixel_type == PIXEL_TYPE_UNORM8)
                     bpp = 1;
-                else if (pixel_type == PIXEL_TYPE_FLOAT16)
+                else if (desc.pixel_type == PIXEL_TYPE_FLOAT16)
                     bpp = 2;
-                else if (pixel_type == PIXEL_TYPE_FLOAT32)
+                else if (desc.pixel_type == PIXEL_TYPE_FLOAT32)
                     bpp = 4;
                 else
                     return false;
@@ -432,19 +432,19 @@ namespace ast
         else
         {
             // Use STB for everything else
-            if (pixel_type == PIXEL_TYPE_UNORM8)
+            if (desc.pixel_type == PIXEL_TYPE_UNORM8)
             {
-                data = stbi_load(path.c_str(), &x, &y, &n, 0);
+                data = stbi_load(desc.file.c_str(), &x, &y, &n, 0);
                 bpp = 1;
             }
-            else if (pixel_type == PIXEL_TYPE_FLOAT16)
+            else if (desc.pixel_type == PIXEL_TYPE_FLOAT16)
             {
-                data = stbi_load_16(path.c_str(), &x, &y, &n, 0);
+                data = stbi_load_16(desc.file.c_str(), &x, &y, &n, 0);
                 bpp = 2;
             }
-            else if (pixel_type == PIXEL_TYPE_FLOAT32)
+            else if (desc.pixel_type == PIXEL_TYPE_FLOAT32)
             {
-                data = stbi_loadf(path.c_str(), &x, &y, &n, 0);
+                data = stbi_loadf(desc.file.c_str(), &x, &y, &n, 0);
                 bpp = 4;
             }
             else
@@ -453,35 +453,35 @@ namespace ast
         
         if (data)
         {
-            image.type = IMAGE_2D;
-            image.name = filesystem::get_filename(path);
-            image.channel_size = bpp;
-            image.mip_slice_count = 1;
-            image.channel_count = n;
-            image.compression = COMPRESSION_NONE;
+            texture.type = TEXTURE_2D;
+            texture.name = filesystem::get_filename(desc.file);
+            texture.channel_size = bpp;
+            texture.mip_slice_count = 1;
+            texture.channel_count = n;
+            texture.compression = COMPRESSION_NONE;
             
             size_t num_pixels = x * y * n;
             size_t size_in_bytes = num_pixels * bpp;
             
-            image.array_slices.resize(1);
-            image.array_slices[0].mip_slices.resize(1);
-            image.array_slices[0].mip_slices[0].width = x;
-            image.array_slices[0].mip_slices[0].height = y;
+            texture.array_slices.resize(1);
+            texture.array_slices[0].mip_slices.resize(1);
+            texture.array_slices[0].mip_slices[0].width = x;
+            texture.array_slices[0].mip_slices[0].height = y;
             
-            if (pixel_type == PIXEL_TYPE_UNORM8)
+            if (desc.pixel_type == PIXEL_TYPE_UNORM8)
             {
-                image.array_slices[0].mip_slices[0].pixels8.resize(num_pixels);
-                memcpy(&image.array_slices[0].mip_slices[0].pixels8[0], data, size_in_bytes);
+                texture.array_slices[0].mip_slices[0].pixels8.resize(num_pixels);
+                memcpy(&texture.array_slices[0].mip_slices[0].pixels8[0], data, size_in_bytes);
             }
-            else if (pixel_type == PIXEL_TYPE_FLOAT16)
+            else if (desc.pixel_type == PIXEL_TYPE_FLOAT16)
             {
-                image.array_slices[0].mip_slices[0].pixels16.resize(num_pixels);
-                memcpy(&image.array_slices[0].mip_slices[0].pixels16[0], data, size_in_bytes);
+                texture.array_slices[0].mip_slices[0].pixels16.resize(num_pixels);
+                memcpy(&texture.array_slices[0].mip_slices[0].pixels16[0], data, size_in_bytes);
             }
-            else if (pixel_type == PIXEL_TYPE_FLOAT32)
+            else if (desc.pixel_type == PIXEL_TYPE_FLOAT32)
             {
-                image.array_slices[0].mip_slices[0].pixels32.resize(num_pixels);
-                memcpy(&image.array_slices[0].mip_slices[0].pixels32[0], data, size_in_bytes);
+                texture.array_slices[0].mip_slices[0].pixels32.resize(num_pixels);
+                memcpy(&texture.array_slices[0].mip_slices[0].pixels32[0], data, size_in_bytes);
             }
             
             free(data);

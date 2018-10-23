@@ -7,7 +7,7 @@
 
 namespace ast
 {
-    enum TextureType
+    enum MaterialTextureType
     {
         TEXTURE_ALBEDO = 0,
         TEXTURE_EMISSIVE,
@@ -83,10 +83,20 @@ namespace ast
         PIXEL_TYPE_FLOAT32 = 32
     };
     
-    enum ImageType
+    enum TextureType
     {
-        IMAGE_2D = 0,
-        IMAGE_CUBE
+        TEXTURE_2D = 0,
+        TEXTURE_CUBE
+    };
+    
+    enum CubeMapFormat
+    {
+        CUBEMAP_FORMAT_VCROSS,
+        CUBEMAP_FORMAT_HCROSS,
+        CUBEMAP_FORMAT_FACE_LIST,
+        CUBEMAP_FORMAT_VSTRIP,
+        CUBEMAP_FORMAT_HSTRIP,
+        CUBEMAP_FORMAT_LATLONG
     };
     
     struct VertexDesc
@@ -109,11 +119,11 @@ namespace ast
         glm::vec4  bone_weights;
     };
     
-    struct TextureDesc
+    struct MaterialTextureDesc
     {
-        TextureType type;
-        std::string path;
-        bool        srgb;
+        MaterialTextureType type;
+        std::string         path;
+        bool                srgb;
     };
     
     struct MaterialProperty
@@ -132,17 +142,17 @@ namespace ast
     
     struct MaterialDesc
     {
-        std::string                   name;
-        bool                          metallic_workflow;
-        bool                          double_sided;
-        std::string                   vertex_shader_func;
-        std::string                   fragment_shader_func;
-        BlendMode                     blend_mode;
-        DisplacementType              displacement_type;
-        ShadingModel                  shading_model;
-        LightingModel                 lighting_model;
-        std::vector<TextureDesc>      textures;
-        std::vector<MaterialProperty> properties;
+        std::string                      name;
+        bool                             metallic_workflow;
+        bool                             double_sided;
+        std::string                      vertex_shader_func;
+        std::string                      fragment_shader_func;
+        BlendMode                        blend_mode;
+        DisplacementType                 displacement_type;
+        ShadingModel                     shading_model;
+        LightingModel                    lighting_model;
+        std::vector<MaterialTextureDesc> textures;
+        std::vector<MaterialProperty>    properties;
     };
     
     struct SubMeshDesc
@@ -167,7 +177,7 @@ namespace ast
         glm::vec3                       min_extents;
     };
     
-    struct ImageMipSliceDesc
+    struct TextureMipSliceDesc
     {
         uint32_t              width;
         uint32_t              height;
@@ -176,20 +186,20 @@ namespace ast
         std::vector<float>    pixels32;
     };
     
-    struct ImageArraySliceDesc
+    struct TextureArraySliceDesc
     {
-        std::vector<ImageMipSliceDesc> mip_slices;
+        std::vector<TextureMipSliceDesc> mip_slices;
     };
     
-    struct ImageDesc
+    struct TextureDesc
     {
-        std::string                      name;
-        ImageType                        type;
-        uint32_t                         channel_count;
-        uint32_t                         mip_slice_count;
-        uint32_t                         channel_size;
-        CompressionType 	             compression;
-        std::vector<ImageArraySliceDesc> array_slices;
+        std::string                        name;
+        TextureType                        type;
+        uint32_t                           channel_count;
+        uint32_t                           mip_slice_count;
+        uint32_t                           channel_size;
+        CompressionType 	               compression;
+        std::vector<TextureArraySliceDesc> array_slices;
     };
     
     // --------------------------------------------------------------------------------
