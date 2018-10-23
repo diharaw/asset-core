@@ -10,34 +10,6 @@ namespace ast
         IMPORT_SOURCE_FILE
     };
     
-    struct TextureData
-    {
-        size_t size;
-        void*  data;
-        
-        TextureData()
-        {
-            size = 0;
-            data = nullptr;
-        }
-        
-        ~TextureData()
-        {
-            size = 0;
-            free(data);
-        }
-    };
-    
-    struct TextureArrayItem
-    {
-        std::vector<TextureData> mip_levels;
-    };
-    
-    struct Texture
-    {
-        std::vector<TextureArrayItem> array_items;
-    };
-    
     struct TextureImportOptions
     {
         bool srgb;
@@ -81,6 +53,7 @@ namespace ast
     struct MeshImportDesc
     {
         // Common
+        ImportSource source;
         
         // Memory Import
         void*  data;

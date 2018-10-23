@@ -463,32 +463,22 @@ namespace ast
             size_t num_pixels = x * y * n;
             size_t size_in_bytes = num_pixels * bpp;
             
-            texture.array_slices.resize(1);
-            texture.array_slices[0].mip_slices.resize(1);
-            texture.array_slices[0].mip_slices[0].width = x;
-            texture.array_slices[0].mip_slices[0].height = y;
+            texture.array_items.resize(1);
+            texture.array_items[0].mip_levels.resize(1);
+            texture.array_items[0].mip_levels[0].width = x;
+            texture.array_items[0].mip_levels[0].height = y;
             
-            if (desc.pixel_type == PIXEL_TYPE_UNORM8)
-            {
-                texture.array_slices[0].mip_slices[0].pixels8.resize(num_pixels);
-                memcpy(&texture.array_slices[0].mip_slices[0].pixels8[0], data, size_in_bytes);
-            }
-            else if (desc.pixel_type == PIXEL_TYPE_FLOAT16)
-            {
-                texture.array_slices[0].mip_slices[0].pixels16.resize(num_pixels);
-                memcpy(&texture.array_slices[0].mip_slices[0].pixels16[0], data, size_in_bytes);
-            }
-            else if (desc.pixel_type == PIXEL_TYPE_FLOAT32)
-            {
-                texture.array_slices[0].mip_slices[0].pixels32.resize(num_pixels);
-                memcpy(&texture.array_slices[0].mip_slices[0].pixels32[0], data, size_in_bytes);
-            }
-            
+            texture.array_items[0].mip_levels[0].pixels.copy_data(size_in_bytes, data);
             free(data);
             
             return true;
         }
 
+        return false;
+    }
+    
+    bool import_texture_cube(const TextureCubeImportDesc& desc, TextureDesc& texture)
+    {
         return false;
     }
 }

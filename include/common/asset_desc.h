@@ -177,29 +177,53 @@ namespace ast
         glm::vec3                       min_extents;
     };
     
-    struct TextureMipSliceDesc
+    struct TextureData
     {
-        uint32_t              width;
-        uint32_t              height;
-        std::vector<uint8_t>  pixels8;
-        std::vector<uint16_t> pixels16;
-        std::vector<float>    pixels32;
+        size_t size;
+        void*  data;
+        
+        TextureData()
+        {
+            size = 0;
+            data = nullptr;
+        }
+        
+        ~TextureData()
+        {
+            size = 0;
+            free(data);
+        }
+        
+        void copy_data(size_t src_size, void* src_data)
+        {
+            data = malloc(src_size);
+            memcpy(data, src_data, src_size);
+            size = src_size;
+        }
     };
     
-    struct TextureArraySliceDesc
+    struct TextureMipSliceDesc
     {
-        std::vector<TextureMipSliceDesc> mip_slices;
+        uint32_t    width;
+        uint32_t    height;
+        TextureData pixels;
     };
+    
+    struct TextureArrayItem
+    {
+        std::vector<TextureMipSliceDesc> mip_levels;
+    };
+    
     
     struct TextureDesc
     {
-        std::string                        name;
-        TextureType                        type;
-        uint32_t                           channel_count;
-        uint32_t                           mip_slice_count;
-        uint32_t                           channel_size;
-        CompressionType 	               compression;
-        std::vector<TextureArraySliceDesc> array_slices;
+        std::string                   name;
+        TextureType                   type;
+        uint32_t                      channel_count;
+        uint32_t                      mip_slice_count;
+        uint32_t                      channel_size;
+        CompressionType 	          compression;
+        std::vector<TextureArrayItem> array_items;
     };
     
     // --------------------------------------------------------------------------------
