@@ -23,6 +23,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <iostream>
+
 namespace ast
 {
     const nvtt::Format kCompression[] =
@@ -420,30 +422,37 @@ namespace ast
     {
         long offset;
         int mip_levels = 0;
-        int mip_height;
         int compression_type;
+        void* temp_buffer;
+        TextureArrayItem* array_item;
+        
+        TextureOutputHandler()
+        {
+            // Allocate a 50MB buffer for copying purposes.
+            temp_buffer = malloc(1024 * 1024 * 50);
+        }
+        
+        ~TextureOutputHandler()
+        {
+            free(temp_buffer);
+        }
         
         virtual void beginImage(int size, int width, int height, int depth, int face, int miplevel) override
         {
-//            std::cout << "Beginning Image: Size = " << size << ", Mip = " << miplevel << ", Width = " << width << ", Height = " << height << std::endl;
-//
-//            MipSliceHeader mip0Header;
-//
-//            mip0Header.width = width;
-//            mip0Header.height = height;
-//            mip0Header.size = size;
-//
-//            stream->write((char*)&mip0Header, sizeof(MipSliceHeader));
-//            offset += sizeof(MipSliceHeader);
-//            stream->seekp(offset);
-//
-            mip_height = height;
-            mip_levels++;
+            std::cout << "Beginning Image: Size = " << size << ", Mip = " << miplevel << ", Width = " << width << ", Height = " << height << std::endl;
+
+            array_item->mip_levels[mip_levels].width = width;
+            array_item->mip_levels[mip_levels].height = height;
+            
         }
         
         // Output data. Compressed data is output as soon as it's generated to minimize memory allocations.
         virtual bool writeData(const void * data, int size) override
         {
+            // Copy compressed data into temp buffer.
+            memcpy((char*)temp_buffer + offset, data, size);
+            
+            // Move temp buffer forward.
             offset += size;
             
             return true;
@@ -452,6 +461,14 @@ namespace ast
         // Indicate the end of the compressed image. (New in NVTT 2.1)
         virtual void endImage() override
         {
+            // Reset temp buffer pointer.
+            offset = 0;
+            
+            // Copy temp buffer data into image.
+            array_item->mip_levels[mip_levels].pixels.copy_data(offset, temp_buffer);
+            
+            // Move to the next mip level.
+            mip_levels++;
         }
     };
     
