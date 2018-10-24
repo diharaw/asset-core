@@ -15,17 +15,21 @@ namespace ast
         bool srgb;
         bool normal_map;
         bool generate_mip_chain;
+        CompressionType compression;
     };
     
     struct Texture2DImportDesc
     {
         // Common
-        ImportSource type;
+        ImportSource source;
         PixelType    pixel_type;
         
         // Memory Import
         void*  data;
         size_t size;
+        uint32_t width;
+        uint32_t height;
+        uint32_t channel_count;
         
         // File Import
         std::string file;
@@ -36,13 +40,18 @@ namespace ast
     struct TextureCubeImportDesc
     {
         // Common
-        ImportSource  type;
+        ImportSource  source;
         PixelType     pixel_type;
         CubeMapFormat format;
+        bool          generate_irradiance;
+        bool          generate_prefiltered;
         
         // Memory Import (index 0 for cross, latlong and sphere. all others for face list)
-        void*  data[6];
-        size_t size[6];
+        void*    data[6];
+        size_t   size[6];
+        uint32_t width;
+        uint32_t height;
+        uint32_t channel_count;
         
         // File Import (index 0 for cross, latlong and sphere. all others for face list)
         std::string files[6];

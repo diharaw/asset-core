@@ -217,7 +217,7 @@ namespace ast
             header.compression = desc.compression;
             header.channel_size = desc.channel_size;
             header.channel_count = desc.channel_count;
-            header.array_slice_count = desc.array_slices.size();
+            header.array_slice_count = desc.array_items.size();
             header.mip_slice_count = desc.mip_slice_count;
             
             size_t offset = 0;
@@ -225,32 +225,21 @@ namespace ast
             // Write header
             WRITE_AND_OFFSET(f, &header, sizeof(BINImageHeader), offset);
             
-            for (const auto& array_slice : desc.array_slices)
+            for (const auto& array_item : desc.array_items)
             {
-                for (const auto& mip_slice : array_slice.mip_slices)
+                for (const auto& mip_level : array_item.mip_levels)
                 {
                     BINMipSliceHeader mip_header;
                     
-                    mip_header.height = mip_slice.height;
-                    mip_header.width = mip_slice.width;
+                    mip_header.height = mip_level.height;
+                    mip_header.width = mip_level.width;
                     mip_header.size = header.channel_count * header.channel_size * mip_header.height * mip_header.width;
                     
                     // Write mip header
                     WRITE_AND_OFFSET(f, &mip_header, sizeof(BINMipSliceHeader), offset);
                     
                     // Write pixels
-                    if (header.channel_size == 1)
-                    {
-                        WRITE_AND_OFFSET(f, &mip_slice.pixels8[0], mip_header.size, offset);
-                    }
-                    else if (header.channel_size == 2)
-                    {
-                        WRITE_AND_OFFSET(f, &mip_slice.pixels16[0], mip_header.size, offset);
-                    }
-                    else if (header.channel_size == 4)
-                    {
-                        WRITE_AND_OFFSET(f, &mip_slice.pixels32[0], mip_header.size, offset);
-                    }
+                    WRITE_AND_OFFSET(f, mip_level.pixels.data, mip_header.size, offset);
                 }
             }
             

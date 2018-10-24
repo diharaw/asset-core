@@ -25,6 +25,20 @@
 
 namespace ast
 {
+    const nvtt::Format kCompression[] =
+    {
+        nvtt::Format_RGB,
+        nvtt::Format_BC1,
+        nvtt::Format_BC1a,
+        nvtt::Format_BC2,
+        nvtt::Format_BC3,
+        nvtt::Format_BC3n,
+        nvtt::Format_BC4,
+        nvtt::Format_BC5,
+        nvtt::Format_BC6,
+        nvtt::Format_BC7
+    };
+    
     std::string get_texture_path(aiMaterial* material, aiTextureType texture_type)
     {
         aiString path;
@@ -58,7 +72,13 @@ namespace ast
     {
         const aiScene* scene;
         Assimp::Importer importer;
-        scene = importer.ReadFile(desc.file.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+        
+        if (desc.source == IMPORT_SOURCE_FILE)
+            scene = importer.ReadFile(desc.file.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+        else if (desc.source == IMPORT_SOURCE_MEMORY)
+            scene = importer.ReadFileFromMemory(desc.data, desc.size, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+        else
+            return false;
         
         if (scene)
         {
@@ -396,57 +416,185 @@ namespace ast
         return false;
     }
     
-    bool import_texture_2d(const Texture2DImportDesc& desc, TextureDesc& texture)
+    struct TextureOutputHandler : public nvtt::OutputHandler
     {
-        auto ext = filesystem::get_file_extention(desc.file);
+        long offset;
+        int mip_levels = 0;
+        int mip_height;
+        int compression_type;
         
-        int x, y, n, bpp;
-        void* data = nullptr;
-        
-        if (ext == "dds")
+        virtual void beginImage(int size, int width, int height, int depth, int face, int miplevel) override
         {
-            // Use NVTT for DDS files
-            nv::DirectDrawSurface dds;
+//            std::cout << "Beginning Image: Size = " << size << ", Mip = " << miplevel << ", Width = " << width << ", Height = " << height << std::endl;
+//
+//            MipSliceHeader mip0Header;
+//
+//            mip0Header.width = width;
+//            mip0Header.height = height;
+//            mip0Header.size = size;
+//
+//            stream->write((char*)&mip0Header, sizeof(MipSliceHeader));
+//            offset += sizeof(MipSliceHeader);
+//            stream->seekp(offset);
+//
+            mip_height = height;
+            mip_levels++;
+        }
+        
+        // Output data. Compressed data is output as soon as it's generated to minimize memory allocations.
+        virtual bool writeData(const void * data, int size) override
+        {
+            offset += size;
             
-            if (dds.load(desc.file.c_str()))
-            {
-                if (desc.pixel_type == PIXEL_TYPE_UNORM8)
-                    bpp = 1;
-                else if (desc.pixel_type == PIXEL_TYPE_FLOAT16)
-                    bpp = 2;
-                else if (desc.pixel_type == PIXEL_TYPE_FLOAT32)
-                    bpp = 4;
-                else
-                    return false;
-
-                x = dds.header.width;
-                y = dds.header.height;
-                n = dds.header.pixelSize() / (bpp * 8);
-                
-                size_t size = dds.surfaceSize(0);
-                
-                data = malloc(size);
-                dds.readSurface(0, 0, data, size);
-            }
+            return true;
+        }
+        
+        // Indicate the end of the compressed image. (New in NVTT 2.1)
+        virtual void endImage() override
+        {
+        }
+    };
+    
+    bool compress_array_item(TextureArrayItem& item, PixelType pixel_type, int pixel_size_bits, int channel_count, CompressionType compression, bool generate_mipmaps)
+    {
+        nvtt::CompressionOptions compression_options;
+        nvtt::InputOptions input_options;
+        nvtt::OutputOptions output_options;
+        nvtt::Compressor compressor;
+        TextureOutputHandler handler;
+        
+        compression_options.setFormat(kCompression[compression]);
+        
+        if (compression == COMPRESSION_NONE)
+        {
+            uint32_t pixel_size = pixel_size_bits;
+            
+            if (pixel_type == PIXEL_TYPE_UNORM8)
+                compression_options.setPixelType(nvtt::PixelType_UnsignedNorm);
+            else if (pixel_type == PIXEL_TYPE_FLOAT16 || pixel_type == PIXEL_TYPE_FLOAT32)
+                compression_options.setPixelType(nvtt::PixelType_Float);
+            
+            if (channel_count == 4)
+                compression_options.setPixelFormat(pixel_size, pixel_size, pixel_size, pixel_size);
+            else if (channel_count == 3)
+                compression_options.setPixelFormat(pixel_size, pixel_size, pixel_size, 0);
+            else if (channel_count == 2)
+                compression_options.setPixelFormat(pixel_size, pixel_size, 0, 0);
+            else if (channel_count == 1)
+                compression_options.setPixelFormat(pixel_size, 0, 0, 0);
+        }
+        
+        if (pixel_type == PIXEL_TYPE_DEFAULT)
+        {
+            if (pixel_type == PIXEL_TYPE_UNORM8)
+                input_options.setFormat(nvtt::InputFormat_BGRA_8UB);
+            else if (pixel_type == PIXEL_TYPE_FLOAT16)
+                input_options.setFormat(nvtt::InputFormat_RGBA_16F);
+            else if (pixel_type == PIXEL_TYPE_FLOAT32)
+                input_options.setFormat(nvtt::InputFormat_RGBA_32F);
         }
         else
         {
-            // Use STB for everything else
+            if (pixel_type == PIXEL_TYPE_UNORM8)
+                input_options.setFormat(nvtt::InputFormat_BGRA_8UB);
+            else if (pixel_type == PIXEL_TYPE_FLOAT16)
+                input_options.setFormat(nvtt::InputFormat_RGBA_16F);
+            else if (pixel_type == PIXEL_TYPE_FLOAT32)
+                input_options.setFormat(nvtt::InputFormat_RGBA_32F);
+        }
+        
+        input_options.setNormalMap(false);
+        input_options.setConvertToNormalMap(false);
+        input_options.setNormalizeMipmaps(false);
+        
+        output_options.setOutputHeader(false);
+        output_options.setOutputHandler(&handler);
+        
+        return false;
+    }
+    
+    bool import_texture_2d(const Texture2DImportDesc& desc, TextureDesc& texture)
+    {
+        int x, y, n, bpp;
+        void* data = nullptr;
+        
+        if (desc.source == IMPORT_SOURCE_FILE)
+        {
+            auto ext = filesystem::get_file_extention(desc.file);
+            
+            if (ext == "dds")
+            {
+                // Use NVTT for DDS files
+                nv::DirectDrawSurface dds;
+                
+                if (dds.load(desc.file.c_str()))
+                {
+                    if (desc.pixel_type == PIXEL_TYPE_UNORM8)
+                        bpp = 1;
+                    else if (desc.pixel_type == PIXEL_TYPE_FLOAT16)
+                        bpp = 2;
+                    else if (desc.pixel_type == PIXEL_TYPE_FLOAT32)
+                        bpp = 4;
+                    else
+                        return false;
+                    
+                    nv::Image img;
+                    dds.mipmap(&img, 0, 0);
+                
+                    x = img.width();
+                    y = img.height();
+                    
+                    auto fmt = img.format();
+                
+                    if (fmt == nv::Image::Format_RGB)
+                        n = 3;
+                    else if (fmt == nv::Image::Format_ARGB)
+                        n = 4;
+                    else
+                        return false;
+                    
+                    size_t size = x * y * n * bpp;
+                    data = malloc(size);
+                    memcpy(data, img.pixels(), size);
+                }
+            }
+            else
+            {
+                // Use STB for everything else
+                if (desc.pixel_type == PIXEL_TYPE_UNORM8)
+                {
+                    data = stbi_load(desc.file.c_str(), &x, &y, &n, 0);
+                    bpp = 1;
+                }
+                else if (desc.pixel_type == PIXEL_TYPE_FLOAT16)
+                {
+                    data = stbi_load_16(desc.file.c_str(), &x, &y, &n, 0);
+                    bpp = 2;
+                }
+                else if (desc.pixel_type == PIXEL_TYPE_FLOAT32)
+                {
+                    data = stbi_loadf(desc.file.c_str(), &x, &y, &n, 0);
+                    bpp = 4;
+                }
+                else
+                    return false;
+            }
+        }
+        else if (desc.source == IMPORT_SOURCE_MEMORY)
+        {
+            data = malloc(desc.size);
+            memcpy(data, desc.data, desc.size);
+            
+            x = desc.width;
+            y = desc.height;
+            n = desc.channel_count;
+            
             if (desc.pixel_type == PIXEL_TYPE_UNORM8)
-            {
-                data = stbi_load(desc.file.c_str(), &x, &y, &n, 0);
                 bpp = 1;
-            }
             else if (desc.pixel_type == PIXEL_TYPE_FLOAT16)
-            {
-                data = stbi_load_16(desc.file.c_str(), &x, &y, &n, 0);
                 bpp = 2;
-            }
             else if (desc.pixel_type == PIXEL_TYPE_FLOAT32)
-            {
-                data = stbi_loadf(desc.file.c_str(), &x, &y, &n, 0);
                 bpp = 4;
-            }
             else
                 return false;
         }
@@ -458,7 +606,7 @@ namespace ast
             texture.channel_size = bpp;
             texture.mip_slice_count = 1;
             texture.channel_count = n;
-            texture.compression = COMPRESSION_NONE;
+            texture.compression = desc.options.compression;
             
             size_t num_pixels = x * y * n;
             size_t size_in_bytes = num_pixels * bpp;
@@ -479,6 +627,15 @@ namespace ast
     
     bool import_texture_cube(const TextureCubeImportDesc& desc, TextureDesc& texture)
     {
+        if (desc.source == IMPORT_SOURCE_FILE)
+        {
+            
+        }
+        else if (desc.source == IMPORT_SOURCE_MEMORY)
+        {
+            
+        }
+        
         return false;
     }
 }
