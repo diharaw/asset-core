@@ -472,7 +472,7 @@ namespace ast
         }
     };
     
-    bool compress_array_item(TextureArrayItem& item, PixelType pixel_type, int pixel_size_bits, int channel_count, CompressionType compression, bool generate_mipmaps)
+    bool compress_array_item(TextureArrayItem& item, PixelType pixel_type, int pixel_size_bits, int channel_count, int output_mips, CompressionType compression, bool generate_mipmaps)
     {
         nvtt::CompressionOptions compression_options;
         nvtt::InputOptions input_options;
@@ -526,6 +526,38 @@ namespace ast
         
         output_options.setOutputHeader(false);
         output_options.setOutputHandler(&handler);
+        
+        Image<T> temp_img;
+        
+        input_options.setTextureLayout(nvtt::TextureType_2D, item.mip_levels[0].width, item.mip_levels[0].height);
+        
+        // If generate_mipmaps is false or if the full mipchain has to be generated, set the data for the initial mip level.
+        if (!generate_mipmaps || (generate_mipmaps && output_mips == -1) || (generate_mipmaps && output_mips > 1))
+        {
+            img.to_rgba(temp_img, i, 0);
+            input_options.setMipmapGeneration(generate_mipmaps);
+            input_options.setMipmapData(item.mip_levels[0].pixels.data, item.mip_levels[0].width, item.mip_levels[0].height);
+        }
+        else if (generate_mipmaps && item.mip_levels.size() > 1)
+        {
+            input_options.setMipmapGeneration(generate_mipmaps, item.mip_levels.size());
+            
+            for (int mip = 0; mip < item.mip_levels.size(); mip++)
+            {
+                img.to_rgba(temp_img, i, mip);
+                input_options.setMipmapData(item.mip_levels[mip].pixels.data, item.mip_levels[mip].width, item.mip_levels[mip].height, 1, 0, mip);
+            }
+        }
+        else
+        {
+            temp_img.unload();
+            std::cout << "ERROR::Image must contain at least one miplevel" << std::endl;
+            return false;
+        }
+        
+        handler.mip_levels = 0;
+        compressor.process(input_options, compression_options, output_options);
+        temp_img.unload();
         
         return false;
     }
@@ -635,6 +667,8 @@ namespace ast
             
             texture.array_items[0].mip_levels[0].pixels.copy_data(size_in_bytes, data);
             free(data);
+            
+            compress_array_item(texture.array_items[0], desc.pixel_type, bpp * 8, n, desc.options.compression, desc.options.generate_mip_chain);
             
             return true;
         }
