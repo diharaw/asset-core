@@ -472,6 +472,103 @@ namespace ast
         }
     };
     
+    template<typename T, size_t N>
+    struct Pixel
+    {
+        T c[N];
+    };
+    
+    template<typename T>
+    bool to_rgba(TextureArrayItem& in, TextureArrayItem& out, int channel_count, int mip_slice)
+    {
+        if (channel_count == 4)
+        {
+            out = in;
+            return true;
+        }
+        
+        const TextureMipSliceDesc& in_mip_slice_desc = in.mip_levels[mip_slice];
+        const TextureData& in_tex_data = in_mip_slice_desc.pixels;
+        
+        TextureMipSliceDesc& out_mip_slice_desc = out.mip_levels[mip_slice];
+
+        Pixel<T, 4>* dst = new Pixel<T, 4>[out_mip_slice_desc.width * out_mip_slice_desc.height];
+        size_t size = sizeof(T) * channel_count * out_mip_slice_desc.width * out_mip_slice_desc.height;
+        
+        if (channel_count == 3)
+        {
+            Pixel<T, 3>* src = (Pixel<T, 3>*)in_tex_data.data;
+            
+            for (int y = 0; y < in_mip_slice_desc.height; y++)
+            {
+                for (int x = 0; x < in_mip_slice_desc.width; x++)
+                {
+                    // Initialize values
+                    dst[y * in_mip_slice_desc.width + x].c[0] = 0;
+                    dst[y * in_mip_slice_desc.width + x].c[1] = 0;
+                    dst[y * in_mip_slice_desc.width + x].c[2] = 0;
+                    dst[y * in_mip_slice_desc.width + x].c[3] = std::numeric_limits<T>::max();
+                    
+                    for (int c = 0; c < channel_count; c++)
+                    {
+                        dst[y * in_mip_slice_desc.width + x].c[c] = src[y * in_mip_slice_desc.width + x].c[c];
+                    }
+                }
+            }
+        }
+        else if (channel_count == 2)
+        {
+            Pixel<T, 2>* src = (Pixel<T, 2>*)in_tex_data.data;
+            
+            for (int y = 0; y < in_mip_slice_desc.height; y++)
+            {
+                for (int x = 0; x < in_mip_slice_desc.width; x++)
+                {
+                    // Initialize values
+                    dst[y * in_mip_slice_desc.width + x].c[0] = 0;
+                    dst[y * in_mip_slice_desc.width + x].c[1] = 0;
+                    dst[y * in_mip_slice_desc.width + x].c[2] = 0;
+                    dst[y * in_mip_slice_desc.width + x].c[3] = std::numeric_limits<T>::max();
+                    
+                    for (int c = 0; c < channel_count; c++)
+                    {
+                        dst[y * in_mip_slice_desc.width + x].c[c] = src[y * in_mip_slice_desc.width + x].c[c];
+                    }
+                }
+            }
+        }
+        else if (channel_count == 1)
+        {
+            Pixel<T, 1>* src = (Pixel<T, 1>*)in_tex_data.data;
+            
+            for (int y = 0; y < in_mip_slice_desc.height; y++)
+            {
+                for (int x = 0; x < in_mip_slice_desc.width; x++)
+                {
+                    // Initialize values
+                    dst[y * in_mip_slice_desc.width + x].c[0] = 0;
+                    dst[y * in_mip_slice_desc.width + x].c[1] = 0;
+                    dst[y * in_mip_slice_desc.width + x].c[2] = 0;
+                    dst[y * in_mip_slice_desc.width + x].c[3] = std::numeric_limits<T>::max();
+                    
+                    for (int c = 0; c < channel_count; c++)
+                    {
+                        dst[y * in_mip_slice_desc.width + x].c[c] = src[y * in_mip_slice_desc.width + x].c[c];
+                    }
+                }
+            }
+        }
+        
+        out.mip_levels.resize(in.mip_levels.size());
+        out.mip_levels[0].height = in.mip_levels[0].height;
+        out.mip_levels[0].width = in.mip_levels[0].width;
+        out.mip_levels[0].pixels.copy_data(size, dst);
+      
+        delete[] dst;
+        
+        return true;
+    }
+    
     bool compress_array_item(TextureArrayItem& item, PixelType pixel_type, int pixel_size_bits, int channel_count, int output_mips, CompressionType compression, bool generate_mipmaps)
     {
         nvtt::CompressionOptions compression_options;
@@ -527,14 +624,20 @@ namespace ast
         output_options.setOutputHeader(false);
         output_options.setOutputHandler(&handler);
         
-        Image<T> temp_img;
+        TextureArrayItem temp_tex;
         
         input_options.setTextureLayout(nvtt::TextureType_2D, item.mip_levels[0].width, item.mip_levels[0].height);
         
         // If generate_mipmaps is false or if the full mipchain has to be generated, set the data for the initial mip level.
         if (!generate_mipmaps || (generate_mipmaps && output_mips == -1) || (generate_mipmaps && output_mips > 1))
         {
-            img.to_rgba(temp_img, i, 0);
+            if (pixel_type == PIXEL_TYPE_UNORM8)
+                to_rgba<uint8_t>(item, temp_tex, channel_count, 0);
+            else if (pixel_type == PIXEL_TYPE_FLOAT16)
+                to_rgba<uint16_t>(item, temp_tex, channel_count, 0);
+            else if (pixel_type == PIXEL_TYPE_FLOAT32)
+                to_rgba<float>(item, temp_tex, channel_count, 0);
+            
             input_options.setMipmapGeneration(generate_mipmaps);
             input_options.setMipmapData(item.mip_levels[0].pixels.data, item.mip_levels[0].width, item.mip_levels[0].height);
         }
@@ -550,14 +653,12 @@ namespace ast
         }
         else
         {
-            temp_img.unload();
             std::cout << "ERROR::Image must contain at least one miplevel" << std::endl;
             return false;
         }
         
         handler.mip_levels = 0;
         compressor.process(input_options, compression_options, output_options);
-        temp_img.unload();
         
         return false;
     }
