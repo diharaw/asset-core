@@ -631,6 +631,8 @@ namespace ast
         // If generate_mipmaps is false or if the full mipchain has to be generated, set the data for the initial mip level.
         if (!generate_mipmaps || (generate_mipmaps && output_mips == -1) || (generate_mipmaps && output_mips > 1))
         {
+            temp_tex.mip_levels.resize(output_mips);
+            
             if (pixel_type == PIXEL_TYPE_UNORM8)
                 to_rgba<uint8_t>(item, temp_tex, channel_count, 0);
             else if (pixel_type == PIXEL_TYPE_FLOAT16)
@@ -644,10 +646,17 @@ namespace ast
         else if (generate_mipmaps && item.mip_levels.size() > 1)
         {
             input_options.setMipmapGeneration(generate_mipmaps, item.mip_levels.size());
+            temp_tex.mip_levels.resize(item.mip_levels.size());
             
             for (int mip = 0; mip < item.mip_levels.size(); mip++)
             {
-                img.to_rgba(temp_img, i, mip);
+                if (pixel_type == PIXEL_TYPE_UNORM8)
+                    to_rgba<uint8_t>(item, temp_tex, channel_count, mip);
+                else if (pixel_type == PIXEL_TYPE_FLOAT16)
+                    to_rgba<uint16_t>(item, temp_tex, channel_count, mip);
+                else if (pixel_type == PIXEL_TYPE_FLOAT32)
+                    to_rgba<float>(item, temp_tex, channel_count, mip);
+                
                 input_options.setMipmapData(item.mip_levels[mip].pixels.data, item.mip_levels[mip].width, item.mip_levels[mip].height, 1, 0, mip);
             }
         }
@@ -769,7 +778,11 @@ namespace ast
             texture.array_items[0].mip_levels[0].pixels.copy_data(size_in_bytes, data);
             free(data);
             
-            compress_array_item(texture.array_items[0], desc.pixel_type, bpp * 8, n, desc.options.compression, desc.options.generate_mip_chain);
+            if (desc.options.generate_mip_chain || desc.options.compression != COMPRESSION_NONE)
+            {
+                if (!compress_array_item(texture.array_items[0], desc.pixel_type, bpp * 8, n, desc.options.generate_mip_chain ? -1 : 1, desc.options.compression, desc.options.generate_mip_chain))
+                    return false;
+            }
             
             return true;
         }
