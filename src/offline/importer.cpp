@@ -420,9 +420,8 @@ namespace ast
     
     struct TextureOutputHandler : public nvtt::OutputHandler
     {
-        long offset;
+        long offset = 0;
         int mip_levels = 0;
-        int compression_type;
         void* temp_buffer;
         TextureArrayItem* array_item;
         
@@ -577,6 +576,8 @@ namespace ast
         nvtt::Compressor compressor;
         TextureOutputHandler handler;
         
+        handler.array_item = &item;
+        
         compression_options.setFormat(kCompression[compression]);
         
         if (compression == COMPRESSION_NONE)
@@ -628,10 +629,31 @@ namespace ast
         
         input_options.setTextureLayout(nvtt::TextureType_2D, item.mip_levels[0].width, item.mip_levels[0].height);
         
+        int32_t mipLevels = output_mips;
+        int x = item.mip_levels[0].width;
+        int y = item.mip_levels[0].height;
+        int mX = x;
+        int mY = y;
+        
+        if (output_mips == -1)
+        {
+            mipLevels = 0;
+            
+            while (mX > 1 && mY > 1)
+            {
+                mX = x >> mipLevels;
+                mY = y >> mipLevels;
+                
+                mipLevels++;
+            }
+            
+            mipLevels++;
+        }
+        
         // If generate_mipmaps is false or if the full mipchain has to be generated, set the data for the initial mip level.
         if (!generate_mipmaps || (generate_mipmaps && output_mips == -1) || (generate_mipmaps && output_mips > 1))
         {
-            temp_tex.mip_levels.resize(output_mips);
+            temp_tex.mip_levels.resize(mipLevels);
             
             if (pixel_type == PIXEL_TYPE_UNORM8)
                 to_rgba<uint8_t>(item, temp_tex, channel_count, 0);
@@ -669,7 +691,7 @@ namespace ast
         handler.mip_levels = 0;
         compressor.process(input_options, compression_options, output_options);
         
-        return false;
+        return true;
     }
     
     bool import_texture_2d(const Texture2DImportDesc& desc, TextureDesc& texture)
@@ -783,6 +805,8 @@ namespace ast
                 if (!compress_array_item(texture.array_items[0], desc.pixel_type, bpp * 8, n, desc.options.generate_mip_chain ? -1 : 1, desc.options.compression, desc.options.generate_mip_chain))
                     return false;
             }
+            
+            texture.mip_slice_count = texture.array_items[0].mip_levels.size();
             
             return true;
         }
