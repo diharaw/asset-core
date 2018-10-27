@@ -1,5 +1,6 @@
 #pragma once
 
+#include <common/header.h>
 #include <offline/image_importer.h>
 #include <cmft/image.h>
 #include <cmft/cubemapfilter.h>
@@ -15,62 +16,6 @@
 
 namespace ast
 {
-	enum AssetType
-	{
-		ASSET_IMAGE = 0,
-		ASSET_AUDIO = 1,
-		ASSET_MESH = 2,
-		ASSET_VIDEO = 3
-	};
-
-	struct FileHeader
-	{
-		uint32_t magic;
-		uint8_t  version;
-		uint8_t  type;
-	};
-
-	enum CompressionType
-	{
-		COMPRESSION_NONE = 0,
-		COMPRESSION_BC1 = 1,
-		COMPRESSION_BC1a = 2,
-		COMPRESSION_BC2 = 3,
-		COMPRESSION_BC3 = 4,
-		COMPRESSION_BC3n = 5,
-		COMPRESSION_BC4 = 6,
-		COMPRESSION_BC5 = 7,
-		COMPRESSION_BC6 = 8,
-		COMPRESSION_BC7 = 9,
-		COMPRESSION_ETC1 = 10,
-		COMPRESSION_ETC2 = 11,
-		COMPRESSION_PVR = 12
-	};
-
-	enum PixelType
-	{
-		PIXEL_TYPE_DEFAULT = 0,
-		PIXEL_TYPE_UNORM8 = 8,
-		PIXEL_TYPE_FLOAT16 = 16,
-		PIXEL_TYPE_FLOAT32 = 32
-	};
-
-	struct Header
-	{
-		uint8_t  compression;
-		uint8_t  channelSize;
-		uint8_t  numChannels;
-		uint16_t numArraySlices;
-		uint8_t  numMipSlices;
-	};
-
-	struct MipSliceHeader
-	{
-		uint16_t width;
-		uint16_t height;
-		int size;
-	};
-
 	struct NVTTOutputHandler : public nvtt::OutputHandler
 	{
 		std::fstream* stream;
@@ -83,14 +28,14 @@ namespace ast
 		{
 			std::cout << "Beginning Image: Size = " << size << ", Mip = " << miplevel << ", Width = " << width << ", Height = " << height << std::endl;
 
-			MipSliceHeader mip0Header;
+			BINMipSliceHeader mip0Header;
 
 			mip0Header.width = width;
 			mip0Header.height = height;
 			mip0Header.size = size;
 
-			stream->write((char*)&mip0Header, sizeof(MipSliceHeader));
-			offset += sizeof(MipSliceHeader);
+			stream->write((char*)&mip0Header, sizeof(BINMipSliceHeader));
+			offset += sizeof(BINMipSliceHeader);
 			stream->seekp(offset);
 
 			mip_height = height;
@@ -148,17 +93,17 @@ namespace ast
 			return false;
 		}
 
-		FileHeader fh;
+		BINFileHeader fh;
 		char* magic = (char*)&fh.magic;
 
-		magic[0] = 't';
-		magic[1] = 'r';
-		magic[2] = 'm';
+		magic[0] = 'a';
+		magic[1] = 's';
+		magic[2] = 't';
 
-		fh.version = 1;
+        fh.version = AST_VERSION;
 		fh.type = ASSET_IMAGE;
 
-		Header imageHeader;
+		BINImageHeader imageHeader;
 
 		int x = img.data[0][0].width;
 		int y = img.data[0][0].height;
@@ -199,10 +144,10 @@ namespace ast
 			generate_mipmaps = false;
 
 		imageHeader.compression = options.compression;
-		imageHeader.channelSize = sizeof(T);
-		imageHeader.numChannels = img.components;
-		imageHeader.numArraySlices = img.array_slices;
-		imageHeader.numMipSlices = mip_levels;
+		imageHeader.channel_size = sizeof(T);
+		imageHeader.num_channels = img.components;
+		imageHeader.num_array_slices = img.array_slices;
+		imageHeader.num_mip_slices = mip_levels;
 
 		const char* file = options.path.c_str(); // @TODO: Extract name from filename.
 		std::fstream f(options.path, std::ios::out | std::ios::binary);
@@ -220,8 +165,8 @@ namespace ast
 		f.write((char*)file, strlen(file));
 		offset += len;
 		f.seekp(offset);
-		f.write((char*)&imageHeader, sizeof(Header));
-		offset += sizeof(Header);
+		f.write((char*)&imageHeader, sizeof(BINImageHeader));
+		offset += sizeof(BINImageHeader);
 		f.seekp(offset);
 
 		NVTTOutputHandler handler;

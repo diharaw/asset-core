@@ -6,6 +6,47 @@
 
 namespace ast
 {
+    enum CompressionType
+    {
+        COMPRESSION_NONE = 0,
+        COMPRESSION_BC1 = 1,
+        COMPRESSION_BC1a = 2,
+        COMPRESSION_BC2 = 3,
+        COMPRESSION_BC3 = 4,
+        COMPRESSION_BC3n = 5,
+        COMPRESSION_BC4 = 6,
+        COMPRESSION_BC5 = 7,
+        COMPRESSION_BC6 = 8,
+        COMPRESSION_BC7 = 9,
+        COMPRESSION_ETC1 = 10,
+        COMPRESSION_ETC2 = 11,
+        COMPRESSION_PVR = 12
+    };
+    
+    enum PixelType
+    {
+        PIXEL_TYPE_DEFAULT = 0,
+        PIXEL_TYPE_UNORM8 = 8,
+        PIXEL_TYPE_FLOAT16 = 16,
+        PIXEL_TYPE_FLOAT32 = 32
+    };
+    
+    struct BINImageHeader
+    {
+        uint8_t  compression;
+        uint8_t  channel_size;
+        uint8_t  num_channels;
+        uint16_t num_array_slices;
+        uint8_t  num_mip_slices;
+    };
+    
+    struct BINMipSliceHeader
+    {
+        uint16_t width;
+        uint16_t height;
+        int size;
+    };
+    
 	template<typename T>
 	struct Image
 	{
