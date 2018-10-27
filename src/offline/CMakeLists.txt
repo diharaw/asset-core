@@ -10,4 +10,5 @@ add_library(AssetCoreOffline ${AST_OFFLINE_SOURCE})
 
 target_link_libraries(AssetCoreOffline AssetCoreCommon)
 target_link_libraries(AssetCoreOffline nvtt)
+target_link_libraries(AssetCoreOffline cmft)
 target_link_libraries(AssetCoreOffline assimp)

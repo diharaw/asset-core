@@ -71,7 +71,7 @@ namespace ast
 		int size;
 	};
 
-	struct TRMOutputHandler : public nvtt::OutputHandler
+	struct NVTTOutputHandler : public nvtt::OutputHandler
 	{
 		std::fstream* stream;
 		long offset;
@@ -112,20 +112,6 @@ namespace ast
 			std::cout << "Ending Image.." << std::endl;
 		}
 	};
-
-	
-
-	const char* extension(const char* file)
-	{
-		int length = strlen(file);
-
-		while (length > 0 && file[length] != '.')
-		{
-			length--;
-		}
-
-		return &file[length + 1];
-	}
 
 	const int kChannels[] = { 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4 };
 
@@ -238,7 +224,7 @@ namespace ast
 		offset += sizeof(Header);
 		f.seekp(offset);
 
-		TRMOutputHandler handler;
+		NVTTOutputHandler handler;
 		nvtt::CompressionOptions compression_options;
 		nvtt::InputOptions input_options;
 		nvtt::OutputOptions output_options;
@@ -334,40 +320,6 @@ namespace ast
 		return true;
 	}
 
-//    bool export_texture(const char* input,
-//        const char* output,
-//        CompressionType compression = COMPRESSION_NONE,
-//        bool normal_map = false,
-//        int output_mips = 0)
-//    {
-//        std::string ext = extension(input);
-//
-//        if (ext == "hdr")
-//        {
-//            Image<float> img;
-//
-//            if (!import_image(img, input))
-//                return false;
-//
-//            bool result = export_image(img, output, PIXEL_TYPE_DEFAULT, compression, normal_map, output_mips);
-//            img.unload();
-//
-//            return result;
-//        }
-//        else
-//        {
-//            Image<uint8_t> img;
-//
-//            if (!import_image(img, input))
-//                return false;
-//
-//            bool result = export_image(img, output, PIXEL_TYPE_DEFAULT, compression, normal_map, output_mips);
-//            img.unload();
-//
-//            return result;
-//        }
-//    }
-
 	template<typename T>
 	bool cubemap_from_latlong(cmft::Image& dst, Image<T>& src)
 	{
@@ -422,8 +374,8 @@ namespace ast
 
 	template<typename T>
 	bool cubemap_from_latlong(Image<T>& src,
-		const char* name,
-		const char* output,
+        const std::string& name,
+		const std::string& output,
 		PixelType pixel_type = PIXEL_TYPE_DEFAULT,
 		CompressionType compression = COMPRESSION_NONE,
 		bool mipmap = false,
@@ -584,22 +536,22 @@ namespace ast
 		return true;
 	}
 
-//    bool cubemap_from_latlong(const char* input,
-//        const char* output,
-//        PixelType pixel_type = PIXEL_TYPE_DEFAULT,
-//        CompressionType compression = COMPRESSION_NONE,
-//        bool mipmap = false,
-//        bool irradiance = false,
-//        bool radiance = false)
-//    {
-//        Image<float> src;
-//
-//        if (!image_load(src, input))
-//        {
-//            std::cout << "ERROR::Failed to open Cubemap" << std::endl;
-//            return false;
-//        }
-//
-//        return cubemap_from_latlong<float>(src, input, output, pixel_type, compression, mipmap, irradiance, radiance);
-//    }
+    bool cubemap_from_latlong(const std::string& input,
+        const std::string& output,
+        PixelType pixel_type = PIXEL_TYPE_DEFAULT,
+        CompressionType compression = COMPRESSION_NONE,
+        bool mipmap = false,
+        bool irradiance = false,
+        bool radiance = false)
+    {
+        Image<float> src;
+
+        if (!import_image(src, input))
+        {
+            std::cout << "ERROR::Failed to open Cubemap" << std::endl;
+            return false;
+        }
+
+        return cubemap_from_latlong<float>(src, input, output, pixel_type, compression, mipmap, irradiance, radiance);
+    }
 };
