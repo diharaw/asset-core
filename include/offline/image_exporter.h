@@ -82,9 +82,18 @@ namespace ast
         int output_mips = 0;
     };
     
+    struct CubemapImageExportOptions
+    {
+        std::string path;
+        PixelType pixel_type = PIXEL_TYPE_DEFAULT;
+        CompressionType compression = COMPRESSION_NONE;
+        int output_mips = 0;
+        bool irradiance = false;
+        bool radiance = false;
+    };
+    
 	template<typename T>
-	bool export_image(Image<T>& img,
-		const ImageExportOptions& options)
+	bool export_image(Image<T>& img, const ImageExportOptions& options)
 	{
 		// Make sure that float images either use no compression or BC6
 		if ((std::is_same<T, uint16_t>::value || std::is_same<T, int16_t>::value || std::is_same<T, float>::value) && (options.compression != COMPRESSION_NONE && options.compression != COMPRESSION_BC6))
@@ -149,8 +158,13 @@ namespace ast
 		imageHeader.num_array_slices = img.array_slices;
 		imageHeader.num_mip_slices = mip_levels;
 
-		const char* file = options.path.c_str(); // @TODO: Extract name from filename.
-		std::fstream f(options.path, std::ios::out | std::ios::binary);
+        std::string filename = img.name;
+        std::string path = options.path;
+        path += "/";
+        path += filename;
+        path += ".ast";
+        
+		std::fstream f(path, std::ios::out | std::ios::binary);
 
 		long offset = 0;
 
@@ -158,11 +172,11 @@ namespace ast
 		f.write((char*)&fh, sizeof(fh));
 		offset += sizeof(fh);
 		f.seekp(offset);
-		uint16_t len = strlen(file);
+		uint16_t len = filename.size();
 		f.write((char*)&len, sizeof(uint16_t));
 		offset += sizeof(uint16_t);
 		f.seekp(offset);
-		f.write((char*)file, strlen(file));
+		f.write((char*)filename.c_str(), len);
 		offset += len;
 		f.seekp(offset);
 		f.write((char*)&imageHeader, sizeof(BINImageHeader));
@@ -318,14 +332,7 @@ namespace ast
 	}
 
 	template<typename T>
-	bool cubemap_from_latlong(Image<T>& src,
-        const std::string& name,
-		const std::string& output,
-		PixelType pixel_type = PIXEL_TYPE_DEFAULT,
-		CompressionType compression = COMPRESSION_NONE,
-		bool mipmap = false,
-		bool irradiance = false,
-		bool radiance = false)
+	bool cubemap_from_latlong(Image<T>& src, const CubemapImageExportOptions& options)
 	{
 		cmft::Image cmft_cube;
 
@@ -335,7 +342,7 @@ namespace ast
 			return false;
 		}
 
-		if (irradiance)
+		if (options.irradiance)
 		{
 			cmft::Image cmft_irradiance_cube;
 
@@ -350,6 +357,9 @@ namespace ast
 			uint32_t img_offsets[CUBE_FACE_NUM][MAX_MIP_NUM];
 			cmft::imageGetMipOffsets(img_offsets, cmft_irradiance_cube);
 
+            irradiance_cube.name = src.name;
+            irradiance_cube.name += "_irradiance";
+            
 			irradiance_cube.components = src.components;
 			irradiance_cube.array_slices = 6;
 			irradiance_cube.mip_slices = 1;
@@ -363,14 +373,12 @@ namespace ast
 				irradiance_cube.data[i][0].width = cmft_irradiance_cube.m_width;
 			}
 
-			std::string out = "irradiance.trm";
-            
             ImageExportOptions irradiance_exp_options;
             
-            irradiance_exp_options.compression = compression;
+            irradiance_exp_options.compression = options.compression;
             irradiance_exp_options.normal_map = false;
             irradiance_exp_options.output_mips = 0;
-            irradiance_exp_options.path = out;
+            irradiance_exp_options.path = options.path;
             
 			if (!export_image(irradiance_cube, irradiance_exp_options))
 			{
@@ -381,7 +389,7 @@ namespace ast
 			cmft::imageUnload(cmft_irradiance_cube);
 		}
 
-		if (radiance)
+		if (options.radiance)
 		{
 			cmft::Image cmft_radiance_cube;
 
@@ -409,6 +417,9 @@ namespace ast
 			uint32_t img_offsets[CUBE_FACE_NUM][MAX_MIP_NUM];
 			cmft::imageGetMipOffsets(img_offsets, cmft_radiance_cube);
 
+            radiance_cube.name = src.name;
+            radiance_cube.name += "_radiance";
+            
 			radiance_cube.components = src.components;
 			radiance_cube.array_slices = 6;
 			radiance_cube.mip_slices = 7;
@@ -425,14 +436,12 @@ namespace ast
 				}
 			}
 
-			std::string out = "radiance.trm";
-            
             ImageExportOptions radiance_exp_options;
             
-            radiance_exp_options.compression = compression;
+            radiance_exp_options.compression = options.compression;
             radiance_exp_options.normal_map = false;
             radiance_exp_options.output_mips = 0;
-            radiance_exp_options.path = out;
+            radiance_exp_options.path = options.path;
 
 			if (!export_image(radiance_cube, radiance_exp_options))
 			{
@@ -463,11 +472,11 @@ namespace ast
         
         ImageExportOptions exp_options;
         
-        exp_options.compression = compression;
+        exp_options.compression = options.compression;
         exp_options.normal_map = false;
-        exp_options.output_mips = 0;
-        exp_options.pixel_type = pixel_type;
-        exp_options.path = output;
+        exp_options.output_mips = options.output_mips;
+        exp_options.pixel_type = options.pixel_type;
+        exp_options.path = options.path;
 
 		if (!export_image(cubemap, exp_options))
 		{
@@ -481,13 +490,7 @@ namespace ast
 		return true;
 	}
 
-    bool cubemap_from_latlong(const std::string& input,
-        const std::string& output,
-        PixelType pixel_type = PIXEL_TYPE_DEFAULT,
-        CompressionType compression = COMPRESSION_NONE,
-        bool mipmap = false,
-        bool irradiance = false,
-        bool radiance = false)
+    bool cubemap_from_latlong(const std::string& input, const CubemapImageExportOptions& options)
     {
         Image<float> src;
 
@@ -497,6 +500,6 @@ namespace ast
             return false;
         }
 
-        return cubemap_from_latlong<float>(src, input, output, pixel_type, compression, mipmap, irradiance, radiance);
+        return cubemap_from_latlong<float>(src, options);
     }
 };

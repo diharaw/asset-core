@@ -12,6 +12,7 @@ namespace ast
     bool import_image(Image<uint8_t>& img, const std::string& file, int force_cmp = 0)
 	{
         auto ext = filesystem::get_file_extention(file);
+        img.name = filesystem::get_filename(file);
         
         if (ext == "dds")
         {
@@ -63,6 +64,8 @@ namespace ast
 
 	bool import_image(Image<float>& img, const std::string& file, int force_cmp = 0)
 	{
+        img.name = filesystem::get_filename(file);
+        
 		img.data[0][0].data = stbi_loadf(file.c_str(), &img.data[0][0].width, &img.data[0][0].height, &img.components, force_cmp);
 	
 		if (img.data[0][0].data != nullptr)

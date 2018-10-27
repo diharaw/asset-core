@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <stdint.h>
+#include <string>
 #include <../dependency/stb/stb_image.h>
 
 namespace ast
@@ -196,5 +197,6 @@ namespace ast
 		int mip_slices;
 		int array_slices;
 		Data data[16][16];
+        std::string name;
 	};
 }
