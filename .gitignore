@@ -31,8 +31,14 @@
 *.out
 *.app
 
-external/
-external/*
+external/assimp
+external/assimp/*
+external/glm
+external/glm/*
+external/json
+external/json/*
+external/stb
+external/stb/*
 bin/
 bin/*
 lib/
