@@ -79,7 +79,10 @@ namespace ast
 				for (int j = 0; j < mip_slices; j++)
 				{
 					if (data[i][j].data)
-						free(data[i][j].data);
+                    {
+                        free(data[i][j].data);
+                        data[i][j].data = nullptr;
+                    }
 				}
 			}
 		}

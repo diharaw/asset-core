@@ -10,7 +10,7 @@
 
 namespace ast
 {
-    bool import_image(Image<uint8_t>& img, const std::string& file, int force_cmp = 0)
+    inline bool import_image(Image<uint8_t>& img, const std::string& file, int force_cmp = 0)
 	{
         auto ext = filesystem::get_file_extention(file);
         img.name = filesystem::get_filename(file);
@@ -63,7 +63,7 @@ namespace ast
 		return false;
 	}
 
-	bool import_image(Image<float>& img, const std::string& file, int force_cmp = 0)
+	inline bool import_image(Image<float>& img, const std::string& file, int force_cmp = 0)
 	{
         img.name = filesystem::get_filename(file);
         

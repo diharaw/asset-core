@@ -38,21 +38,16 @@ namespace ast
         return false;
     }
     
-    bool import_mesh(const MeshImportDesc& desc, MeshDesc& mesh)
+    bool import_mesh(const std::string& file, Mesh& mesh)
     {
         const aiScene* scene;
         Assimp::Importer importer;
         
-        if (desc.source == IMPORT_SOURCE_FILE)
-            scene = importer.ReadFile(desc.file.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
-        else if (desc.source == IMPORT_SOURCE_MEMORY)
-            scene = importer.ReadFileFromMemory(desc.data, desc.size, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
-        else
-            return false;
+        scene = importer.ReadFile(file.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
         
         if (scene)
         {
-            mesh.name = filesystem::get_filename(desc.file);
+            mesh.name = filesystem::get_filename(file);
             mesh.submeshes.resize(scene->mNumMeshes);
             
             uint32_t vertex_count = 0;
@@ -73,7 +68,7 @@ namespace ast
                 
                 if (!does_material_exist(processed_mat_id, scene->mMeshes[i]->mMaterialIndex))
                 {
-                    MaterialDesc mat;
+                    Material mat;
                     
                     mat.name = scene->mMeshes[i]->mName.C_Str();
                     
@@ -122,7 +117,7 @@ namespace ast
                     {
                         std::replace(albedo_path.begin(), albedo_path.end(), '\\', '/');
                         
-                        MaterialTextureDesc mat_desc;
+                        Texture mat_desc;
                         
                         mat_desc.srgb = true;
                         mat_desc.type = TEXTURE_ALBEDO;
@@ -149,7 +144,7 @@ namespace ast
                     {
                         std::replace(roughness_path.begin(), roughness_path.end(), '\\', '/');
                         
-                        MaterialTextureDesc mat_desc;
+                        Texture mat_desc;
                         
                         mat_desc.srgb = false;
                         mat_desc.type = TEXTURE_ROUGHNESS;
@@ -176,7 +171,7 @@ namespace ast
                     {
                         std::replace(metalness_path.begin(), metalness_path.end(), '\\', '/');
                         
-                        MaterialTextureDesc mat_desc;
+                        Texture mat_desc;
                         
                         mat_desc.srgb = false;
                         mat_desc.type = TEXTURE_METALNESS;
@@ -210,7 +205,7 @@ namespace ast
                     {
                         std::replace(emissive_path.begin(), emissive_path.end(), '\\', '/');
                         
-                        MaterialTextureDesc mat_desc;
+                        Texture mat_desc;
                         
                         mat_desc.srgb = false;
                         mat_desc.type = TEXTURE_EMISSIVE;
@@ -244,7 +239,7 @@ namespace ast
                     {
                         std::replace(specular_path.begin(), specular_path.end(), '\\', '/');
                         
-                        MaterialTextureDesc mat_desc;
+                        Texture mat_desc;
                         
                         mat_desc.srgb = false;
                         mat_desc.type = TEXTURE_SPECULAR;
@@ -260,7 +255,7 @@ namespace ast
                     {
                         std::replace(normal_path.begin(), normal_path.end(), '\\', '/');
                         
-                        MaterialTextureDesc mat_desc;
+                        Texture mat_desc;
                         
                         mat_desc.srgb = false;
                         mat_desc.type = TEXTURE_NORMAL;
@@ -276,7 +271,7 @@ namespace ast
                     {
                         std::replace(height_path.begin(), height_path.end(), '\\', '/');
                         
-                        MaterialTextureDesc mat_desc;
+                        Texture mat_desc;
                         
                         mat_desc.srgb = true;
                         mat_desc.type = TEXTURE_DISPLACEMENT;

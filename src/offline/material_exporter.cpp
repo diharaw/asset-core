@@ -1,4 +1,5 @@
 #include <offline/material_exporter.h>
+#include <offline/image_exporter.h>
 #include <common/filesystem.h>
 #include <json.hpp>
 #include <iostream>
@@ -6,7 +7,24 @@
 
 namespace ast
 {
-    bool export_material(const std::string& path, const MaterialDesc& desc)
+    void export_texture(const std::string& src_path, const std::string& dst_path, CompressionType compression, bool normal_map)
+    {
+        Image<uint8_t> img;
+        
+        if (import_image(img, src_path))
+        {
+            ImageExportOptions options;
+            
+            options.output_mips = -1;
+            options.normal_map = normal_map;
+            options.compression = compression;
+            options.path = dst_path;
+            
+            export_image(img, options);
+        }
+    }
+    
+    bool export_material(const Material& desc, const MaterialExportOptions& options)
     {
         nlohmann::json doc;
         
@@ -26,7 +44,27 @@ namespace ast
         {
             nlohmann::json texture;
             
-            texture["path"] = texture_desc.path;
+            std::string path;
+            
+            if (options.relative_texture_path != "")
+                path = options.relative_texture_path;
+            else
+                path += filesystem::get_file_path(texture_desc.path);
+                
+            path += "/";
+            path += filesystem::get_filename(texture_desc.path);
+            path += ".ast";
+            
+            std::string src_path = options.texture_source_path;
+            src_path += "/";
+            src_path += texture_desc.path;
+            
+            std::string dst_path = options.dst_texture_path;
+            
+            if (options.texture_source_path != "" && options.dst_texture_path != "")
+                export_texture(src_path, dst_path, options.compression, texture_desc.type == TEXTURE_NORMAL ? true : false);
+            
+            texture["path"] = path;
             texture["srgb"] = texture_desc.srgb;
             texture["type"] = kTextureType[texture_desc.type];
             
@@ -73,7 +111,7 @@ namespace ast
         
         doc["properties"] = property_array;
         
-        std::string output_path = path;
+        std::string output_path = options.path;
         output_path += "/";
         output_path += desc.name;
         output_path += ".json";

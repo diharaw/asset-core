@@ -58,7 +58,7 @@ namespace ast
         "BLEND_MODE_TRANSLUCENT"
     };
     
-    enum MaterialTextureType
+    enum TextureType
     {
         TEXTURE_ALBEDO = 0,
         TEXTURE_EMISSIVE,
@@ -109,11 +109,11 @@ namespace ast
         BLEND_MODE_TRANSLUCENT
     };
     
-    struct MaterialTextureDesc
+    struct Texture
     {
-        MaterialTextureType type;
-        std::string         path;
-        bool                srgb;
+        TextureType type;
+        std::string path;
+        bool        srgb;
     };
     
     struct MaterialProperty
@@ -130,18 +130,18 @@ namespace ast
         };
     };
     
-    struct MaterialDesc
+    struct Material
     {
-        std::string                      name;
-        bool                             metallic_workflow;
-        bool                             double_sided;
-        std::string                      vertex_shader_func;
-        std::string                      fragment_shader_func;
-        BlendMode                        blend_mode;
-        DisplacementType                 displacement_type;
-        ShadingModel                     shading_model;
-        LightingModel                    lighting_model;
-        std::vector<MaterialTextureDesc> textures;
-        std::vector<MaterialProperty>    properties;
+        std::string                   name;
+        bool                          metallic_workflow;
+        bool                          double_sided;
+        std::string                   vertex_shader_func;
+        std::string                   fragment_shader_func;
+        BlendMode                     blend_mode;
+        DisplacementType              displacement_type;
+        ShadingModel                  shading_model;
+        LightingModel                 lighting_model;
+        std::vector<Texture>          textures;
+        std::vector<MaterialProperty> properties;
     };
 }

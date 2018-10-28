@@ -491,7 +491,7 @@ namespace ast
 		return true;
 	}
 
-    bool cubemap_from_latlong(const std::string& input, const CubemapImageExportOptions& options)
+    inline bool cubemap_from_latlong(const std::string& input, const CubemapImageExportOptions& options)
     {
         Image<float> src;
 

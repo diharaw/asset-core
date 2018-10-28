@@ -1,6 +1,8 @@
 //#include <offline/importer.h>
 //#include <offline/exporter.h>
 #include <offline/image_exporter.h>
+#include <offline/mesh_importer.h>
+#include <offline/mesh_exporter.h>
 #include <common/filesystem.h>
 #include <stdio.h>
 
@@ -68,25 +70,43 @@ int main(int argc, char * argv[])
 //            printf("Failed to import Texture!\n");
     }
     
-    std::string input = "/Users/diharaw/Desktop/TextureExport/Arches_E_PineTree_3k.hdr";
+//    std::string input = "/Users/diharaw/Desktop/TextureExport/Arches_E_PineTree_3k.hdr";
+//
+//    ast::Image<float> img;
+//
+//    if (ast::import_image(img, input))
+//    {
+//        ast::CubemapImageExportOptions options;
+//
+//        options.compression = ast::COMPRESSION_BC6;
+//        options.irradiance = true;
+//        options.radiance = true;
+//        options.output_mips = 0;
+//        options.path = "/Users/diharaw/Desktop";
+//
+//        if (!ast::cubemap_from_latlong(img, options))
+//            printf("Failed to output Texture!\n");
+//    }
+//    else
+//        printf("Failed to import Texture!\n");
     
-    ast::Image<float> img;
+    std::string input = "/Users/diharaw/Desktop/sun_temple/SunTemple.fbx";
     
-    if (ast::import_image(img, input))
+    ast::Mesh mesh;
+    
+    if (ast::import_mesh(input, mesh))
     {
-        ast::CubemapImageExportOptions options;
+        ast::MeshExportOption options;
         
-        options.compression = ast::COMPRESSION_BC6;
-        options.irradiance = true;
-        options.radiance = true;
-        options.output_mips = 0;
-        options.path = "/Users/diharaw/Desktop";
+        options.path = "/Users/diharaw/Desktop/sun_temple/ast";
+        options.relative_material_path = "sun_temple_materials";
+        options.relative_texture_path = "sun_temple_textures";
         
-        if (!ast::cubemap_from_latlong(img, options))
-            printf("Failed to output Texture!\n");
+        if (!ast::export_mesh(mesh, options))
+            printf("Failed to output Material!\n");
     }
     else
-        printf("Failed to import Texture!\n");
+        printf("Failed to import Material!\n");
 
 	return 0;
 }

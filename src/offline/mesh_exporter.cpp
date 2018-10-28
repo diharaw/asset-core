@@ -9,19 +9,33 @@
 
 namespace ast
 {
-    bool export_mesh(const std::string& path, const MeshDesc& desc)
+    bool export_mesh(const Mesh& desc, const MeshExportOption& options)
     {
-        std::string material_path = path;
-        material_path += "/materials";
-
+        std::string material_path = options.path;
+        
+        if (options.relative_material_path != "")
+        {
+            material_path += "/";
+            material_path += options.relative_material_path;
+        }
+        else
+            material_path += "/materials";
+        
         filesystem::create_directory(material_path);
         
-        std::string texture_path = path;
-        texture_path += "/textures";
+        std::string texture_path = options.path;
+        
+        if (options.relative_texture_path != "")
+        {
+            texture_path += "/";
+            texture_path += options.relative_texture_path;
+        }
+        else
+            texture_path += "/textures";
         
         filesystem::create_directory(texture_path);
         
-        std::string output_path = path;
+        std::string output_path = options.path;
         output_path += "/";
         output_path += desc.name;
         output_path += ".ast";
@@ -65,13 +79,13 @@ namespace ast
             // Write vertices
             if (desc.vertices.size() > 0)
             {
-                WRITE_AND_OFFSET(f, (char*)&desc.vertices[0], sizeof(VertexDesc) * desc.vertices.size(), offset);
+                WRITE_AND_OFFSET(f, (char*)&desc.vertices[0], sizeof(Vertex) * desc.vertices.size(), offset);
             }
             
             // Write skeletal vertices
             if (desc.skeletal_vertices.size() > 0)
             {
-                WRITE_AND_OFFSET(f, (char*)&desc.skeletal_vertices[0], sizeof(SkeletalVertexDesc) * desc.skeletal_vertices.size(), offset);
+                WRITE_AND_OFFSET(f, (char*)&desc.skeletal_vertices[0], sizeof(SkeletalVertex) * desc.skeletal_vertices.size(), offset);
             }
             
             // Write indices
@@ -83,7 +97,7 @@ namespace ast
             // Write mesh headers
             if (desc.submeshes.size() > 0)
             {
-                WRITE_AND_OFFSET(f, (char*)&desc.submeshes[0], sizeof(SubMeshDesc) * desc.submeshes.size(), offset);
+                WRITE_AND_OFFSET(f, (char*)&desc.submeshes[0], sizeof(SubMesh) * desc.submeshes.size(), offset);
             }
             
             // Export materials
@@ -91,9 +105,24 @@ namespace ast
             
             for (const auto& material : desc.materials)
             {
-                if (export_material(material_path, material))
+                MaterialExportOptions mat_exp_options;
+                
+                mat_exp_options.path = material_path;
+                mat_exp_options.relative_texture_path = options.relative_texture_path;
+                mat_exp_options.compression = options.compression;
+                mat_exp_options.texture_source_path = filesystem::get_file_path(options.path);
+                mat_exp_options.dst_texture_path = texture_path;
+                
+                if (export_material(material, mat_exp_options))
                 {
                     std::string mat_out_path = "materials/";
+                    
+                    if (options.relative_material_path != "")
+                    {
+                        mat_out_path = options.relative_material_path;
+                        mat_out_path += "/";
+                    }
+                    
                     mat_out_path += material.name;
                     mat_out_path += ".json";
                     

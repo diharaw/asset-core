@@ -4,7 +4,7 @@
 
 namespace ast
 {
-    struct VertexDesc
+    struct Vertex
     {
         glm::vec3 position;
         glm::vec2 tex_coord;
@@ -13,7 +13,7 @@ namespace ast
         glm::vec3 bitangent;
     };
     
-    struct SkeletalVertexDesc
+    struct SkeletalVertex
     {
         glm::vec3  position;
         glm::vec2  tex_coord;
@@ -24,7 +24,7 @@ namespace ast
         glm::vec4  bone_weights;
     };
     
-    struct SubMeshDesc
+    struct SubMesh
     {
         uint32_t  material_index;
         uint32_t  index_count;
@@ -34,16 +34,16 @@ namespace ast
         glm::vec3 min_extents;
     };
     
-    struct MeshDesc
+    struct Mesh
     {
-        std::string                     name;
-        std::vector<VertexDesc>         vertices;
-        std::vector<SkeletalVertexDesc> skeletal_vertices;
-        std::vector<uint32_t>           indices;
-        std::vector<SubMeshDesc>        submeshes;
-        std::vector<MaterialDesc>       materials;
-        glm::vec3                       max_extents;
-        glm::vec3                       min_extents;
+        std::string                 name;
+        std::vector<Vertex>         vertices;
+        std::vector<SkeletalVertex> skeletal_vertices;
+        std::vector<uint32_t>       indices;
+        std::vector<SubMesh>        submeshes;
+        std::vector<Material>       materials;
+        glm::vec3                   max_extents;
+        glm::vec3                   min_extents;
     };
     
     // --------------------------------------------------------------------------------
