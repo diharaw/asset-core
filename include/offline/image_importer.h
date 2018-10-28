@@ -6,6 +6,7 @@
 #include <nvtt/nvtt.h>
 #include <nvimage/Image.h>
 #include <nvimage/DirectDrawSurface.h>
+#include <../dependency/stb/stb_image.h>
 
 namespace ast
 {

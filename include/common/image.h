@@ -3,7 +3,6 @@
 #include <iostream>
 #include <stdint.h>
 #include <string>
-#include <../dependency/stb/stb_image.h>
 
 namespace ast
 {

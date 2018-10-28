@@ -49,24 +49,44 @@ int main(int argc, char * argv[])
 //
 //        ast::TextureDesc tex_desc;
 //
-        std::string input = "/Users/diharaw/Desktop/sun_temple/Textures/M_Arch_Inst_Red_2_0_BaseColor.dds";
-        ast::Image<uint8_t> img;
-        
-        ast::ImageExportOptions options;
-        
-        options.compression = ast::COMPRESSION_BC1;
-        options.normal_map = false;
-        options.output_mips = -1;
-        options.path = "/Users/diharaw/Desktop/sun_temple/ast/textures/M_Arch_Inst_Red_2_0_BaseColor.ast";
-        
-        if (ast::import_image(img, input))
-        {
-            if (!ast::export_image(img, options))
-                printf("Failed to output Texture!\n");
-        }
-        else
-            printf("Failed to import Texture!\n");
+//        std::string input = "/Users/diharaw/Desktop/sun_temple/Textures/M_Arch_Inst_Red_2_0_BaseColor.dds";
+//        ast::Image<uint8_t> img;
+//
+//        ast::ImageExportOptions options;
+//
+//        options.compression = ast::COMPRESSION_BC1;
+//        options.normal_map = false;
+//        options.output_mips = -1;
+//        options.path = "/Users/diharaw/Desktop/sun_temple/ast/textures/M_Arch_Inst_Red_2_0_BaseColor.ast";
+//
+//        if (ast::import_image(img, input))
+//        {
+//            if (!ast::export_image(img, options))
+//                printf("Failed to output Texture!\n");
+//        }
+//        else
+//            printf("Failed to import Texture!\n");
     }
+    
+    std::string input = "/Users/diharaw/Desktop/TextureExport/Arches_E_PineTree_3k.hdr";
+    
+    ast::Image<float> img;
+    
+    if (ast::import_image(img, input))
+    {
+        ast::CubemapImageExportOptions options;
+        
+        options.compression = ast::COMPRESSION_BC6;
+        options.irradiance = true;
+        options.radiance = true;
+        options.output_mips = 0;
+        options.path = "/Users/diharaw/Desktop";
+        
+        if (!ast::cubemap_from_latlong(img, options))
+            printf("Failed to output Texture!\n");
+    }
+    else
+        printf("Failed to import Texture!\n");
 
 	return 0;
 }

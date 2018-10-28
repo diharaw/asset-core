@@ -419,7 +419,7 @@ namespace ast
 
             radiance_cube.name = src.name;
             radiance_cube.name += "_radiance";
-            
+
 			radiance_cube.components = src.components;
 			radiance_cube.array_slices = 6;
 			radiance_cube.mip_slices = 7;
@@ -457,6 +457,7 @@ namespace ast
 
 		Image<T> cubemap;
 
+        cubemap.name = src.name;
 		cubemap.components = src.components;
 		cubemap.array_slices = 6;
 		cubemap.mip_slices = 1;
