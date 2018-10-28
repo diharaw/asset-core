@@ -7,7 +7,7 @@
 
 namespace ast
 {
-    void export_texture(const std::string& src_path, const std::string& dst_path, CompressionType compression, bool normal_map)
+    void export_texture(const std::string& src_path, const std::string& dst_path, bool normal_map)
     {
         Image<uint8_t> img;
         
@@ -17,10 +17,18 @@ namespace ast
             
             options.output_mips = -1;
             options.normal_map = normal_map;
-            options.compression = compression;
             options.path = dst_path;
             
+            if (img.components == 1)
+                options.compression = COMPRESSION_BC4;
+            else if (img.components == 3)
+                options.compression = COMPRESSION_BC1;
+            else if (img.components == 4)
+                options.compression = COMPRESSION_BC3;
+            
             export_image(img, options);
+            
+            img.unload();
         }
     }
     
@@ -61,8 +69,15 @@ namespace ast
             
             std::string dst_path = options.dst_texture_path;
             
-            if (options.texture_source_path != "" && options.dst_texture_path != "")
-                export_texture(src_path, dst_path, options.compression, texture_desc.type == TEXTURE_NORMAL ? true : false);
+            std::string full_dst_path = dst_path;
+            full_dst_path += "/";
+            full_dst_path += filesystem::get_filename(texture_desc.path);
+            full_dst_path += ".ast";
+            
+            bool exists = filesystem::does_file_exist(full_dst_path);
+
+            if (options.texture_source_path != "" && options.dst_texture_path != "" && !exists)
+                export_texture(src_path, dst_path, texture_desc.type == TEXTURE_NORMAL ? true : false);
             
             texture["path"] = path;
             texture["srgb"] = texture_desc.srgb;

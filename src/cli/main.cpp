@@ -99,8 +99,7 @@ int main(int argc, char * argv[])
         ast::MeshExportOption options;
         
         options.path = "/Users/diharaw/Desktop/sun_temple/ast";
-        options.relative_material_path = "sun_temple_materials";
-        options.relative_texture_path = "sun_temple_textures";
+        options.texture_source_path = "/Users/diharaw/Desktop/sun_temple";
         
         if (!ast::export_mesh(mesh, options))
             printf("Failed to output Material!\n");

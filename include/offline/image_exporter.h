@@ -242,15 +242,20 @@ namespace ast
 		for (int i = 0; i < img.array_slices; i++)
 		{
 			Image<T> temp_img;
+            Image<T>* current_img = &temp_img;
 
 			input_options.setTextureLayout(nvtt::TextureType_2D, img.data[i][0].width, img.data[i][0].height);
 
 			// If generate_mipmaps is false or if the full mipchain has to be generated, set the data for the initial mip level.
 			if (!generate_mipmaps || (generate_mipmaps && options.output_mips == -1) || (generate_mipmaps && options.output_mips > 1))
 			{
-				img.to_rgba(temp_img, i, 0);
+                if (img.components == 4)
+                    current_img = &img;
+                else
+                    img.to_rgba(temp_img, i, 0);
+                    
 				input_options.setMipmapGeneration(generate_mipmaps);
-				input_options.setMipmapData(temp_img.data[i][0].data, img.data[i][0].width, img.data[i][0].height);
+				input_options.setMipmapData(current_img->data[i][0].data, img.data[i][0].width, img.data[i][0].height);
 			}
 			else if (generate_mipmaps && img.mip_slices > 1)
 			{
@@ -258,8 +263,12 @@ namespace ast
 
 				for (int mip = 0; mip < img.mip_slices; mip++)
 				{
-					img.to_rgba(temp_img, i, mip);
-					input_options.setMipmapData(temp_img.data[i][mip].data, img.data[i][mip].width, img.data[i][mip].height, 1, 0, mip);
+                    if (img.components == 4)
+                        current_img = &img;
+                    else
+                        img.to_rgba(temp_img, i, 0);
+                    
+					input_options.setMipmapData(current_img->data[i][mip].data, img.data[i][mip].width, img.data[i][mip].height, 1, 0, mip);
 				}
 			}
 			else
@@ -271,6 +280,7 @@ namespace ast
 
 			handler.mip_levels = 0;
 			compressor.process(input_options, compression_options, output_options);
+            
 			temp_img.unload();
 		}
 

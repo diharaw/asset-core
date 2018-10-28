@@ -10,7 +10,7 @@ namespace ast
         std::string path;
         std::string relative_texture_path = "";
         std::string relative_material_path = "";
-        CompressionType compression = COMPRESSION_NONE;
+        std::string texture_source_path = "";
     };
     
     extern bool export_mesh(const Mesh& desc, const MeshExportOption& options);

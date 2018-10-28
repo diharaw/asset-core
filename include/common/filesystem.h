@@ -63,6 +63,9 @@ namespace filesystem
      * @return bool returns true if exists.
      */
 	extern bool does_directory_exist(const std::string& _name);
+    
+    extern bool does_file_exist(const std::string& _name);
+    
     /**
      * Returns current working directory.
      * @return string Current working directory.

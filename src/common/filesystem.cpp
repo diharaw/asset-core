@@ -318,6 +318,16 @@ namespace filesystem
         }
     }
 #else
+    bool does_file_exist(const std::string& _name)
+    {
+        int res = access(_name.c_str(), R_OK);
+        
+        if (res < 0)
+            return false;
+        else
+            return true;
+    }
+    
     bool directory_exists_internal(const std::string& path)
     {
         DIR *dir;
