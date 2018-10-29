@@ -9,7 +9,7 @@ namespace ast
 {
     void export_texture(const std::string& src_path, const std::string& dst_path, bool normal_map)
     {
-        Image<uint8_t> img;
+        Image img;
         
         if (import_image(img, src_path))
         {
@@ -28,7 +28,7 @@ namespace ast
             
             export_image(img, options);
             
-            img.unload();
+            img.deallocate();
         }
     }
     

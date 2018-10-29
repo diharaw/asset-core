@@ -10,7 +10,7 @@
 
 namespace ast
 {
-    inline bool import_image(Image<uint8_t>& img, const std::string& file, int force_cmp = 0)
+    inline bool import_image(Image& img, const std::string& file, const PixelType& type = PIXEL_TYPE_UNORM8, int force_cmp = 0)
 	{
         auto ext = filesystem::get_file_extention(file);
         img.name = filesystem::get_filename(file);
@@ -37,8 +37,8 @@ namespace ast
                 else
                     return false;
                 
-                size_t size = img.data[0][0].width * img.data[0][0].height * img.components * sizeof(uint8_t);
-                img.data[0][0].data = (uint8_t*)malloc(size);
+                size_t size = img.data[0][0].width * img.data[0][0].height * img.components * size_t(type);
+                img.data[0][0].data = malloc(size);
                 memcpy(img.data[0][0].data, nv_img.pixels(), size);
                 
                 img.array_slices = 1;
@@ -49,7 +49,10 @@ namespace ast
         }
         else
         {
-            img.data[0][0].data = stbi_load(file.c_str(), &img.data[0][0].width, &img.data[0][0].height, &img.components, force_cmp);
+            if (type == PIXEL_TYPE_UNORM8)
+                img.data[0][0].data = stbi_load(file.c_str(), &img.data[0][0].width, &img.data[0][0].height, &img.components, force_cmp);
+            else if (type == PIXEL_TYPE_FLOAT32)
+                img.data[0][0].data = stbi_loadf(file.c_str(), &img.data[0][0].width, &img.data[0][0].height, &img.components, force_cmp);
             
             if (img.data[0][0].data != nullptr)
             {
@@ -60,23 +63,6 @@ namespace ast
             }
         }
         
-		return false;
-	}
-
-	inline bool import_image(Image<float>& img, const std::string& file, int force_cmp = 0)
-	{
-        img.name = filesystem::get_filename(file);
-        
-		img.data[0][0].data = stbi_loadf(file.c_str(), &img.data[0][0].width, &img.data[0][0].height, &img.components, force_cmp);
-	
-		if (img.data[0][0].data != nullptr)
-		{
-			img.array_slices = 1;
-			img.mip_slices = 1;
-	
-			return true;
-		}
-	
 		return false;
 	}
 }

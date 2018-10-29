@@ -25,10 +25,9 @@ namespace ast
     
     enum PixelType
     {
-        PIXEL_TYPE_DEFAULT = 0,
-        PIXEL_TYPE_UNORM8 = 8,
-        PIXEL_TYPE_FLOAT16 = 16,
-        PIXEL_TYPE_FLOAT32 = 32
+        PIXEL_TYPE_UNORM8 = 1,
+        PIXEL_TYPE_FLOAT16 = 2,
+        PIXEL_TYPE_FLOAT32 = 4
     };
     
     struct BINImageHeader
@@ -47,10 +46,43 @@ namespace ast
         int size;
     };
     
-	template<typename T>
+#define TO_BGRA(type, imgData)                                              \
+Pixel<type, 4>* src = (Pixel<type, 4>*)imgData.data;                        \
+                                                                            \
+for (int y = 0; y < imgData.height; y++)                                    \
+{                                                                           \
+    for (int x = 0; x < imgData.width; x++)                                 \
+    {                                                                       \
+        type red = src[y * imgData.width + x].c[2];                         \
+                                                                            \
+        src[y * imgData.width + x].c[0] = src[y * imgData.width + x].c[2];  \
+        src[y * imgData.width + x].c[2] = red;                              \
+    }                                                                       \
+}
+    
+#define TO_RGBA(type, num_components, dst_data)                                     \
+Pixel<type, 4>* dst = (Pixel<type, 4>*) dst_data;                                   \
+Pixel<type, num_components>* src = (Pixel<type, num_components>*)imgData.data;      \
+                                                                                    \
+    for (int y = 0; y < imgData.height; y++)                                        \
+    {                                                                               \
+        for (int x = 0; x < imgData.width; x++)                                     \
+        {                                                                           \
+            dst[y * imgData.width + x].c[0] = 0;                                    \
+            dst[y * imgData.width + x].c[1] = 0;                                    \
+            dst[y * imgData.width + x].c[2] = 0;                                    \
+            dst[y * imgData.width + x].c[3] = std::numeric_limits<type>::max();     \
+                                                                                    \
+            for (int c = 0; c < num_components; c++)                                \
+            {                                                                       \
+                dst[y * imgData.width + x].c[c] = src[y * imgData.width + x].c[c];  \
+            }                                                                       \
+        }                                                                           \
+    }
+    
 	struct Image
 	{
-		template<size_t N>
+		template<typename T, size_t N>
 		struct Pixel
 		{
 			T c[N];
@@ -58,12 +90,19 @@ namespace ast
 	
 		struct Data
 		{
-			T* data;
+			void* data;
 			int width;
 			int height;
 		};
+        
+        int components;
+        int mip_slices;
+        int array_slices;
+        Data data[16][16];
+        std::string name;
+        PixelType type;
 	
-		Image()
+        Image(const PixelType& pixel_type = PIXEL_TYPE_UNORM8) : mip_slices(0), array_slices(0), type(pixel_type)
 		{
 			for (int i = 0; i < 16; i++)
 			{
@@ -71,8 +110,50 @@ namespace ast
 					data[i][j].data = nullptr;
 			}
 		}
+        
+        ~Image()
+        {
+            deallocate();
+        }
+        
+        Image& operator=(Image other)
+        {
+            deallocate();
+            allocate(other.type, other.data[other.array_slices][other.mip_slices].width, other.data[other.array_slices][other.mip_slices].height, other.components, other.array_slices, other.mip_slices);
+            
+            return *this;
+        }
+        
+        void allocate(const PixelType& pixel_type,
+                      const uint32_t& base_mip_width,
+                      const uint32_t& base_mip_height,
+                      const uint32_t& component_count,
+                      const uint32_t& array_slice_count,
+                      const uint32_t& mip_slice_count)
+        {
+            type = pixel_type;
+            components = component_count;
+            mip_slices = mip_slice_count;
+            array_slices = array_slice_count;
+            
+            for (uint32_t i = 0; i < array_slices; i++)
+            {
+                uint32_t w = base_mip_width;
+                uint32_t h = base_mip_height;
+                
+                for (uint32_t j = 0; j < mip_slices; j++)
+                {
+                    data[i][j].width = w;
+                    data[i][j].height = h;
+                    data[i][j].data = malloc(w * h * components * size_t(type));
+                    
+                    w /= 2;
+                    h /= 2;
+                }
+            }
+        }
 	
-		void unload()
+		void deallocate()
 		{
 			for (int i = 0; i < array_slices; i++)
 			{
@@ -89,116 +170,92 @@ namespace ast
 	
 		size_t size(int array_slice, int mip_slice) const
 		{
-			return sizeof(T) * data[array_slice][mip_slice].width * data[array_slice][mip_slice].height * components;
+			return size_t(type) * data[array_slice][mip_slice].width * data[array_slice][mip_slice].height * components;
 		}
 	
 		void to_bgra(int array_slice, int mip_slice)
 		{
 			Data& imgData = data[array_slice][mip_slice];
 	
-			Pixel<4>* src = (Pixel<4>*)imgData.data;
-	
-			for (int y = 0; y < imgData.height; y++)
-			{
-				for (int x = 0; x < imgData.width; x++)
-				{
-					T red = src[y * imgData.width + x].c[2];
-	
-					src[y * imgData.width + x].c[0] = src[y * imgData.width + x].c[2];
-					src[y * imgData.width + x].c[2] = red;
-				}
-			}
+			if (type == PIXEL_TYPE_UNORM8)
+            {
+                TO_BGRA(uint8_t, imgData)
+            }
+            else if (type == PIXEL_TYPE_FLOAT16)
+            {
+                TO_BGRA(int16_t, imgData)
+            }
+            else if (type == PIXEL_TYPE_FLOAT32)
+            {
+                TO_BGRA(float, imgData)
+            }
 		}
 	
-		bool to_rgba(Image<T>& img, int array_slice, int mip_slice)
+		bool to_rgba(Image& img, int array_slice, int mip_slice)
 		{
 			if (components == 4)
 			{
 				img = *this;
 				return true;
 			}
-	
+        
 			Data& imgData = data[array_slice][mip_slice];
-			Pixel<4>* dst = new Pixel<4>[imgData.width * imgData.height];
+			void* new_data = malloc(imgData.width * imgData.height * components * size_t(type));
 	
-			if (components == 3)
-			{
-				Pixel<3>* src = (Pixel<3>*)imgData.data;
-	
-				for (int y = 0; y < imgData.height; y++)
-				{
-					for (int x = 0; x < imgData.width; x++)
-					{
-						// Initialize values
-						dst[y * imgData.width + x].c[0] = 0;
-						dst[y * imgData.width + x].c[1] = 0;
-						dst[y * imgData.width + x].c[2] = 0;
-						dst[y * imgData.width + x].c[3] = std::numeric_limits<T>::max();
-	
-						for (int c = 0; c < components; c++)
-						{
-							dst[y * imgData.width + x].c[c] = src[y * imgData.width + x].c[c];
-						}
-					}
-				}
-			}
-			else if (components == 2)
-			{
-				Pixel<2>* src = (Pixel<2>*)imgData.data;
-	
-				for (int y = 0; y < imgData.height; y++)
-				{
-					for (int x = 0; x < imgData.width; x++)
-					{
-						// Initialize values
-						dst[y * imgData.width + x].c[0] = 0;
-						dst[y * imgData.width + x].c[1] = 0;
-						dst[y * imgData.width + x].c[2] = 0;
-						dst[y * imgData.width + x].c[3] = std::numeric_limits<T>::max();
-	
-						for (int c = 0; c < components; c++)
-						{
-							dst[y * imgData.width + x].c[c] = src[y * imgData.width + x].c[c];
-						}
-					}
-				}
-			}
-			else if (components == 1)
-			{
-				Pixel<1>* src = (Pixel<1>*)imgData.data;
-	
-				for (int y = 0; y < imgData.height; y++)
-				{
-					for (int x = 0; x < imgData.width; x++)
-					{
-						// Initialize values
-						dst[y * imgData.width + x].c[0] = 0;
-						dst[y * imgData.width + x].c[1] = 0;
-						dst[y * imgData.width + x].c[2] = 0;
-						dst[y * imgData.width + x].c[3] = std::numeric_limits<T>::max();
-	
-						for (int c = 0; c < components; c++)
-						{
-							dst[y * imgData.width + x].c[c] = src[y * imgData.width + x].c[c];
-						}
-					}
-				}
-			}
-	
+            if (type == PIXEL_TYPE_UNORM8)
+            {
+                if (components == 3)
+                {
+                    TO_RGBA(uint8_t, 3, new_data)
+                }
+                else if (components == 2)
+                {
+                    TO_RGBA(uint8_t, 2, new_data)
+                }
+                else if (components == 1)
+                {
+                    TO_RGBA(uint8_t, 1, new_data)
+                }
+            }
+            else if (type == PIXEL_TYPE_FLOAT16)
+            {
+                if (components == 3)
+                {
+                    TO_RGBA(int16_t, 3, new_data)
+                }
+                else if (components == 2)
+                {
+                    TO_RGBA(int16_t, 2, new_data)
+                }
+                else if (components == 1)
+                {
+                    TO_RGBA(int16_t, 1, new_data)
+                }
+            }
+            else if (type == PIXEL_TYPE_FLOAT32)
+            {
+                if (components == 3)
+                {
+                    TO_RGBA(float, 3, new_data)
+                }
+                else if (components == 2)
+                {
+                    TO_RGBA(float, 2, new_data)
+                }
+                else if (components == 1)
+                {
+                    TO_RGBA(float, 1, new_data)
+                }
+            }
+
 			img.components = 4;
 			img.array_slices = array_slices;
 			img.mip_slices = mip_slices;
-			img.data[array_slice][mip_slice].data = (T*)dst;
+			img.data[array_slice][mip_slice].data = new_data;
 			img.data[array_slice][mip_slice].width = data[array_slice][mip_slice].width;
 			img.data[array_slice][mip_slice].height = data[array_slice][mip_slice].height;
 	
 			return true;
 		}
-	
-		int components;
-		int mip_slices;
-		int array_slices;
-		Data data[16][16];
-        std::string name;
 	};
 }

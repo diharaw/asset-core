@@ -52,14 +52,14 @@ int main(int argc, char * argv[])
 //        ast::TextureDesc tex_desc;
 //
 //        std::string input = "/Users/diharaw/Desktop/sun_temple/Textures/M_Arch_Inst_Red_2_0_BaseColor.dds";
-//        ast::Image<uint8_t> img;
+//        ast::Image img;
 //
 //        ast::ImageExportOptions options;
 //
-//        options.compression = ast::COMPRESSION_BC1;
+//        options.compression = ast::COMPRESSION_NONE;
 //        options.normal_map = false;
 //        options.output_mips = -1;
-//        options.path = "/Users/diharaw/Desktop/sun_temple/ast/textures/M_Arch_Inst_Red_2_0_BaseColor.ast";
+//        options.path = "/Users/diharaw/Desktop/sun_temple/ast";
 //
 //        if (ast::import_image(img, input))
 //        {
@@ -91,16 +91,16 @@ int main(int argc, char * argv[])
 //        printf("Failed to import Texture!\n");
     
     std::string input = "/Users/diharaw/Desktop/sun_temple/SunTemple.fbx";
-    
+
     ast::Mesh mesh;
-    
+
     if (ast::import_mesh(input, mesh))
     {
         ast::MeshExportOption options;
-        
+
         options.path = "/Users/diharaw/Desktop/sun_temple/ast";
         options.texture_source_path = "/Users/diharaw/Desktop/sun_temple";
-        
+
         if (!ast::export_mesh(mesh, options))
             printf("Failed to output Material!\n");
     }

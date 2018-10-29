@@ -76,7 +76,7 @@ namespace ast
     struct ImageExportOptions
     {
         std::string path;
-        PixelType pixel_type = PIXEL_TYPE_DEFAULT;
+        PixelType pixel_type = PIXEL_TYPE_UNORM8;
         CompressionType compression = COMPRESSION_NONE;
         bool normal_map = false;
         int output_mips = 0;
@@ -85,18 +85,17 @@ namespace ast
     struct CubemapImageExportOptions
     {
         std::string path;
-        PixelType pixel_type = PIXEL_TYPE_DEFAULT;
+        PixelType pixel_type = PIXEL_TYPE_UNORM8;
         CompressionType compression = COMPRESSION_NONE;
         int output_mips = 0;
         bool irradiance = false;
         bool radiance = false;
     };
     
-	template<typename T>
-	bool export_image(Image<T>& img, const ImageExportOptions& options)
+	inline bool export_image(Image& img, const ImageExportOptions& options)
 	{
 		// Make sure that float images either use no compression or BC6
-		if ((std::is_same<T, uint16_t>::value || std::is_same<T, int16_t>::value || std::is_same<T, float>::value) && (options.compression != COMPRESSION_NONE && options.compression != COMPRESSION_BC6))
+		if ((img.type == PIXEL_TYPE_FLOAT16 || img.type == PIXEL_TYPE_FLOAT32) && (options.compression != COMPRESSION_NONE && options.compression != COMPRESSION_BC6))
 		{
 			std::cout << "ERROR::Float images must use either no compression or BC6!" << std::endl;
 			return false;
@@ -153,7 +152,7 @@ namespace ast
 			generate_mipmaps = false;
 
 		imageHeader.compression = options.compression;
-		imageHeader.channel_size = sizeof(T);
+		imageHeader.channel_size = img.type;
 		imageHeader.num_channels = img.components;
 		imageHeader.num_array_slices = img.array_slices;
 		imageHeader.num_mip_slices = mip_levels;
@@ -196,11 +195,11 @@ namespace ast
 
 		if (options.compression == COMPRESSION_NONE)
 		{
-			uint32_t pixel_size = (options.pixel_type == PIXEL_TYPE_DEFAULT) ? 8 * sizeof(T) : options.pixel_type;
+			uint32_t pixel_size = 8 * options.pixel_type;
 
-			if (std::is_same<T, uint8_t>::value)
+			if (img.type == PIXEL_TYPE_UNORM8)
 				compression_options.setPixelType(nvtt::PixelType_UnsignedNorm);
-			else if (std::is_same<T, uint16_t>::value || std::is_same<T, int16_t>::value || std::is_same<T, float>::value)
+			else if (img.type == PIXEL_TYPE_FLOAT16 || img.type == PIXEL_TYPE_FLOAT32)
 				compression_options.setPixelType(nvtt::PixelType_Float);
 
 			if (img.components == 4)
@@ -213,24 +212,12 @@ namespace ast
 				compression_options.setPixelFormat(pixel_size, 0, 0, 0);
 		}
 
-		if (options.pixel_type == PIXEL_TYPE_DEFAULT)
-		{
-			if (std::is_same<T, uint8_t>::value)
-				input_options.setFormat(nvtt::InputFormat_BGRA_8UB);
-			else if (std::is_same<T, uint16_t>::value || std::is_same<T, int16_t>::value)
-				input_options.setFormat(nvtt::InputFormat_RGBA_16F);
-			else if (std::is_same<T, float>::value)
-				input_options.setFormat(nvtt::InputFormat_RGBA_32F);
-		}
-		else
-		{
-			if (options.pixel_type == PIXEL_TYPE_UNORM8)
-				input_options.setFormat(nvtt::InputFormat_BGRA_8UB);
-			else if (options.pixel_type == PIXEL_TYPE_FLOAT16)
-				input_options.setFormat(nvtt::InputFormat_RGBA_16F);
-			else if (options.pixel_type == PIXEL_TYPE_FLOAT32)
-				input_options.setFormat(nvtt::InputFormat_RGBA_32F);
-		}
+        if (options.pixel_type == PIXEL_TYPE_UNORM8)
+            input_options.setFormat(nvtt::InputFormat_BGRA_8UB);
+        else if (options.pixel_type == PIXEL_TYPE_FLOAT16)
+            input_options.setFormat(nvtt::InputFormat_RGBA_16F);
+        else if (options.pixel_type == PIXEL_TYPE_FLOAT32)
+            input_options.setFormat(nvtt::InputFormat_RGBA_32F);
 
 		input_options.setNormalMap(options.normal_map);
 		input_options.setConvertToNormalMap(false);
@@ -241,8 +228,8 @@ namespace ast
 
 		for (int i = 0; i < img.array_slices; i++)
 		{
-			Image<T> temp_img;
-            Image<T>* current_img = &temp_img;
+			Image temp_img;
+            Image* current_img = &temp_img;
 
 			input_options.setTextureLayout(nvtt::TextureType_2D, img.data[i][0].width, img.data[i][0].height);
 
@@ -273,7 +260,7 @@ namespace ast
 			}
 			else
 			{
-				temp_img.unload();
+				temp_img.deallocate();
 				std::cout << "ERROR::Image must contain at least one miplevel" << std::endl;
 				return false;
 			}
@@ -281,7 +268,7 @@ namespace ast
 			handler.mip_levels = 0;
 			compressor.process(input_options, compression_options, output_options);
             
-			temp_img.unload();
+			temp_img.deallocate();
 		}
 
 		f.close();
@@ -289,13 +276,12 @@ namespace ast
 		return true;
 	}
 
-	template<typename T>
-	bool cubemap_from_latlong(cmft::Image& dst, Image<T>& src)
+	inline bool cubemap_from_latlong(cmft::Image& dst, Image& src)
 	{
-		cmft::Image img;
-		img.m_width = uint32_t(src.data[0][0].width);
-		img.m_height = uint32_t(src.data[0][0].height);
-		img.m_dataSize = src.size(0, 0);
+		cmft::Image cmft_img;
+		cmft_img.m_width = uint32_t(src.data[0][0].width);
+		cmft_img.m_height = uint32_t(src.data[0][0].height);
+		cmft_img.m_dataSize = src.size(0, 0);
 
 		if (src.components < 3)
 		{
@@ -305,34 +291,34 @@ namespace ast
 
 		if (src.components == 4)
 		{
-			if (std::is_same<T, uint8_t>::value)
-				img.m_format = cmft::TextureFormat::RGBA8;
-			else if (std::is_same<T, uint16_t>::value)
-				img.m_format = cmft::TextureFormat::RGBA16F;
-			else if (std::is_same<T, float>::value)
-				img.m_format = cmft::TextureFormat::RGBA32F;
+			if (src.type == PIXEL_TYPE_UNORM8)
+				cmft_img.m_format = cmft::TextureFormat::RGBA8;
+			else if (src.type == PIXEL_TYPE_FLOAT16)
+				cmft_img.m_format = cmft::TextureFormat::RGBA16F;
+			else if (src.type == PIXEL_TYPE_FLOAT32)
+				cmft_img.m_format = cmft::TextureFormat::RGBA32F;
 		}
 		else if (src.components == 3)
 		{
-			if (std::is_same<T, uint8_t>::value)
-				img.m_format = cmft::TextureFormat::RGB8;
-			else if (std::is_same<T, uint16_t>::value)
-				img.m_format = cmft::TextureFormat::RGB16F;
-			else if (std::is_same<T, float>::value)
-				img.m_format = cmft::TextureFormat::RGB32F;
+			if (src.type == PIXEL_TYPE_UNORM8)
+				cmft_img.m_format = cmft::TextureFormat::RGB8;
+			else if (src.type == PIXEL_TYPE_FLOAT16)
+				cmft_img.m_format = cmft::TextureFormat::RGB16F;
+			else if (src.type == PIXEL_TYPE_FLOAT32)
+				cmft_img.m_format = cmft::TextureFormat::RGB32F;
 		}
 
-		img.m_numMips = 1;
-		img.m_numFaces = 1;
-		img.m_data = (void*)src.data[0][0].data;
+		cmft_img.m_numMips = 1;
+		cmft_img.m_numFaces = 1;
+		cmft_img.m_data = (void*)src.data[0][0].data;
 
-		if (!cmft::imageIsLatLong(img))
+		if (!cmft::imageIsLatLong(cmft_img))
 		{
 			std::cout << "ERROR::Image is not in latlong format" << std::endl;
 			return false;
 		}
 
-		if (!cmft::imageCubemapFromLatLong(dst, img))
+		if (!cmft::imageCubemapFromLatLong(dst, cmft_img))
 		{
 			std::cout << "ERROR::Failed to convert Cubemap" << std::endl;
 			return false;
@@ -341,8 +327,7 @@ namespace ast
 		return true;
 	}
 
-	template<typename T>
-	bool cubemap_from_latlong(Image<T>& src, const CubemapImageExportOptions& options)
+	inline bool cubemap_from_latlong(Image& src, const CubemapImageExportOptions& options)
 	{
 		cmft::Image cmft_cube;
 
@@ -362,7 +347,7 @@ namespace ast
 				return false;
 			}
 
-			Image<T> irradiance_cube;
+			Image irradiance_cube;
 
 			uint32_t img_offsets[CUBE_FACE_NUM][MAX_MIP_NUM];
 			cmft::imageGetMipOffsets(img_offsets, cmft_irradiance_cube);
@@ -422,7 +407,7 @@ namespace ast
 				return false;
 			}
 
-			Image<T> radiance_cube;
+			Image radiance_cube;
 
 			uint32_t img_offsets[CUBE_FACE_NUM][MAX_MIP_NUM];
 			cmft::imageGetMipOffsets(img_offsets, cmft_radiance_cube);
@@ -440,7 +425,7 @@ namespace ast
 				{
 					uint8_t* mip_data = (uint8_t*)cmft_radiance_cube.m_data + img_offsets[i][j];
 
-					radiance_cube.data[i][j].data = (T*)mip_data;
+					radiance_cube.data[i][j].data = (void*)mip_data;
 					radiance_cube.data[i][j].height = cmft_radiance_cube.m_height >> j;
 					radiance_cube.data[i][j].width = cmft_radiance_cube.m_width >> j;
 				}
@@ -465,7 +450,7 @@ namespace ast
 		uint32_t img_offsets[CUBE_FACE_NUM][MAX_MIP_NUM];
 		cmft::imageGetMipOffsets(img_offsets, cmft_cube);
 
-		Image<T> cubemap;
+		Image cubemap;
 
         cubemap.name = src.name;
 		cubemap.components = src.components;
@@ -476,7 +461,7 @@ namespace ast
 		{
 			uint8_t* mip_data = (uint8_t*)cmft_cube.m_data + img_offsets[i][0];
 
-			cubemap.data[i][0].data = (T*)mip_data;
+			cubemap.data[i][0].data = (void*)mip_data;
 			cubemap.data[i][0].height = cmft_cube.m_height;
 			cubemap.data[i][0].width = cmft_cube.m_width;
 		}
@@ -496,14 +481,14 @@ namespace ast
 		}
 
 		cmft::imageUnload(cmft_cube);
-		src.unload();
+		src.deallocate();
 
 		return true;
 	}
 
     inline bool cubemap_from_latlong(const std::string& input, const CubemapImageExportOptions& options)
     {
-        Image<float> src;
+        Image src;
 
         if (!import_image(src, input))
         {
@@ -511,6 +496,6 @@ namespace ast
             return false;
         }
 
-        return cubemap_from_latlong<float>(src, options);
+        return cubemap_from_latlong(src, options);
     }
 };
