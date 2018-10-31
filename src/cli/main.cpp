@@ -4,6 +4,7 @@
 #include <offline/mesh_importer.h>
 #include <offline/mesh_exporter.h>
 #include <common/filesystem.h>
+#include <runtime/loader.h>
 #include <stdio.h>
 
 int main(int argc, char * argv[])
