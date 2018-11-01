@@ -1,6 +1,7 @@
 #include <runtime/loader.h>
 #include <common/header.h>
 #include <fstream>
+#include <json.hpp>
 
 #define READ_AND_OFFSET(stream, dest, size, offset) stream.read((char*)dest, size); offset += size; stream.seekg(offset);
 
@@ -118,6 +119,95 @@ namespace ast
     
     bool load_material(const std::string& path, Material& material)
     {
+        std::ifstream i(path);
+        
+        nlohmann::json j;
+        i >> j;
+
+        std::string blend_mode;
+        std::string displacement_type;
+        std::string lighting_model;
+        std::string shading_model;
+        
+        if (j.find("name") != j.end())
+            material.name = j["name"];
+        else
+            material.name = "untitled";
+        
+        if (j.find("blend_mode") != j.end())
+        {
+            blend_mode = j["blend_mode"];
+            
+            for (int i = 0; i < 4; i++)
+            {
+                if (kBlendMode[i] == blend_mode)
+                {
+                    material.blend_mode = i;
+                    break;
+                }
+            }
+        }
+        else
+            material.blend_mode = BLEND_MODE_OPAQUE;
+        
+        if (j.find("displacement_type") != j.end())
+        {
+            displacement_type = j["displacement_type"];
+            
+            for (int i = 0; i < 3; i++)
+            {
+                if (kDisplacementType[i] == displacement_type)
+                {
+                    material.displacement_type = i;
+                    break;
+                }
+            }
+        }
+        else
+            material.displacement_type = DISPLACEMENT_NONE;
+        
+        if (j.find("lighting_model") != j.end())
+        {
+            lighting_model = j["lighting_model"];
+            
+            for (int i = 0; i < 2; i++)
+            {
+                if (kLightingModel[i] == lighting_model)
+                {
+                    material.lighting_model = i;
+                    break;
+                }
+            }
+        }
+        else
+            material.lighting_model = LIGHTING_MODEL_LIT;
+        
+        if (j.find("shading_model") != j.end())
+        {
+            shading_model = j["shading_model"];
+            
+            for (int i = 0; i < 3; i++)
+            {
+                if (kShadingModel[i] == shading_model)
+                {
+                    material.shading_model = i;
+                    break;
+                }
+            }
+        }
+        else
+            material.shading_model = SHADING_MODEL_STANDARD;
+        
+        if (j.find("double_sided") != j.end())
+            material.double_sided = j["double_sided"];
+        else
+            material.double_sided = false;
+        
+        if (j.find("metallic_workflow") != j.end())
+            material.metallic_workflow = j["metallic_workflow"];
+        else
+            material.metallic_workflow = true;
+        
         return true;
     }
 }
