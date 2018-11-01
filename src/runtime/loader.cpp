@@ -15,8 +15,42 @@ namespace ast
         
         BINFileHeader file_header;
         BINImageHeader image_header;
+        uint16_t len = 0;
         
         size_t offset = 0;
+        
+        READ_AND_OFFSET(f, &file_header, sizeof(BINFileHeader), offset);
+        
+        READ_AND_OFFSET(f, &len, sizeof(uint16_t), offset);
+        image.name.resize(len);
+        
+        READ_AND_OFFSET(f, image.name.c_str(), len, offset);
+        
+        READ_AND_OFFSET(f, &image_header, sizeof(BINImageHeader), offset);
+        
+        image.array_slices = image_header.num_array_slices;
+        image.mip_slices = image_header.num_mip_slices;
+        image.components = image_header.num_channels;
+        image.type = image_header.channel_size;
+        image.compression = image_header.compression;
+        
+        if (image_header.num_array_slices == 0)
+            return false;
+        
+        for (int i = 0; i < image_header.num_array_slices; i++)
+        {
+            for (int j = 0; j < image_header.num_array_slices; j++)
+            {
+                BINMipSliceHeader mip_header;
+                READ_AND_OFFSET(f, &mip_header, sizeof(BINMipSliceHeader), offset);
+                
+                image.data[i][j].width = mip_header.width;
+                image.data[i][j].height = mip_header.height;
+                image.data[i][j].data = malloc(mip_header.size);
+                
+                READ_AND_OFFSET(f, image.data[i][j].data, mip_header.size, offset);
+            }
+        }
         
         return true;
     }

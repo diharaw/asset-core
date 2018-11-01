@@ -12,6 +12,7 @@
 #define CMFT_GLOSS_BIAS 3
 #define RADIANCE_MAP_MIP_LEVELS 7
 
+#define WRITE_AND_OFFSET(stream, dest, size, offset) stream.write((char*)dest, size); offset += size; stream.seekg(offset);
 
 namespace ast
 {
@@ -142,22 +143,17 @@ namespace ast
         std::fstream f(path, std::ios::out | std::ios::binary);
         
         long offset = 0;
+        f.seekp(offset);
         
-        f.seekp(offset);
-        f.write((char*)&fh, sizeof(fh));
-        offset += sizeof(fh);
-        f.seekp(offset);
+        WRITE_AND_OFFSET(f, &fh, sizeof(fh), offset);
+        
         uint16_t len = filename.size();
-        f.write((char*)&len, sizeof(uint16_t));
-        offset += sizeof(uint16_t);
-        f.seekp(offset);
-        f.write((char*)filename.c_str(), len);
-        offset += len;
-        f.seekp(offset);
-        f.write((char*)&imageHeader, sizeof(BINImageHeader));
-        offset += sizeof(BINImageHeader);
-        f.seekp(offset);
+        WRITE_AND_OFFSET(f, &len, sizeof(uint16_t), offset);
         
+        WRITE_AND_OFFSET(f, filename.c_str(), len, offset);
+        
+        WRITE_AND_OFFSET(f, &imageHeader, sizeof(BINImageHeader), offset);
+     
         NVTTOutputHandler handler;
         nvtt::CompressionOptions compression_options;
         nvtt::InputOptions input_options;

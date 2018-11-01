@@ -101,8 +101,9 @@ Pixel<type, num_components>* src = (Pixel<type, num_components>*)imgData.data;  
         Data data[16][16];
         std::string name;
         PixelType type;
+        CompressionType compression;
 	
-        Image(const PixelType& pixel_type = PIXEL_TYPE_UNORM8) : mip_slices(0), array_slices(0), type(pixel_type)
+        Image(const PixelType& pixel_type = PIXEL_TYPE_UNORM8) : mip_slices(0), array_slices(0), type(pixel_type), compression(COMPRESSION_NONE)
 		{
 			for (int i = 0; i < 16; i++)
 			{
