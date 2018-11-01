@@ -208,6 +208,50 @@ namespace ast
         else
             material.metallic_workflow = true;
         
+        if (j.find("textures") != j.end())
+        {
+            auto json_textures = j["textures"];
+            
+            for (auto& json_texture : json_textures)
+            {
+                Texture texture;
+                
+                if (j.find("srgb") != j.end())
+                    texture.srgb = json_texture["srgb"];
+                else
+                    texture.srgb = true;
+                
+                if (j.find("path") != j.end())
+                    texture.path = json_texture["path"];
+                
+                if (j.find("type") != j.end())
+                {
+                    std::string tex_type = json_texture["type"];
+                    
+                    for (int i = 0; i < 9; i++)
+                    {
+                        if (kTextureType[i] == tex_type)
+                        {
+                            texture.type = i;
+                            break;
+                        }
+                    }
+                }
+                
+                material.textures.push_back(texture);
+            }
+        }
+        
+        if (j.find("properties") != j.end())
+        {
+            auto json_properties = j["properties"];
+            
+            for (auto& json_property : json_properties)
+            {
+                
+            }
+        }
+        
         return true;
     }
 }
