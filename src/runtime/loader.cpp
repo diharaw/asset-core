@@ -57,6 +57,62 @@ namespace ast
     
     bool load_mesh(const std::string& path, Mesh& mesh)
     {
+        std::fstream f(path, std::ios::in | std::ios::binary);
+        
+        if (!f.is_open())
+            return false;
+        
+        BINFileHeader file_header;
+        BINMeshFileHeader mesh_header;
+        
+        size_t offset = 0;
+        
+        READ_AND_OFFSET(f, &file_header, sizeof(BINFileHeader), offset);
+        
+        READ_AND_OFFSET(f, (char*)&mesh_header, sizeof(BINMeshFileHeader), offset);
+        
+        if (mesh_header.vertex_count > 0)
+        {
+            mesh.vertices.resize(mesh_header.vertex_count);
+            READ_AND_OFFSET(f, (char*)&mesh.vertices[0], sizeof(Vertex) * mesh.vertices.size(), offset);
+        }
+        
+        if (mesh_header.skeletal_vertex_count > 0)
+        {
+            mesh.skeletal_vertices.resize(mesh_header.skeletal_vertex_count);
+            READ_AND_OFFSET(f, (char*)&mesh.skeletal_vertices[0], sizeof(SkeletalVertex) * mesh.skeletal_vertices.size(), offset);
+        }
+        
+        if (mesh_header.index_count > 0)
+        {
+            mesh.indices.resize(mesh_header.index_count);
+            READ_AND_OFFSET(f, (char*)&mesh.indices[0], sizeof(uint32_t) * mesh.indices.size(), offset);
+        }
+        
+        if (mesh_header.mesh_count > 0)
+        {
+            mesh.submeshes.resize(mesh_header.mesh_count);
+            READ_AND_OFFSET(f, (char*)&mesh.submeshes[0], sizeof(SubMesh) * mesh.submeshes.size(), offset);
+        }
+        
+        std::vector<BINMeshMaterialJson> bin_materials;
+        
+        if (mesh_header.material_count > 0)
+        {
+            bin_materials.resize(mesh_header.material_count);
+            mesh.materials.resize(mesh_header.material_count);
+            READ_AND_OFFSET(f, (char*)&bin_materials[0], sizeof(BINMeshMaterialJson) * bin_materials.size(), offset);
+        }
+        
+        for (int i = 0; i < mesh_header.material_count; i++)
+        {
+            if (!load_material(bin_materials[i].material, mesh.materials[i]))
+            {
+                std::cout << "Failed to load material: " << bin_materials[i].material << std::endl;
+                return false;
+            }
+        }
+        
         return true;
     }
     
