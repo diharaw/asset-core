@@ -91,7 +91,7 @@ int main(int argc, char * argv[])
 //    else
 //        printf("Failed to import Texture!\n");
     
-    std::string input = "/Users/diharaw/Desktop/sun_temple/SunTemple.fbx";
+    std::string input = "/Users/diharaw/Desktop/lpshead/head.OBJ";
 
     ast::Mesh mesh;
 
@@ -99,8 +99,11 @@ int main(int argc, char * argv[])
     {
         ast::MeshExportOption options;
 
-        options.path = "/Users/diharaw/Desktop/sun_temple/ast";
-        options.texture_source_path = "/Users/diharaw/Desktop/sun_temple";
+        options.path = "/Users/diharaw/Desktop/lpshead/ast";
+        options.texture_source_path = "/Users/diharaw/Desktop/lpshead";
+        options.relative_material_path = "../materials";
+        options.relative_texture_path = "../textures";
+        options.use_compression = true;
 
         if (!ast::export_mesh(mesh, options))
             printf("Failed to output Material!\n");

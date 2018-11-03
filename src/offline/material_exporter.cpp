@@ -7,7 +7,7 @@
 
 namespace ast
 {
-    void export_texture(const std::string& src_path, const std::string& dst_path, bool normal_map)
+    void export_texture(const std::string& src_path, const std::string& dst_path, bool normal_map, bool use_compression)
     {
         Image img;
         
@@ -18,14 +18,18 @@ namespace ast
             options.output_mips = -1;
             options.normal_map = normal_map;
             options.path = dst_path;
+            options.compression = COMPRESSION_NONE;
             
-            if (img.components == 1)
-                options.compression = COMPRESSION_BC4;
-            else if (img.components == 3)
-                options.compression = COMPRESSION_BC1;
-            else if (img.components == 4)
-                options.compression = COMPRESSION_BC3;
-            
+            if (use_compression)
+            {
+                if (img.components == 1)
+                    options.compression = COMPRESSION_BC4;
+                else if (img.components == 3)
+                    options.compression = COMPRESSION_BC1;
+                else if (img.components == 4)
+                    options.compression = COMPRESSION_BC3;
+            }
+
             export_image(img, options);
             
             img.deallocate();
@@ -57,7 +61,14 @@ namespace ast
             if (options.relative_texture_path != "")
                 path = options.relative_texture_path;
             else
+            {
                 path += filesystem::get_file_path(texture_desc.path);
+                
+                if (path.size() > 0)
+                    path += "/";
+                
+                path += "textures";
+            }
                 
             path += "/";
             path += filesystem::get_filename(texture_desc.path);
@@ -77,7 +88,7 @@ namespace ast
             bool exists = filesystem::does_file_exist(full_dst_path);
 
             if (options.texture_source_path != "" && options.dst_texture_path != "" && !exists)
-                export_texture(src_path, dst_path, texture_desc.type == TEXTURE_NORMAL ? true : false);
+                export_texture(src_path, dst_path, texture_desc.type == TEXTURE_NORMAL ? true : false, options.use_compression);
             
             texture["path"] = path;
             texture["srgb"] = texture_desc.srgb;

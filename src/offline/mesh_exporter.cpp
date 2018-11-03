@@ -111,6 +111,7 @@ namespace ast
                 mat_exp_options.relative_texture_path = options.relative_texture_path;
                 mat_exp_options.texture_source_path = options.texture_source_path;
                 mat_exp_options.dst_texture_path = texture_path;
+                mat_exp_options.use_compression = options.use_compression;
                 
                 if (export_material(material, mat_exp_options))
                 {
