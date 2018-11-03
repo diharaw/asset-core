@@ -1,6 +1,7 @@
 #include <runtime/loader.h>
 #include <common/header.h>
 #include <fstream>
+#include <common/filesystem.h>
 #include <json.hpp>
 
 #define READ_AND_OFFSET(stream, dest, size, offset) stream.read((char*)dest, size); offset += size; stream.seekg(offset);
@@ -107,7 +108,16 @@ namespace ast
         
         for (int i = 0; i < mesh_header.material_count; i++)
         {
-            if (!load_material(bin_materials[i].material, mesh.materials[i]))
+            std::string relative_path = bin_materials[i].material;
+            std::string parent_path = filesystem::get_file_path(path);
+            std::string material_path = "";
+            
+            if (parent_path.length() == 0)
+                material_path = relative_path;
+            else
+                material_path = parent_path + relative_path;
+            
+            if (!load_material(material_path, mesh.materials[i]))
             {
                 std::cout << "Failed to load material: " << bin_materials[i].material << std::endl;
                 return false;
