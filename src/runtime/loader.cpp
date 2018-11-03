@@ -248,7 +248,83 @@ namespace ast
             
             for (auto& json_property : json_properties)
             {
+                MaterialProperty property;
+                std::string type = "";
                 
+                if (json_property.find("type") != j.end())
+                {
+                    type = json_property["type"];
+                    
+                    if (type == kPropertyType[PROPERTY_ALBEDO])
+                    {
+                        property.type = PROPERTY_ALBEDO;
+                        
+                        if (json_property.find("value") != j.end())
+                        {
+                            auto vec = json_property["value"];
+                            int i = 0;
+                            
+                            if (vec.size() != 4)
+                                continue;
+                            
+                            for (auto& value : vec)
+                                property.vec4_value[i] = value;
+                        }
+                    }
+                    else if (type == kPropertyType[PROPERTY_EMISSIVE])
+                    {
+                        property.type = PROPERTY_EMISSIVE;
+                        
+                        if (json_property.find("value") != j.end())
+                        {
+                            auto vec = json_property["value"];
+                            int i = 0;
+                            
+                            if (vec.size() != 4)
+                                continue;
+                            
+                            for (auto& value : vec)
+                                property.vec4_value[i] = value;
+                        }
+                    }
+                    else if (type == kPropertyType[PROPERTY_METALNESS])
+                    {
+                        property.type = PROPERTY_METALNESS;
+                        
+                        if (json_property.find("value") != j.end())
+                            property.float_value = json_property["value"];
+                    }
+                    else if (type == kPropertyType[PROPERTY_ROUGHNESS])
+                    {
+                        property.type = PROPERTY_ROUGHNESS;
+                        
+                        if (json_property.find("value") != j.end())
+                            property.float_value = json_property["value"];
+                    }
+                    else if (type == kPropertyType[PROPERTY_SPECULAR])
+                    {
+                        property.type = PROPERTY_EMISSIVE;
+                        
+                        if (json_property.find("value") != j.end())
+                        {
+                            auto vec = json_property["value"];
+                            int i = 0;
+                            
+                            if (vec.size() != 3)
+                                continue;
+                            
+                            for (auto& value : vec)
+                                property.vec3_value[i] = value;
+                        }
+                    }
+                    else if (type == kPropertyType[PROPERTY_GLOSSINESS])
+                    {
+                        property.type = PROPERTY_GLOSSINESS;
+                        
+                        if (json_property.find("value") != j.end())
+                            property.float_value = json_property["value"];
+                    }
+                }
             }
         }
         
