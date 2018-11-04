@@ -9,3 +9,4 @@ file(GLOB_RECURSE AST_CLI_SOURCE ${CMAKE_SOURCE_DIR}/src/cli/*.cpp
 add_executable(AssetCoreCLI ${AST_CLI_SOURCE})
 
 target_link_libraries(AssetCoreCLI AssetCoreOffline)
+target_link_libraries(AssetCoreCLI AssetCoreRuntime)

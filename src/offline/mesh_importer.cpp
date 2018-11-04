@@ -53,7 +53,7 @@ namespace ast
             uint32_t vertex_count = 0;
             uint32_t index_count = 0;
             aiMaterial* temp_material;
-            std::vector<uint32_t> processed_mat_id;
+            std::vector<uint32_t> processed_mat_ids;
             std::unordered_map<uint32_t, uint32_t> mat_id_mapping;
             uint32_t unnamed_mats = 1;
             
@@ -66,7 +66,7 @@ namespace ast
                 vertex_count += scene->mMeshes[i]->mNumVertices;
                 index_count += mesh.submeshes[i].index_count;
                 
-                if (!does_material_exist(processed_mat_id, scene->mMeshes[i]->mMaterialIndex))
+                if (!does_material_exist(processed_mat_ids, scene->mMeshes[i]->mMaterialIndex))
                 {
                     Material mat;
                     
@@ -283,6 +283,7 @@ namespace ast
                     }
                     
                     mat_id_mapping[scene->mMeshes[i]->mMaterialIndex] = mesh.materials.size();
+                    processed_mat_ids.push_back(scene->mMeshes[i]->mMaterialIndex);
                     
                     mesh.materials.push_back(mat);
                 }

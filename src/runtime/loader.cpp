@@ -33,8 +33,8 @@ namespace ast
         image.array_slices = image_header.num_array_slices;
         image.mip_slices = image_header.num_mip_slices;
         image.components = image_header.num_channels;
-        image.type = image_header.channel_size;
-        image.compression = image_header.compression;
+        image.type = (PixelType)image_header.channel_size;
+        image.compression = (CompressionType)image_header.compression;
         
         if (image_header.num_array_slices == 0)
             return false;
@@ -72,6 +72,10 @@ namespace ast
         READ_AND_OFFSET(f, &file_header, sizeof(BINFileHeader), offset);
         
         READ_AND_OFFSET(f, (char*)&mesh_header, sizeof(BINMeshFileHeader), offset);
+        
+        mesh.name = mesh_header.name;
+        mesh.max_extents = mesh_header.max_extents;
+        mesh.min_extents = mesh_header.min_extents;
         
         if (mesh_header.vertex_count > 0)
         {
@@ -152,7 +156,7 @@ namespace ast
             {
                 if (kBlendMode[i] == blend_mode)
                 {
-                    material.blend_mode = i;
+                    material.blend_mode = (BlendMode)i;
                     break;
                 }
             }
@@ -168,7 +172,7 @@ namespace ast
             {
                 if (kDisplacementType[i] == displacement_type)
                 {
-                    material.displacement_type = i;
+                    material.displacement_type = (DisplacementType)i;
                     break;
                 }
             }
@@ -184,7 +188,7 @@ namespace ast
             {
                 if (kLightingModel[i] == lighting_model)
                 {
-                    material.lighting_model = i;
+                    material.lighting_model = (LightingModel)i;
                     break;
                 }
             }
@@ -200,7 +204,7 @@ namespace ast
             {
                 if (kShadingModel[i] == shading_model)
                 {
-                    material.shading_model = i;
+                    material.shading_model = (ShadingModel)i;
                     break;
                 }
             }
@@ -226,15 +230,15 @@ namespace ast
             {
                 Texture texture;
                 
-                if (j.find("srgb") != j.end())
+                if (json_texture.find("srgb") != json_texture.end())
                     texture.srgb = json_texture["srgb"];
                 else
                     texture.srgb = true;
                 
-                if (j.find("path") != j.end())
+                if (json_texture.find("path") != json_texture.end())
                     texture.path = json_texture["path"];
                 
-                if (j.find("type") != j.end())
+                if (json_texture.find("type") != json_texture.end())
                 {
                     std::string tex_type = json_texture["type"];
                     
@@ -242,7 +246,7 @@ namespace ast
                     {
                         if (kTextureType[i] == tex_type)
                         {
-                            texture.type = i;
+                            texture.type = (TextureType)i;
                             break;
                         }
                     }
@@ -260,8 +264,9 @@ namespace ast
             {
                 MaterialProperty property;
                 std::string type = "";
+                bool found = false;
                 
-                if (json_property.find("type") != j.end())
+                if (json_property.find("type") != json_property.end())
                 {
                     type = json_property["type"];
                     
@@ -269,7 +274,7 @@ namespace ast
                     {
                         property.type = PROPERTY_ALBEDO;
                         
-                        if (json_property.find("value") != j.end())
+                        if (json_property.find("value") != json_property.end())
                         {
                             auto vec = json_property["value"];
                             int i = 0;
@@ -279,13 +284,15 @@ namespace ast
                             
                             for (auto& value : vec)
                                 property.vec4_value[i] = value;
+                            
+                            found = true;
                         }
                     }
                     else if (type == kPropertyType[PROPERTY_EMISSIVE])
                     {
                         property.type = PROPERTY_EMISSIVE;
                         
-                        if (json_property.find("value") != j.end())
+                        if (json_property.find("value") != json_property.end())
                         {
                             auto vec = json_property["value"];
                             int i = 0;
@@ -295,27 +302,33 @@ namespace ast
                             
                             for (auto& value : vec)
                                 property.vec4_value[i] = value;
+                            
+                            found = true;
                         }
                     }
                     else if (type == kPropertyType[PROPERTY_METALNESS])
                     {
                         property.type = PROPERTY_METALNESS;
                         
-                        if (json_property.find("value") != j.end())
+                        if (json_property.find("value") != json_property.end())
                             property.float_value = json_property["value"];
+                        
+                        found = true;
                     }
                     else if (type == kPropertyType[PROPERTY_ROUGHNESS])
                     {
                         property.type = PROPERTY_ROUGHNESS;
                         
-                        if (json_property.find("value") != j.end())
+                        if (json_property.find("value") != json_property.end())
                             property.float_value = json_property["value"];
+                        
+                        found = true;
                     }
                     else if (type == kPropertyType[PROPERTY_SPECULAR])
                     {
                         property.type = PROPERTY_EMISSIVE;
                         
-                        if (json_property.find("value") != j.end())
+                        if (json_property.find("value") != json_property.end())
                         {
                             auto vec = json_property["value"];
                             int i = 0;
@@ -325,16 +338,23 @@ namespace ast
                             
                             for (auto& value : vec)
                                 property.vec3_value[i] = value;
+                            
+                            found = true;
                         }
                     }
                     else if (type == kPropertyType[PROPERTY_GLOSSINESS])
                     {
                         property.type = PROPERTY_GLOSSINESS;
                         
-                        if (json_property.find("value") != j.end())
+                        if (json_property.find("value") != json_property.end())
                             property.float_value = json_property["value"];
+                        
+                        found = true;
                     }
                 }
+                
+                if (found)
+                    material.properties.push_back(property);
             }
         }
         
