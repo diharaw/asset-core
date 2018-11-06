@@ -119,8 +119,6 @@ namespace ast
                 
                 mip_levels++;
             }
-            
-            mip_levels++;
         }
         else if (options.output_mips == 0)
             mip_levels = img.mip_slices;

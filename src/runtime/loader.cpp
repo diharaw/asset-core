@@ -39,9 +39,9 @@ namespace ast
         if (image_header.num_array_slices == 0)
             return false;
         
-        for (int i = 0; i < image_header.num_array_slices; i++)
+        for (int i = 0; i < image.array_slices; i++)
         {
-            for (int j = 0; j < image_header.num_array_slices; j++)
+            for (int j = 0; j < image.mip_slices; j++)
             {
                 BINMipSliceHeader mip_header;
                 READ_AND_OFFSET(f, &mip_header, sizeof(BINMipSliceHeader), offset);

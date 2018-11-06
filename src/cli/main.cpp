@@ -7,6 +7,54 @@
 #include <runtime/loader.h>
 #include <stdio.h>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
+void read_and_export_image(const std::string& input)
+{
+    ast::Image image;
+    
+    if (ast::load_image(input, image))
+    {
+        std::string name = filesystem::get_filename(input);
+        
+        for (int i = 0; i < image.array_slices; i++)
+        {
+            for (int j = 0; j < image.mip_slices; j++)
+            {
+                std::string output_name = filesystem::get_file_path(input);
+                output_name += "/";
+                output_name += name;
+                output_name += "_";
+                output_name += std::to_string(i);
+                output_name += "_";
+                output_name += std::to_string(j);
+                
+                if (image.type == ast::PIXEL_TYPE_UNORM8)
+                {
+                    if (image.components == 1)
+                    {
+                        output_name += ".png";
+                         stbi_write_png(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, image.data[i][j].data, image.data[i][j].width * image.type * image.components);
+                    }
+                    else
+                    {
+                        output_name += ".bmp";
+                        stbi_write_bmp(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, image.data[i][j].data);
+                    }
+                }
+                else
+                {
+                    output_name += ".hdr";
+                    stbi_write_hdr(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, (float*)image.data[i][j].data);
+                }
+            }
+        }
+    }
+    else
+        printf("Failed to Load Image!\n");
+}
+
 int main(int argc, char * argv[])
 {
 //    if (argc == 1)
@@ -130,23 +178,41 @@ int main(int argc, char * argv[])
 //    }
 //    else
 //        printf("Failed to import Material!\n");
-    ast::Mesh loaded_mesh;
+//    ast::Mesh loaded_mesh;
+//
+//    if (ast::load_mesh("/Users/diharaw/Desktop/lpshead/ast/head.ast", loaded_mesh))
+//    {
+//        printf("Name                 : %s \n", loaded_mesh.name.c_str());
+//        printf("Mesh Count           : %i \n", (int)loaded_mesh.submeshes.size());
+//        printf("Vertex Count         : %i \n", (int)loaded_mesh.vertices.size());
+//        printf("Skeletal Vertex Count: %i \n", (int)loaded_mesh.skeletal_vertices.size());
+//        printf("Material Count       : %i \n", (int)loaded_mesh.materials.size());
+//
+//        for (const auto& mat : loaded_mesh.materials)
+//        {
+//            printf("\tName: %s \n", mat.name.c_str());
+//        }
+//    }
+//    else
+//        printf("Failed to Load Mesh!\n");
     
-    if (ast::load_mesh("/Users/diharaw/Desktop/lpshead/ast/head.ast", loaded_mesh))
-    {
-        printf("Name                 : %s \n", loaded_mesh.name.c_str());
-        printf("Mesh Count           : %i \n", (int)loaded_mesh.submeshes.size());
-        printf("Vertex Count         : %i \n", (int)loaded_mesh.vertices.size());
-        printf("Skeletal Vertex Count: %i \n", (int)loaded_mesh.skeletal_vertices.size());
-        printf("Material Count       : %i \n", (int)loaded_mesh.materials.size());
-        
-        for (const auto& mat : loaded_mesh.materials)
-        {
-            printf("\tName: %s \n", mat.name.c_str());
-        }
-    }
-    else
-        printf("Failed to Load Mesh!\n");
+//    ast::Image img;
+//
+//    if (ast::import_image(img, "/Users/diharaw/Desktop/lpshead/bump-lowRes.png"))
+//    {
+//        ast::ImageExportOptions opt;
+//
+//        opt.compression = ast::COMPRESSION_NONE;
+//        opt.normal_map = false;
+//        opt.output_mips = -1;
+//        opt.path = "/Users/diharaw/Desktop";
+//        opt.pixel_type = ast::PIXEL_TYPE_UNORM8;
+//
+//        ast::export_image(img, opt);
+//    }
+    
+    read_and_export_image("/Users/diharaw/Desktop/lpshead/textures/bump-lowRes.ast");
+    read_and_export_image("/Users/diharaw/Desktop/lpshead/textures/lambertian.ast");
     
 	return 0;
 }
