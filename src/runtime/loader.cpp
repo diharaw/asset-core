@@ -222,6 +222,36 @@ namespace ast
         else
             material.metallic_workflow = true;
         
+        if (j.find("fragment_shader_func") != j.end())
+        {
+            auto shader_lines = j["fragment_shader_func"];
+            std::string source = "";
+            
+            for (auto& line : shader_lines)
+            {
+                std::string str_line = line;
+                source += str_line;
+                source += "\n";
+            }
+            
+            material.fragment_shader_func = source;
+        }
+        
+        if (j.find("vertex_shader_func") != j.end())
+        {
+            auto shader_lines = j["vertex_shader_func"];
+            std::string source = "";
+            
+            for (auto& line : shader_lines)
+            {
+                std::string str_line = line;
+                source += str_line;
+                source += "\n";
+            }
+            
+            material.vertex_shader_func = source;
+        }
+        
         if (j.find("textures") != j.end())
         {
             auto json_textures = j["textures"];
