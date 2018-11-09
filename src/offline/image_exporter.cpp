@@ -88,7 +88,7 @@ namespace ast
         fh.version = AST_VERSION;
         fh.type = ASSET_IMAGE;
         
-        BINImageHeader imageHeader;
+        BINImageHeader image_header;
         
         int x = img.data[0][0].width;
         int y = img.data[0][0].height;
@@ -126,11 +126,11 @@ namespace ast
         if (mip_levels == 1)
             generate_mipmaps = false;
         
-        imageHeader.compression = options.compression;
-        imageHeader.channel_size = img.type;
-        imageHeader.num_channels = img.components;
-        imageHeader.num_array_slices = img.array_slices;
-        imageHeader.num_mip_slices = mip_levels;
+        image_header.compression = options.compression;
+        image_header.channel_size = img.type;
+        image_header.num_channels = img.components;
+        image_header.num_array_slices = img.array_slices;
+        image_header.num_mip_slices = mip_levels;
         
         std::string filename = img.name;
         std::string path = options.path;
@@ -150,95 +150,116 @@ namespace ast
         
         WRITE_AND_OFFSET(f, filename.c_str(), len, offset);
         
-        WRITE_AND_OFFSET(f, &imageHeader, sizeof(BINImageHeader), offset);
-     
-        NVTTOutputHandler handler;
-        nvtt::CompressionOptions compression_options;
-        nvtt::InputOptions input_options;
-        nvtt::OutputOptions output_options;
-        nvtt::Compressor compressor;
+        WRITE_AND_OFFSET(f, &image_header, sizeof(BINImageHeader), offset);
         
-        handler.stream = &f;
-        handler.offset = offset;
-        
-        compression_options.setFormat(kCompression[options.compression]);
-        
-        if (options.compression == COMPRESSION_NONE)
+        if (options.output_mips == 0 && options.compression == COMPRESSION_NONE)
         {
-            uint32_t pixel_size = 8 * options.pixel_type;
-            
-            if (img.type == PIXEL_TYPE_UNORM8)
-                compression_options.setPixelType(nvtt::PixelType_UnsignedNorm);
-            else if (img.type == PIXEL_TYPE_FLOAT16 || img.type == PIXEL_TYPE_FLOAT32)
-                compression_options.setPixelType(nvtt::PixelType_Float);
-            
-            if (img.components == 4)
-                compression_options.setPixelFormat(pixel_size, pixel_size, pixel_size, pixel_size);
-            else if (img.components == 3)
-                compression_options.setPixelFormat(pixel_size, pixel_size, pixel_size, 0);
-            else if (img.components == 2)
-                compression_options.setPixelFormat(pixel_size, pixel_size, 0, 0);
-            else if (img.components == 1)
-                compression_options.setPixelFormat(pixel_size, 0, 0, 0);
-        }
-        
-        if (options.pixel_type == PIXEL_TYPE_UNORM8)
-            input_options.setFormat(nvtt::InputFormat_BGRA_8UB);
-        else if (options.pixel_type == PIXEL_TYPE_FLOAT16)
-            input_options.setFormat(nvtt::InputFormat_RGBA_16F);
-        else if (options.pixel_type == PIXEL_TYPE_FLOAT32)
-            input_options.setFormat(nvtt::InputFormat_RGBA_32F);
-        
-        input_options.setNormalMap(options.normal_map);
-        input_options.setConvertToNormalMap(false);
-        input_options.setNormalizeMipmaps(false);
-        
-        output_options.setOutputHeader(false);
-        output_options.setOutputHandler(&handler);
-        
-        for (int i = 0; i < img.array_slices; i++)
-        {
-            Image temp_img;
-            Image* current_img = &temp_img;
-            
-            input_options.setTextureLayout(nvtt::TextureType_2D, img.data[i][0].width, img.data[i][0].height);
-            
-            // If generate_mipmaps is false or if the full mipchain has to be generated, set the data for the initial mip level.
-            if (!generate_mipmaps || (generate_mipmaps && options.output_mips == -1) || (generate_mipmaps && options.output_mips > 1))
+            for (uint32_t i = 0; i < img.array_slices; i++)
             {
-                if (img.components == 4)
-                    current_img = &img;
-                else
-                    img.to_rgba(temp_img, i, 0);
-                
-                input_options.setMipmapGeneration(generate_mipmaps);
-                input_options.setMipmapData(current_img->data[i][0].data, img.data[i][0].width, img.data[i][0].height);
+                for (uint32_t j = 0; j < img.mip_slices; j++)
+                {
+                    BINMipSliceHeader mip_header;
+                    
+                    mip_header.width = img.data[i][j].width;
+                    mip_header.height = img.data[i][j].height;
+                    mip_header.size = mip_header.width * mip_header.height * img.type * img.components;
+                    
+                    WRITE_AND_OFFSET(f, &mip_header, sizeof(BINMipSliceHeader), offset);
+                    
+                    WRITE_AND_OFFSET(f, img.data[i][j].data, mip_header.size, offset);
+                }
             }
-            else if (generate_mipmaps && img.mip_slices > 1)
+        }
+        else
+        {
+            NVTTOutputHandler handler;
+            nvtt::CompressionOptions compression_options;
+            nvtt::InputOptions input_options;
+            nvtt::OutputOptions output_options;
+            nvtt::Compressor compressor;
+            
+            handler.stream = &f;
+            handler.offset = offset;
+            
+            compression_options.setFormat(kCompression[options.compression]);
+            
+            if (options.compression == COMPRESSION_NONE)
             {
-                input_options.setMipmapGeneration(generate_mipmaps, img.mip_slices);
+                uint32_t pixel_size = 8 * options.pixel_type;
                 
-                for (int mip = 0; mip < img.mip_slices; mip++)
+                if (img.type == PIXEL_TYPE_UNORM8)
+                    compression_options.setPixelType(nvtt::PixelType_UnsignedNorm);
+                else if (img.type == PIXEL_TYPE_FLOAT16 || img.type == PIXEL_TYPE_FLOAT32)
+                    compression_options.setPixelType(nvtt::PixelType_Float);
+                
+                if (img.components == 4)
+                    compression_options.setPixelFormat(pixel_size, pixel_size, pixel_size, pixel_size);
+                else if (img.components == 3)
+                    compression_options.setPixelFormat(pixel_size, pixel_size, pixel_size, 0);
+                else if (img.components == 2)
+                    compression_options.setPixelFormat(pixel_size, pixel_size, 0, 0);
+                else if (img.components == 1)
+                    compression_options.setPixelFormat(pixel_size, 0, 0, 0);
+            }
+            
+            if (options.pixel_type == PIXEL_TYPE_UNORM8)
+                input_options.setFormat(nvtt::InputFormat_BGRA_8UB);
+            else if (options.pixel_type == PIXEL_TYPE_FLOAT16)
+                input_options.setFormat(nvtt::InputFormat_RGBA_16F);
+            else if (options.pixel_type == PIXEL_TYPE_FLOAT32)
+                input_options.setFormat(nvtt::InputFormat_RGBA_32F);
+            
+            input_options.setNormalMap(options.normal_map);
+            input_options.setConvertToNormalMap(false);
+            input_options.setNormalizeMipmaps(false);
+            
+            output_options.setOutputHeader(false);
+            output_options.setOutputHandler(&handler);
+            
+            for (int i = 0; i < img.array_slices; i++)
+            {
+                Image temp_img;
+                Image* current_img = &temp_img;
+                
+                input_options.setTextureLayout(nvtt::TextureType_2D, img.data[i][0].width, img.data[i][0].height);
+                
+                // If generate_mipmaps is false or if the full mipchain has to be generated, set the data for the initial mip level.
+                if (!generate_mipmaps || (generate_mipmaps && options.output_mips == -1) || (generate_mipmaps && options.output_mips > 1))
                 {
                     if (img.components == 4)
                         current_img = &img;
                     else
                         img.to_rgba(temp_img, i, 0);
                     
-                    input_options.setMipmapData(current_img->data[i][mip].data, img.data[i][mip].width, img.data[i][mip].height, 1, 0, mip);
+                    input_options.setMipmapGeneration(generate_mipmaps);
+                    input_options.setMipmapData(current_img->data[i][0].data, img.data[i][0].width, img.data[i][0].height);
                 }
-            }
-            else
-            {
+                else if (generate_mipmaps && img.mip_slices > 1)
+                {
+                    input_options.setMipmapGeneration(generate_mipmaps, img.mip_slices);
+                    
+                    for (int mip = 0; mip < img.mip_slices; mip++)
+                    {
+                        if (img.components == 4)
+                            current_img = &img;
+                        else
+                            img.to_rgba(temp_img, i, 0);
+                        
+                        input_options.setMipmapData(current_img->data[i][mip].data, img.data[i][mip].width, img.data[i][mip].height, 1, 0, mip);
+                    }
+                }
+                else
+                {
+                    temp_img.deallocate();
+                    std::cout << "ERROR::Image must contain at least one miplevel" << std::endl;
+                    return false;
+                }
+                
+                handler.mip_levels = 0;
+                compressor.process(input_options, compression_options, output_options);
+                
                 temp_img.deallocate();
-                std::cout << "ERROR::Image must contain at least one miplevel" << std::endl;
-                return false;
             }
-            
-            handler.mip_levels = 0;
-            compressor.process(input_options, compression_options, output_options);
-            
-            temp_img.deallocate();
         }
         
         f.close();
