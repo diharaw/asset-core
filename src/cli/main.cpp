@@ -198,20 +198,20 @@ int main(int argc, char * argv[])
     
     ast::Image img;
 
-    if (ast::import_image(img, "/Users/diharaw/Desktop/lpshead/bump-lowRes.png"))
+    if (ast::import_image(img, "/Users/diharaw/Desktop/sun_temple/Textures/M_Arch_Inst_0_Normal.dds"))
     {
         ast::ImageExportOptions opt;
 
         opt.compression = ast::COMPRESSION_NONE;
         opt.normal_map = false;
         opt.output_mips = -1;
-        opt.path = "/Users/diharaw/Desktop";
+        opt.path = "/Users/diharaw/Desktop/TEST";
         opt.pixel_type = ast::PIXEL_TYPE_UNORM8;
 
         ast::export_image(img, opt);
     }
     
-    read_and_export_image("/Users/diharaw/Desktop/bump-lowRes.ast");
+    read_and_export_image("/Users/diharaw/Desktop/TEST/M_Arch_Inst_0_Normal.ast");
     
 	return 0;
 }
