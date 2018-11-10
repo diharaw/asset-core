@@ -196,23 +196,22 @@ int main(int argc, char * argv[])
 //    else
 //        printf("Failed to Load Mesh!\n");
     
-//    ast::Image img;
-//
-//    if (ast::import_image(img, "/Users/diharaw/Desktop/lpshead/bump-lowRes.png"))
-//    {
-//        ast::ImageExportOptions opt;
-//
-//        opt.compression = ast::COMPRESSION_NONE;
-//        opt.normal_map = false;
-//        opt.output_mips = -1;
-//        opt.path = "/Users/diharaw/Desktop";
-//        opt.pixel_type = ast::PIXEL_TYPE_UNORM8;
-//
-//        ast::export_image(img, opt);
-//    }
+    ast::Image img;
+
+    if (ast::import_image(img, "/Users/diharaw/Desktop/lpshead/bump-lowRes.png"))
+    {
+        ast::ImageExportOptions opt;
+
+        opt.compression = ast::COMPRESSION_NONE;
+        opt.normal_map = false;
+        opt.output_mips = -1;
+        opt.path = "/Users/diharaw/Desktop";
+        opt.pixel_type = ast::PIXEL_TYPE_UNORM8;
+
+        ast::export_image(img, opt);
+    }
     
-    read_and_export_image("/Users/diharaw/Desktop/lpshead/textures/bump-lowRes.ast");
-    read_and_export_image("/Users/diharaw/Desktop/lpshead/textures/lambertian.ast");
+    read_and_export_image("/Users/diharaw/Desktop/bump-lowRes.ast");
     
 	return 0;
 }

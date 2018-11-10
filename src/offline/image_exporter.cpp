@@ -199,7 +199,7 @@ namespace ast
                 else if (img.components == 2)
                     compression_options.setPixelFormat(pixel_size, pixel_size, 0, 0);
                 else if (img.components == 1)
-                    compression_options.setPixelFormat(pixel_size, 0, 0, 0);
+                    compression_options.setPixelFormat(0, 0, pixel_size, 0);
             }
             
             if (options.pixel_type == PIXEL_TYPE_UNORM8)
