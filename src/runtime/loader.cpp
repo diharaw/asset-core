@@ -390,4 +390,14 @@ namespace ast
         
         return true;
     }
+    
+    bool load_scene(const std::string& path, Scene& scene)
+    {
+        std::ifstream i(path);
+        
+        nlohmann::json j;
+        i >> j;
+        
+        return true;
+    }
 }
