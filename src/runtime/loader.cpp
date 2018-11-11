@@ -6,6 +6,24 @@
 
 #define READ_AND_OFFSET(stream, dest, size, offset) stream.read((char*)dest, size); offset += size; stream.seekg(offset);
 
+#define JSON_PARSE_VECTOR(src, dst, name, vec_size)    \
+if (src.find(#name) != src.end())                     \
+{                                                      \
+auto vec = src[#name];                            \
+int i = 0;                                         \
+\
+if (vec.size() == vec_size)                        \
+{                                                  \
+for (auto& value : vec)                        \
+{                                              \
+dst[i] = value;                            \
+i++;                                        \
+}                                              \
+}                                                  \
+}
+
+
+
 namespace ast
 {
     bool load_image(const std::string& path, Image& image)
@@ -313,7 +331,10 @@ namespace ast
                                 continue;
                             
                             for (auto& value : vec)
+                            {
                                 property.vec4_value[i] = value;
+                                i++;
+                            }
                             
                             found = true;
                         }
@@ -331,7 +352,10 @@ namespace ast
                                 continue;
                             
                             for (auto& value : vec)
+                            {
                                 property.vec4_value[i] = value;
+                                i++;
+                            }
                             
                             found = true;
                         }
@@ -367,7 +391,10 @@ namespace ast
                                 continue;
                             
                             for (auto& value : vec)
+                            {
                                 property.vec3_value[i] = value;
+                                i++;
+                            }
                             
                             found = true;
                         }
@@ -397,6 +424,129 @@ namespace ast
         
         nlohmann::json j;
         i >> j;
+        
+        if (j.find("name") != j.end())
+            scene.name = j["name"];
+        
+        if (j.find("camera") != j.end())
+        {
+            auto camera = j["camera"];
+            
+            if (camera.find("type") != camera.end())
+            {
+                std::string type = camera["type"];
+                
+                for (int i = 0; i < 2; i++)
+                {
+                    if (kCameraTypes[i] == type)
+                    {
+                        scene.camera.type = (CameraType)i;
+                        break;
+                    }
+                }
+            }
+            
+            if (camera.find("rotation_speed") != camera.end())
+                scene.camera.rotation_speed = camera["rotation_speed"];
+            
+            if (scene.camera.type == CAMERA_ORBIT)
+            {
+                JSON_PARSE_VECTOR(camera, scene.camera.orbit_center, orbit_center, 3);
+                
+                if (camera.find("orbit_boom_length") != camera.end())
+                    scene.camera.orbit_boom_length = camera["orbit_boom_length"];
+            }
+            else if (scene.camera.type == CAMERA_FLYTHROUGH)
+            {
+                JSON_PARSE_VECTOR(camera, scene.camera.position, position, 3);
+                JSON_PARSE_VECTOR(camera, scene.camera.rotation, rotation, 3);
+                
+                if (camera.find("movement_speed") != camera.end())
+                    scene.camera.movement_speed = camera["movement_speed"];
+            }
+        }
+        
+        if (j.find("skybox") != j.end())
+        {
+            auto skybox = j["skybox"];
+            
+            if (skybox.find("type") != skybox.end())
+            {
+                std::string type = skybox["type"];
+                
+                for (int i = 0; i < 2; i++)
+                {
+                    if (kSkyboxType[i] == type)
+                    {
+                        scene.skybox.type = (SkyboxType)i;
+                        break;
+                    }
+                }
+            }
+            
+            if (scene.skybox.type == SKYBOX_STATIC)
+            {
+                if (skybox.find("environment_map") != skybox.end())
+                    scene.skybox.environment_map = skybox["environment_map"];
+                
+                if (skybox.find("diffuse_irradiance") != skybox.end())
+                    scene.skybox.diffuse_irradiance = skybox["diffuse_irradiance"];
+                
+                if (skybox.find("specular_irradiance") != skybox.end())
+                    scene.skybox.specular_irradiance = skybox["specular_irradiance"];
+            }
+        }
+        
+        if (j.find("reflection_probes") != j.end())
+        {
+            auto reflection_probes = j["reflection_probes"];
+            
+            for (auto probe : reflection_probes)
+            {
+                ReflectionProbe new_probe;
+                
+                if (probe.find("diffuse_irradiance") != probe.end())
+                    new_probe.diffuse_irradiance = probe["diffuse_irradiance"];
+                
+                if (probe.find("specular_irradiance") != probe.end())
+                    new_probe.specular_irradiance = probe["specular_irradiance"];
+                
+                JSON_PARSE_VECTOR(probe, new_probe.position, position, 3);
+                JSON_PARSE_VECTOR(probe, new_probe.extents, extents, 3);
+                
+                scene.reflection_probes.push_back(new_probe);
+            }
+        }
+        
+        if (j.find("entities") != j.end())
+        {
+            auto entities = j["entities"];
+            
+            for (auto entity : entities)
+            {
+                Entity new_entity;
+                
+                if (entity.find("name") != entity.end())
+                    new_entity.name = entity["name"];
+                
+                if (entity.find("mesh") != entity.end())
+                    new_entity.mesh = entity["mesh"];
+                
+                if (entity.find("material_override") != entity.end())
+                {
+                    auto material_override = entity["material_override"];
+                    
+                    if (!material_override.is_null())
+                        new_entity.material_override = material_override;
+                }
+                
+                JSON_PARSE_VECTOR(entity, new_entity.position, position, 3);
+                JSON_PARSE_VECTOR(entity, new_entity.rotation, rotation, 3);
+                JSON_PARSE_VECTOR(entity, new_entity.scale, scale, 3);
+                
+                scene.entities.push_back(new_entity);
+            }
+        }
         
         return true;
     }

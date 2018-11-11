@@ -6,16 +6,6 @@
 
 namespace ast
 {
-    const std::string kCameraTypes[] = {
-        "CAMERA_FLYTHROUGH",
-        "CAMERA_ORBIT"
-    };
-    
-    const std::string kSkyboxType[] = {
-        "SKYBOX_PROCEDURAL",
-        "SKYBOX_STATIC"
-    };
-    
     bool export_scene(const Scene& scene, const std::string& path)
     {
         nlohmann::json doc;
@@ -71,6 +61,8 @@ namespace ast
             skybox["diffuse_irradiance"] = scene.skybox.diffuse_irradiance;
             skybox["specular_irradiance"] = scene.skybox.specular_irradiance;
         }
+        
+        doc["skybox"] = skybox;
         
         // Reflection Probes
         auto reflection_probes = doc.array();
@@ -136,6 +128,8 @@ namespace ast
             scale.push_back(entity.scale[2]);
             
             json_entity["scale"] = scale;
+            
+            entity_array.push_back(json_entity);
         }
         
         doc["entities"] = entity_array;

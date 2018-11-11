@@ -6,6 +6,18 @@
 
 namespace ast
 {
+    static const std::string kCameraTypes[] =
+    {
+        "CAMERA_FLYTHROUGH",
+        "CAMERA_ORBIT"
+    };
+    
+    static const std::string kSkyboxType[] =
+    {
+        "SKYBOX_PROCEDURAL",
+        "SKYBOX_STATIC"
+    };
+    
     enum CameraType
     {
         CAMERA_FLYTHROUGH,
