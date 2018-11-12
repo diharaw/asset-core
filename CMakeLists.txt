@@ -20,6 +20,15 @@ set(CMFT_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/cmft/include")
 set(STB_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/stb")
 set(AST_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include")
 
+set(ASSET_CORE_INCLUDES "${ASSIMP_INCLUDE_DIRS}"
+						"${JSON_INCLUDE_DIRS}"
+						"${GLM_INCLUDE_DIRS}"
+						"${AST_INCLUDE_DIRS}"
+						"${NVTT_INCLUDE_DIRS}"
+						"${CMFT_INCLUDE_DIRS}"
+						"${STB_INCLUDE_DIRS}" 
+						PARENT_SCOPE)
+
 include_directories("${ASSIMP_INCLUDE_DIRS}"
 					"${JSON_INCLUDE_DIRS}"
 					"${GLM_INCLUDE_DIRS}"
