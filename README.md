@@ -1,6 +1,6 @@
 [![License: MIT](https://img.shields.io/packagist/l/doctrine/orm.svg)](https://opensource.org/licenses/MIT)
 
-# AssetConverter
+# AssetCore
 A command line tool that converts game assets into a simple binary format for fast loading.
 
 ## Dependencies

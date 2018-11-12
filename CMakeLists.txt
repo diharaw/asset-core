@@ -3,6 +3,11 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project("AssetCore")
 
+# Options
+set(BUILD_ASSET_CORE_RUNTIME true CACHE BOOL "Build Runtime Asset Core Library")
+set(BUILD_ASSET_CORE_OFFLINE true CACHE BOOL "Build Offline Asset Core Library")
+set(BUILD_ASSET_CORE_CLI true CACHE BOOL "Build Asset Core CLI")
+
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
@@ -23,10 +28,20 @@ include_directories("${ASSIMP_INCLUDE_DIRS}"
 					"${CMFT_INCLUDE_DIRS}"
 					"${STB_INCLUDE_DIRS}")
 
-add_subdirectory("${CMAKE_SOURCE_DIR}/external/cmft")
-add_subdirectory("${CMAKE_SOURCE_DIR}/external/nvidia-texture-tools")
-add_subdirectory("${CMAKE_SOURCE_DIR}/external/assimp")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/common")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/offline")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/runtime")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/cli")
+
+if (BUILD_ASSET_CORE_OFFLINE)
+	add_subdirectory("${CMAKE_SOURCE_DIR}/external/cmft")
+	add_subdirectory("${CMAKE_SOURCE_DIR}/external/nvidia-texture-tools")
+	add_subdirectory("${CMAKE_SOURCE_DIR}/external/assimp")
+
+	add_subdirectory("${CMAKE_SOURCE_DIR}/src/offline")
+endif()
+
+if (BUILD_ASSET_CORE_RUNTIME)
+	add_subdirectory("${CMAKE_SOURCE_DIR}/src/runtime")
+endif()
+
+if (BUILD_ASSET_CORE_CLI)
+	add_subdirectory("${CMAKE_SOURCE_DIR}/src/cli")
+endif()
