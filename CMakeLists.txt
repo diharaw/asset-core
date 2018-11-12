@@ -12,13 +12,13 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
-set(ASSIMP_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/external/assimp/include" "${CMAKE_CURRENT_BINARY_DIR}/external/assimp/include")
-set(JSON_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/external/json/single_include/nlohmann")
-set(GLM_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/external/glm/glm")
-set(NVTT_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/external/nvidia-texture-tools/src" "${CMAKE_SOURCE_DIR}/external/nvidia-texture-tools/extern/poshlib" "${CMAKE_CURRENT_BINARY_DIR}/external/nvidia-texture-tools/src")
-set(CMFT_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/external/cmft/include")
-set(STB_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/external/stb")
-set(AST_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/include")
+set(ASSIMP_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/assimp/include" "${CMAKE_CURRENT_BINARY_DIR}/external/assimp/include")
+set(JSON_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/json/single_include/nlohmann")
+set(GLM_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/glm/glm")
+set(NVTT_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/nvidia-texture-tools/src" "${PROJECT_SOURCE_DIR}/external/nvidia-texture-tools/extern/poshlib" "${CMAKE_CURRENT_BINARY_DIR}/external/nvidia-texture-tools/src")
+set(CMFT_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/cmft/include")
+set(STB_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/external/stb")
+set(AST_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include")
 
 include_directories("${ASSIMP_INCLUDE_DIRS}"
 					"${JSON_INCLUDE_DIRS}"
@@ -28,20 +28,20 @@ include_directories("${ASSIMP_INCLUDE_DIRS}"
 					"${CMFT_INCLUDE_DIRS}"
 					"${STB_INCLUDE_DIRS}")
 
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/common")
+add_subdirectory("${PROJECT_SOURCE_DIR}/src/common")
 
 if (BUILD_ASSET_CORE_OFFLINE)
-	add_subdirectory("${CMAKE_SOURCE_DIR}/external/cmft")
-	add_subdirectory("${CMAKE_SOURCE_DIR}/external/nvidia-texture-tools")
-	add_subdirectory("${CMAKE_SOURCE_DIR}/external/assimp")
+	add_subdirectory("${PROJECT_SOURCE_DIR}/external/cmft")
+	add_subdirectory("${PROJECT_SOURCE_DIR}/external/nvidia-texture-tools")
+	add_subdirectory("${PROJECT_SOURCE_DIR}/external/assimp")
 
-	add_subdirectory("${CMAKE_SOURCE_DIR}/src/offline")
+	add_subdirectory("${PROJECT_SOURCE_DIR}/src/offline")
 endif()
 
 if (BUILD_ASSET_CORE_RUNTIME)
-	add_subdirectory("${CMAKE_SOURCE_DIR}/src/runtime")
+	add_subdirectory("${PROJECT_SOURCE_DIR}/src/runtime")
 endif()
 
 if (BUILD_ASSET_CORE_CLI)
-	add_subdirectory("${CMAKE_SOURCE_DIR}/src/cli")
+	add_subdirectory("${PROJECT_SOURCE_DIR}/src/cli")
 endif()
