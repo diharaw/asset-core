@@ -3,8 +3,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -stdlib=libc++")
 
-file(GLOB_RECURSE AST_OFFLINE_SOURCE ${CMAKE_SOURCE_DIR}/src/offline/*.cpp
-									 ${CMAKE_SOURCE_DIR}/include/offline/*.h)
+file(GLOB_RECURSE AST_OFFLINE_SOURCE ${PROJECT_SOURCE_DIR}/src/offline/*.cpp
+									 ${PROJECT_SOURCE_DIR}/include/offline/*.h)
 
 add_library(AssetCoreOffline ${AST_OFFLINE_SOURCE})
 
