@@ -67,6 +67,7 @@ namespace ast
                 image.data[i][j].width = mip_header.width;
                 image.data[i][j].height = mip_header.height;
                 image.data[i][j].data = malloc(mip_header.size);
+                image.data[i][j].size = mip_header.size;
                 
                 READ_AND_OFFSET(f, image.data[i][j].data, mip_header.size, offset);
             }

@@ -46,40 +46,6 @@ namespace ast
         int size;
     };
     
-#define TO_BGRA(type, imgData)                                              \
-Pixel<type, 4>* src = (Pixel<type, 4>*)imgData.data;                        \
-                                                                            \
-for (int y = 0; y < imgData.height; y++)                                    \
-{                                                                           \
-    for (int x = 0; x < imgData.width; x++)                                 \
-    {                                                                       \
-        type red = src[y * imgData.width + x].c[2];                         \
-                                                                            \
-        src[y * imgData.width + x].c[0] = src[y * imgData.width + x].c[2];  \
-        src[y * imgData.width + x].c[2] = red;                              \
-    }                                                                       \
-}
-    
-#define TO_RGBA(type, num_components, dst_data)                                     \
-Pixel<type, 4>* dst = (Pixel<type, 4>*) dst_data;                                   \
-Pixel<type, num_components>* src = (Pixel<type, num_components>*)imgData.data;      \
-                                                                                    \
-    for (int y = 0; y < imgData.height; y++)                                        \
-    {                                                                               \
-        for (int x = 0; x < imgData.width; x++)                                     \
-        {                                                                           \
-            dst[y * imgData.width + x].c[0] = 0;                                    \
-            dst[y * imgData.width + x].c[1] = 0;                                    \
-            dst[y * imgData.width + x].c[2] = 0;                                    \
-            dst[y * imgData.width + x].c[3] = std::numeric_limits<type>::max();     \
-                                                                                    \
-            for (int c = 0; c < num_components; c++)                                \
-            {                                                                       \
-                dst[y * imgData.width + x].c[c] = src[y * imgData.width + x].c[c];  \
-            }                                                                       \
-        }                                                                           \
-    }
-    
 	struct Image
 	{
 		template<typename T, size_t N>
@@ -93,6 +59,7 @@ Pixel<type, num_components>* src = (Pixel<type, num_components>*)imgData.data;  
 			void* data;
 			int width;
 			int height;
+            size_t size;
 		};
         
         int components;

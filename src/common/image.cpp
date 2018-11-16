@@ -2,6 +2,41 @@
 
 namespace ast
 {
+#define TO_BGRA(type, imgData)                                              \
+Pixel<type, 4>* src = (Pixel<type, 4>*)imgData.data;                        \
+\
+for (int y = 0; y < imgData.height; y++)                                    \
+{                                                                           \
+for (int x = 0; x < imgData.width; x++)                                 \
+{                                                                       \
+type red = src[y * imgData.width + x].c[2];                         \
+\
+src[y * imgData.width + x].c[0] = src[y * imgData.width + x].c[2];  \
+src[y * imgData.width + x].c[2] = red;                              \
+}                                                                       \
+}
+    
+#define TO_RGBA(type, num_components, dst_data)                                     \
+Pixel<type, 4>* dst = (Pixel<type, 4>*) dst_data;                                   \
+Pixel<type, num_components>* src = (Pixel<type, num_components>*)imgData.data;      \
+\
+for (int y = 0; y < imgData.height; y++)                                        \
+{                                                                               \
+for (int x = 0; x < imgData.width; x++)                                     \
+{                                                                           \
+dst[y * imgData.width + x].c[0] = 0;                                    \
+dst[y * imgData.width + x].c[1] = 0;                                    \
+dst[y * imgData.width + x].c[2] = 0;                                    \
+dst[y * imgData.width + x].c[3] = std::numeric_limits<type>::max();     \
+\
+for (int c = 0; c < num_components; c++)                                \
+{                                                                       \
+dst[y * imgData.width + x].c[c] = src[y * imgData.width + x].c[c];  \
+}                                                                       \
+}                                                                           \
+}
+    
+
     Image::Image(const PixelType& pixel_type) : mip_slices(0), array_slices(0), type(pixel_type), compression(COMPRESSION_NONE)
     {
         for (int i = 0; i < 16; i++)
@@ -46,6 +81,7 @@ namespace ast
                 data[i][j].width = w;
                 data[i][j].height = h;
                 data[i][j].data = malloc(w * h * components * size_t(type));
+                data[i][j].size = w * h * components * size_t(type);
                 
                 w /= 2;
                 h /= 2;
@@ -154,6 +190,7 @@ namespace ast
         img.data[array_slice][mip_slice].data = new_data;
         img.data[array_slice][mip_slice].width = data[array_slice][mip_slice].width;
         img.data[array_slice][mip_slice].height = data[array_slice][mip_slice].height;
+        img.data[array_slice][mip_slice].size = data[array_slice][mip_slice].size;
         
         return true;
     }
