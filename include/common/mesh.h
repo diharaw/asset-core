@@ -42,6 +42,7 @@ namespace ast
         std::vector<uint32_t>       indices;
         std::vector<SubMesh>        submeshes;
         std::vector<Material>       materials;
+        std::vector<std::string>    material_paths;
         glm::vec3                   max_extents;
         glm::vec3                   min_extents;
     };

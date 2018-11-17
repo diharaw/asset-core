@@ -126,6 +126,7 @@ namespace ast
         {
             bin_materials.resize(mesh_header.material_count);
             mesh.materials.resize(mesh_header.material_count);
+            mesh.material_paths.resize(mesh_header.material_count);
             READ_AND_OFFSET(f, (char*)&bin_materials[0], sizeof(BINMeshMaterialJson) * bin_materials.size(), offset);
         }
         
@@ -139,6 +140,8 @@ namespace ast
                 material_path = relative_path;
             else
                 material_path = parent_path + relative_path;
+            
+            mesh.material_paths[i] = relative_path;
             
             if (!load_material(material_path, mesh.materials[i]))
             {
