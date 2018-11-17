@@ -141,7 +141,7 @@ namespace ast
             else
                 material_path = parent_path + relative_path;
             
-            mesh.material_paths[i] = relative_path;
+            mesh.material_paths[i] = material_path;
             
             if (!load_material(material_path, mesh.materials[i]))
             {
