@@ -67,10 +67,15 @@ namespace ast
     
     struct ReflectionProbe
     {
-        std::string diffuse_irradiance;
-        std::string specular_irradiance;
+        std::string path;
         glm::vec3   position;
         glm::vec3   extents;
+    };
+    
+    struct GIProbe
+    {
+        std::string path;
+        glm::vec3   position;
     };
     
     struct Scene
@@ -79,6 +84,7 @@ namespace ast
         Camera                       camera;
         Skybox                       skybox;
         std::vector<ReflectionProbe> reflection_probes;
+        std::vector<GIProbe>         gi_probes;
         std::vector<Entity>          entities;
     };
 }

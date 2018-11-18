@@ -71,9 +71,8 @@ namespace ast
         {
             nlohmann::json json_probe;
             
-            json_probe["diffuse_irradiance"] = probe.diffuse_irradiance;
-            json_probe["specular_irradiance"] = probe.specular_irradiance;
-            
+            json_probe["path"] = probe.path;
+    
             auto position = doc.array();
             position.push_back(probe.position[0]);
             position.push_back(probe.position[1]);
@@ -92,6 +91,27 @@ namespace ast
         }
         
         doc["reflection_probes"] = reflection_probes;
+        
+        // GI Probes
+        auto gi_probes = doc.array();
+        
+        for (const auto& probe : scene.gi_probes)
+        {
+            nlohmann::json json_probe;
+            
+            json_probe["path"] = probe.path;
+            
+            auto position = doc.array();
+            position.push_back(probe.position[0]);
+            position.push_back(probe.position[1]);
+            position.push_back(probe.position[2]);
+            
+            json_probe["position"] = position;
+            
+            gi_probes.push_back(json_probe);
+        }
+        
+        doc["gi_probes"] = gi_probes;
         
         // Entity
         auto entity_array = doc.array();

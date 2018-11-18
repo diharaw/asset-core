@@ -509,16 +509,30 @@ namespace ast
             {
                 ReflectionProbe new_probe;
                 
-                if (probe.find("diffuse_irradiance") != probe.end())
-                    new_probe.diffuse_irradiance = probe["diffuse_irradiance"];
-                
-                if (probe.find("specular_irradiance") != probe.end())
-                    new_probe.specular_irradiance = probe["specular_irradiance"];
-                
+                if (probe.find("path") != probe.end())
+                    new_probe.path = probe["path"];
+               
                 JSON_PARSE_VECTOR(probe, new_probe.position, position, 3);
                 JSON_PARSE_VECTOR(probe, new_probe.extents, extents, 3);
                 
                 scene.reflection_probes.push_back(new_probe);
+            }
+        }
+        
+        if (j.find("gi_probes") != j.end())
+        {
+            auto gi_probes = j["gi_probes"];
+            
+            for (auto probe : gi_probes)
+            {
+                GIProbe new_probe;
+                
+                if (probe.find("path") != probe.end())
+                    new_probe.path = probe["path"];
+                
+                JSON_PARSE_VECTOR(probe, new_probe.position, position, 3);
+                
+                scene.gi_probes.push_back(new_probe);
             }
         }
         
