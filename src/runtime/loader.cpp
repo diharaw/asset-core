@@ -288,7 +288,16 @@ namespace ast
                     texture.srgb = true;
                 
                 if (json_texture.find("path") != json_texture.end())
-                    texture.path = json_texture["path"];
+                {
+                    std::string relative_path = json_texture["path"];
+                    std::string parent_path = filesystem::get_file_path(path);
+                    std::string material_path = "";
+                    
+                    if (parent_path.length() == 0)
+                        texture.path = relative_path;
+                    else
+                        texture.path = parent_path + relative_path;
+                }
                 
                 if (json_texture.find("type") != json_texture.end())
                 {
