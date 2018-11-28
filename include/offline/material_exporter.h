@@ -12,6 +12,10 @@ namespace ast
         std::string relative_texture_path = "";
         std::string dst_texture_path = "";
         bool use_compression = true;
+        std::string vertex_func_id;
+        std::vector<std::string> vertex_func;
+        std::string fragment_func_id;
+        std::vector<std::string> fragment_func;
     };
     
     extern bool export_material(const Material& desc, const MaterialExportOptions& options);

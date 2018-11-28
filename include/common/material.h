@@ -135,8 +135,10 @@ namespace ast
         std::string                   name;
         bool                          metallic_workflow;
         bool                          double_sided;
-        std::string                   vertex_shader_func;
-        std::string                   fragment_shader_func;
+        std::string                   vertex_shader_func_id;
+        std::string                   vertex_shader_func_src;
+        std::string                   fragment_shader_func_id;
+        std::string                   fragment_shader_func_src;
         BlendMode                     blend_mode;
         DisplacementType              displacement_type;
         ShadingModel                  shading_model;

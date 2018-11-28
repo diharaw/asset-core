@@ -90,8 +90,10 @@ namespace ast
                     mat.lighting_model = LIGHTING_MODEL_LIT;
                     mat.displacement_type = DISPLACEMENT_NONE;
                     mat.shading_model = SHADING_MODEL_STANDARD;
-                    mat.fragment_shader_func = "";
-                    mat.vertex_shader_func = "";
+                    mat.fragment_shader_func_id = "";
+                    mat.fragment_shader_func_src = "";
+                    mat.vertex_shader_func_id = "";
+                    mat.vertex_shader_func_src = "";
                     
                     // Try to find Diffuse texture
                     std::string albedo_path = get_texture_path(temp_material, aiTextureType_DIFFUSE);

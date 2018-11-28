@@ -246,32 +246,46 @@ namespace ast
         
         if (j.find("fragment_shader_func") != j.end())
         {
-            auto shader_lines = j["fragment_shader_func"];
-            std::string source = "";
+            auto shader_func_obj = j["fragment_shader_func"];
             
-            for (auto& line : shader_lines)
+            if (shader_func_obj.find("id") != shader_func_obj.end() && shader_func_obj.find("source") != shader_func_obj.end())
             {
-                std::string str_line = line;
-                source += str_line;
-                source += "\n";
+                auto shader_id = shader_func_obj["id"];
+                auto shader_lines = shader_func_obj["source"];
+                std::string source = "";
+                
+                for (auto& line : shader_lines)
+                {
+                    std::string str_line = line;
+                    source += str_line;
+                    source += "\n";
+                }
+                
+                material.fragment_shader_func_id = shader_id;
+                material.fragment_shader_func_src = source;
             }
-            
-            material.fragment_shader_func = source;
         }
         
         if (j.find("vertex_shader_func") != j.end())
         {
-            auto shader_lines = j["vertex_shader_func"];
-            std::string source = "";
+            auto shader_func_obj = j["vertex_shader_func"];
             
-            for (auto& line : shader_lines)
+            if (shader_func_obj.find("id") != shader_func_obj.end() && shader_func_obj.find("source") != shader_func_obj.end())
             {
-                std::string str_line = line;
-                source += str_line;
-                source += "\n";
+                auto shader_id = shader_func_obj["id"];
+                auto shader_lines = shader_func_obj["source"];
+                std::string source = "";
+                
+                for (auto& line : shader_lines)
+                {
+                    std::string str_line = line;
+                    source += str_line;
+                    source += "\n";
+                }
+                
+                material.vertex_shader_func_id = shader_id;
+                material.vertex_shader_func_src = source;
             }
-            
-            material.vertex_shader_func = source;
         }
         
         if (j.find("textures") != j.end())
