@@ -48,6 +48,10 @@ namespace ast
         if (scene)
         {
             mesh.name = filesystem::get_filename(file);
+
+			mesh.name.erase(std::remove(mesh.name.begin(), mesh.name.end(), ':'), mesh.name.end());
+			mesh.name.erase(std::remove(mesh.name.begin(), mesh.name.end(), '.'), mesh.name.end());
+
             mesh.submeshes.resize(scene->mNumMeshes);
             
             uint32_t vertex_count = 0;
@@ -72,9 +76,12 @@ namespace ast
                     
                     mat.name = scene->mMeshes[i]->mName.C_Str();
                     
+					mat.name.erase(std::remove(mat.name.begin(), mat.name.end(), ':'), mat.name.end());
+					mat.name.erase(std::remove(mat.name.begin(), mat.name.end(), '.'), mat.name.end());
+
                     if (mat.name.empty())
                     {
-                        mat.name = mesh.name;
+                        mat.name =  mesh.name;
                         mat.name += "_unnamed_material_";
                         mat.name += std::to_string(unnamed_mats++);
                     }

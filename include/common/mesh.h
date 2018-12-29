@@ -60,11 +60,11 @@ namespace ast
         uint32_t   index_count;
         glm::vec3  max_extents;
         glm::vec3  min_extents;
-        char       name[50];
+        char       name[150];
     };
     
     struct BINMeshMaterialJson
     {
-        char material[50];
+        char material[150];
     };
 }

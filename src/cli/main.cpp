@@ -140,7 +140,7 @@ int main(int argc, char * argv[])
 //    else
 //        printf("Failed to import Texture!\n");
     
-    std::string input = "/Users/diharaw/Desktop/lpshead/head.OBJ";
+    std::string input = "F:/Game Development/Source/mesh/SunTemple/SunTemple.fbx";
 
     ast::Mesh mesh;
 
@@ -148,19 +148,19 @@ int main(int argc, char * argv[])
     {
         ast::MeshExportOption options;
 
-        options.path = "/Users/diharaw/Desktop/lpshead/ast";
-        options.texture_source_path = "/Users/diharaw/Desktop/lpshead";
-        options.relative_material_path = "../materials";
-        options.relative_texture_path = "../textures";
-        options.use_compression = false;
+        options.path = "C:/Users/Dihara/Desktop/Compressed/Assets/mesh";
+        options.texture_source_path = "F:/Game Development/Source/mesh/SunTemple";
+        options.relative_material_path = "../material";
+        options.relative_texture_path = "../texture";
+        options.use_compression = true;
 
         if (!ast::export_mesh(mesh, options))
-            printf("Failed to output Material!\n");
+            printf("Failed to output Mesh!\n");
         else
         {
             ast::Mesh loaded_mesh;
 
-            if (ast::load_mesh("/Users/diharaw/Desktop/lpshead/ast/head.ast", loaded_mesh))
+            if (ast::load_mesh("C:/Users/Dihara/Desktop/Compressed/Assets/mesh/SunTemple.ast", loaded_mesh))
             {
                 printf("Name                 : %s \n", loaded_mesh.name.c_str());
                 printf("Mesh Count           : %i \n", (int)loaded_mesh.submeshes.size());
@@ -178,7 +178,7 @@ int main(int argc, char * argv[])
         }
     }
     else
-        printf("Failed to import Material!\n");
+        printf("Failed to import Mesh!\n");
 
 //    ast::Mesh loaded_mesh;
 //
@@ -215,5 +215,7 @@ int main(int argc, char * argv[])
 
     //read_and_export_image("/Users/diharaw/Desktop/TEST/M_Arch_Inst_0_Normal.ast");
     
+	std::cin.get();
+
     return 0;
 }
