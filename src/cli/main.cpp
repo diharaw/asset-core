@@ -140,45 +140,46 @@ int main(int argc, char * argv[])
 //    else
 //        printf("Failed to import Texture!\n");
     
-//    std::string input = "/Users/diharaw/Desktop/lpshead/head.OBJ";
-//
-//    ast::Mesh mesh;
-//
-//    if (ast::import_mesh(input, mesh))
-//    {
-//        ast::MeshExportOption options;
-//
-//        options.path = "/Users/diharaw/Desktop/lpshead/ast";
-//        options.texture_source_path = "/Users/diharaw/Desktop/lpshead";
-//        options.relative_material_path = "../materials";
-//        options.relative_texture_path = "../textures";
-//        options.use_compression = false;
-//
-//        if (!ast::export_mesh(mesh, options))
-//            printf("Failed to output Material!\n");
-//        else
-//        {
-//            ast::Mesh loaded_mesh;
-//
-//            if (ast::load_mesh("/Users/diharaw/Desktop/lpshead/ast/head.ast", loaded_mesh))
-//            {
-//                printf("Name                 : %s \n", loaded_mesh.name.c_str());
-//                printf("Mesh Count           : %i \n", (int)loaded_mesh.submeshes.size());
-//                printf("Vertex Count         : %i \n", (int)loaded_mesh.vertices.size());
-//                printf("Skeletal Vertex Count: %i \n", (int)loaded_mesh.skeletal_vertices.size());
-//                printf("Material Count       : %i \n", (int)loaded_mesh.materials.size());
-//
-//                for (const auto& mat : loaded_mesh.materials)
-//                {
-//                    printf("\tName: %s \n", mat.name.c_str());
-//                }
-//            }
-//            else
-//                printf("Failed to Load Mesh!\n");
-//        }
-//    }
-//    else
-//        printf("Failed to import Material!\n");
+    std::string input = "/Users/diharaw/Desktop/lpshead/head.OBJ";
+
+    ast::Mesh mesh;
+
+    if (ast::import_mesh(input, mesh))
+    {
+        ast::MeshExportOption options;
+
+        options.path = "/Users/diharaw/Desktop/lpshead/ast";
+        options.texture_source_path = "/Users/diharaw/Desktop/lpshead";
+        options.relative_material_path = "../materials";
+        options.relative_texture_path = "../textures";
+        options.use_compression = false;
+
+        if (!ast::export_mesh(mesh, options))
+            printf("Failed to output Material!\n");
+        else
+        {
+            ast::Mesh loaded_mesh;
+
+            if (ast::load_mesh("/Users/diharaw/Desktop/lpshead/ast/head.ast", loaded_mesh))
+            {
+                printf("Name                 : %s \n", loaded_mesh.name.c_str());
+                printf("Mesh Count           : %i \n", (int)loaded_mesh.submeshes.size());
+                printf("Vertex Count         : %i \n", (int)loaded_mesh.vertices.size());
+                printf("Skeletal Vertex Count: %i \n", (int)loaded_mesh.skeletal_vertices.size());
+                printf("Material Count       : %i \n", (int)loaded_mesh.materials.size());
+
+                for (const auto& mat : loaded_mesh.materials)
+                {
+                    printf("\tName: %s \n", mat.name.c_str());
+                }
+            }
+            else
+                printf("Failed to Load Mesh!\n");
+        }
+    }
+    else
+        printf("Failed to import Material!\n");
+
 //    ast::Mesh loaded_mesh;
 //
 //    if (ast::load_mesh("/Users/diharaw/Desktop/lpshead/ast/head.ast", loaded_mesh))
@@ -212,7 +213,7 @@ int main(int argc, char * argv[])
 //        ast::export_image(img, opt);
 //    }
 
-    read_and_export_image("/Users/diharaw/Desktop/TEST/M_Arch_Inst_0_Normal.ast");
+    //read_and_export_image("/Users/diharaw/Desktop/TEST/M_Arch_Inst_0_Normal.ast");
     
     return 0;
 }

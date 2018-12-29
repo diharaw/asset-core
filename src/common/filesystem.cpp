@@ -227,6 +227,16 @@ namespace filesystem
 			return true;
 		return false;
 	}
+
+	bool does_file_exist(const std::string& _name)
+	{
+		GetFileAttributes(_name.c_str());
+
+		if (INVALID_FILE_ATTRIBUTES == GetFileAttributes(_name.c_str()) && GetLastError() == ERROR_FILE_NOT_FOUND)
+			return false;
+		else
+			return true;
+	}
 #endif
     
 	bool write_begin(std::string _path)
