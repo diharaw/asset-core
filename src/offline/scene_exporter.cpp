@@ -10,7 +10,10 @@ namespace ast
     {
         nlohmann::json doc;
         
-        doc["name"] = scene.name;
+		if (scene.name.size() == 0)
+			doc["name"] = "untitled_scene";
+		else
+			doc["name"] = scene.name;
         
         // Camera Properties
         nlohmann::json camera;
@@ -153,10 +156,15 @@ namespace ast
         }
         
         doc["entities"] = entity_array;
-        
+
+		std::string scene_name = scene.name;
+
+		if (scene_name.size() == 0)
+			scene_name = "untitled_scene";
+    
         std::string output_path = path;
         output_path += "/";
-        output_path += scene.name;
+        output_path += scene_name;
         output_path += ".json";
         
         std::string output_str = doc.dump(4);
