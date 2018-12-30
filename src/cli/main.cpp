@@ -56,166 +56,130 @@ void read_and_export_image(const std::string& input)
         printf("Failed to Load Image!\n");
 }
 
+void print_usage()
+{
+	printf("usage: AssetCore [options] infile [outpath]\n\n");
+
+	printf("Input options:\n");
+	printf("  -S<path>		Source path for textures.\n");
+	printf("  -T<path>      Relative path for textures.\n");
+	printf("  -M<path>		Relative path for Materials.\n");
+	printf("  -C			Disable texture compression for output textures.\n");
+}
+
 int main(int argc, char * argv[])
 {
-//    if (argc == 1)
-//    {
-//        printf("usage: AssetConverter <filename> [output_path]\n");
-//        printf("<> = required\n");
-//        printf("[] = optional\n");
-//        return 1;
-//    }
-//    else
+    if (argc == 1)
     {
-//        std::string output = "/Users/diharaw/Desktop/sun_temple/ast";//filesystem::get_current_working_directory();
-        
-//        if (argc > 2)
-//            output = argv[2];
-        
-//        ast::MeshDesc mesh;
-//
-//        ast::MeshImportDesc import_desc;
-//
-//        import_desc.source = ast::IMPORT_SOURCE_FILE;
-//        import_desc.file = "/Users/diharaw/Desktop/sun_temple/SunTemple.fbx";//argv[1];
-//
-//        if (ast::import_mesh(import_desc, mesh))
-//        {
-//            if (!ast::export_mesh(output, mesh))
-//                printf("Failed to output mesh.\n");
-//        }
-//        else
-//            printf("Failed to import mesh.\n");
-        
-//        output = "/Users/diharaw/Desktop/sun_temple/ast/textures";//filesystem::get_current_working_directory();
-        
-//        ast::Texture2DImportDesc tex_import_desc;
-//        tex_import_desc.pixel_type = ast::PIXEL_TYPE_UNORM8;
-//        tex_import_desc.options.srgb = false;
-//        tex_import_desc.options.generate_mip_chain = true;
-//        tex_import_desc.options.normal_map = false;
-//        tex_import_desc.options.compression = ast::COMPRESSION_BC5;
-//
-//        tex_import_desc.source = ast::IMPORT_SOURCE_FILE;
-//        tex_import_desc.file = "/Users/diharaw/Desktop/sun_temple/Textures/M_Arch_Inst_Red_2_0_BaseColor.dds";
-//
-//        ast::TextureDesc tex_desc;
-//
-//        std::string input = "/Users/diharaw/Desktop/sun_temple/Textures/M_Arch_Inst_Red_2_0_BaseColor.dds";
-//        ast::Image img;
-//
-//        ast::ImageExportOptions options;
-//
-//        options.compression = ast::COMPRESSION_NONE;
-//        options.normal_map = false;
-//        options.output_mips = -1;
-//        options.path = "/Users/diharaw/Desktop/sun_temple/ast";
-//
-//        if (ast::import_image(img, input))
-//        {
-//            if (!ast::export_image(img, options))
-//                printf("Failed to output Texture!\n");
-//        }
-//        else
-//            printf("Failed to import Texture!\n");
+		print_usage();
+        return 1;
     }
-    
-//    std::string input = "/Users/diharaw/Desktop/TextureExport/Arches_E_PineTree_3k.hdr";
-//
-//    ast::Image<float> img;
-//
-//    if (ast::import_image(img, input))
-//    {
-//        ast::CubemapImageExportOptions options;
-//
-//        options.compression = ast::COMPRESSION_BC6;
-//        options.irradiance = true;
-//        options.radiance = true;
-//        options.output_mips = 0;
-//        options.path = "/Users/diharaw/Desktop";
-//
-//        if (!ast::cubemap_from_latlong(img, options))
-//            printf("Failed to output Texture!\n");
-//    }
-//    else
-//        printf("Failed to import Texture!\n");
-    
-    std::string input = "F:/Game Development/Source/mesh/SunTemple/SunTemple.fbx";
+	else
+	{
+		std::string input;
+		ast::MeshExportOption export_options;
+		ast::Mesh mesh;
 
-    ast::Mesh mesh;
+		int32_t input_idx = 99999;
 
-    if (ast::import_mesh(input, mesh))
-    {
-        ast::MeshExportOption options;
+		for (int32_t i = 0; i < argc; i++)
+		{
+			if (argv[i][0] == '-')
+			{
+				char c = tolower(argv[i][1]);
 
-        options.path = "C:/Users/Dihara/Desktop/Compressed/Assets/mesh";
-        options.texture_source_path = "F:/Game Development/Source/mesh/SunTemple";
-        options.relative_material_path = "../material";
-        options.relative_texture_path = "../texture";
-        options.use_compression = true;
+				if (c == 's')
+				{
+					std::string str = argv[i];
+					std::string path = str.substr(2, str.size() - 2);
 
-        if (!ast::export_mesh(mesh, options))
-            printf("Failed to output Mesh!\n");
-        else
-        {
-            ast::Mesh loaded_mesh;
+					if (path.size() == 0)
+					{
+						printf("ERROR: Invalid parameter: -S (%s)\n\n", argv[i]);
+						print_usage();
 
-            if (ast::load_mesh("C:/Users/Dihara/Desktop/Compressed/Assets/mesh/SunTemple.ast", loaded_mesh))
-            {
-                printf("Name                 : %s \n", loaded_mesh.name.c_str());
-                printf("Mesh Count           : %i \n", (int)loaded_mesh.submeshes.size());
-                printf("Vertex Count         : %i \n", (int)loaded_mesh.vertices.size());
-                printf("Skeletal Vertex Count: %i \n", (int)loaded_mesh.skeletal_vertices.size());
-                printf("Material Count       : %i \n", (int)loaded_mesh.materials.size());
+						return 1;
+					}
+					else
+						export_options.texture_source_path = path;
+				}
+				else if (c == 't')
+				{
+					std::string str = argv[i];
+					std::string path = str.substr(2, str.size() - 2);
 
-                for (const auto& mat : loaded_mesh.materials)
-                {
-                    printf("\tName: %s \n", mat.name.c_str());
-                }
-            }
-            else
-                printf("Failed to Load Mesh!\n");
-        }
-    }
-    else
-        printf("Failed to import Mesh!\n");
+					if (path.size() == 0)
+					{
+						printf("ERROR: Invalid parameter: -T (%s)\n\n", argv[i]);
+						print_usage();
 
-//    ast::Mesh loaded_mesh;
-//
-//    if (ast::load_mesh("/Users/diharaw/Desktop/lpshead/ast/head.ast", loaded_mesh))
-//    {
-//        printf("Name                 : %s \n", loaded_mesh.name.c_str());
-//        printf("Mesh Count           : %i \n", (int)loaded_mesh.submeshes.size());
-//        printf("Vertex Count         : %i \n", (int)loaded_mesh.vertices.size());
-//        printf("Skeletal Vertex Count: %i \n", (int)loaded_mesh.skeletal_vertices.size());
-//        printf("Material Count       : %i \n", (int)loaded_mesh.materials.size());
-//
-//        for (const auto& mat : loaded_mesh.materials)
-//        {
-//            printf("\tName: %s \n", mat.name.c_str());
-//        }
-//    }
-//    else
-//        printf("Failed to Load Mesh!\n");
-    
-//    ast::Image img;
-//
-//    if (ast::import_image(img, "/Users/diharaw/Desktop/sun_temple/Textures/M_Arch_Inst_0_Normal.dds"))
-//    {
-//        ast::ImageExportOptions opt;
-//
-//        opt.compression = ast::COMPRESSION_NONE;
-//        opt.normal_map = false;
-//        opt.output_mips = -1;
-//        opt.path = "/Users/diharaw/Desktop/TEST";
-//        opt.pixel_type = ast::PIXEL_TYPE_UNORM8;
-//
-//        ast::export_image(img, opt);
-//    }
+						return 1;
+					}
+					else
+						export_options.relative_texture_path = path;
+				}
+				else if (c == 'm')
+				{
+					std::string str = argv[i];
+					std::string path = str.substr(2, str.size() - 2);
 
-    //read_and_export_image("/Users/diharaw/Desktop/TEST/M_Arch_Inst_0_Normal.ast");
-    
-	std::cin.get();
+					if (path.size() == 0)
+					{
+						printf("ERROR: Invalid parameter: -M (%s)\n\n", argv[i]);
+						print_usage();
 
-    return 0;
+						return 1;
+					}
+					else
+						export_options.relative_material_path = path;
+				}
+				else if (c == 'c')
+					export_options.use_compression = false;
+			}
+			else if (i > 0)
+			{
+				if (i < input_idx)
+				{
+					input_idx = 1;
+					input = argv[i];
+
+					if (input.size() == 0)
+					{
+						printf("ERROR: Invalid input path: %s\n\n", argv[i]);
+						print_usage();
+
+						return 1;
+					}
+				}
+				else
+				{
+					export_options.path = argv[i];
+
+					if (export_options.path.size() == 0)
+					{
+						printf("ERROR: Invalid input path: %s\n\n", argv[i]);
+						print_usage();
+
+						return 1;
+					}
+				}
+			}
+		}
+
+		if (ast::import_mesh(input, mesh))
+		{
+			if (!ast::export_mesh(mesh, export_options))
+			{
+				printf("ERROR: Failed to export mesh!\n\n");
+				return 1;
+			}
+		}
+		else
+		{
+			printf("ERROR: Failed to import mesh!\n\n");
+			return 1;
+		}
+
+		return 0;
+	}
 }

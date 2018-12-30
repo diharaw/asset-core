@@ -16,7 +16,8 @@
 
 namespace ast
 {
-    const nvtt::Format kCompression[] = {
+    const nvtt::Format kCompression[] = 
+	{
         nvtt::Format_RGB,
         nvtt::Format_BC1,
         nvtt::Format_BC1a,
@@ -39,8 +40,10 @@ namespace ast
         
         virtual void beginImage(int size, int width, int height, int depth, int face, int miplevel) override
         {
+#ifdef _DEBUG
             std::cout << "Beginning Image: Size = " << size << ", Mip = " << miplevel << ", Width = " << width << ", Height = " << height << std::endl;
-            
+#endif
+
             BINMipSliceHeader mip0Header;
             
             mip0Header.width = width;
@@ -65,7 +68,9 @@ namespace ast
         
         virtual void endImage() override
         {
+#ifdef _DEBUG
             std::cout << "Ending Image.." << std::endl;
+#endif
         }
     };
     

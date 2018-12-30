@@ -4,6 +4,7 @@
 #include <common/header.h>
 #include <iostream>
 #include <fstream>
+#include <chrono>
 
 #define WRITE_AND_OFFSET(stream, dest, size, offset) stream.write((char*)dest, size); offset += size; stream.seekg(offset);
 
@@ -11,6 +12,8 @@ namespace ast
 {
     bool export_mesh(const Mesh& desc, const MeshExportOption& options)
     {
+		auto start = std::chrono::high_resolution_clock::now();
+
         std::string material_path = options.path;
         
         if (options.relative_material_path != "")
@@ -142,6 +145,11 @@ namespace ast
             }
 
             f.close();
+
+			auto finish = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> time = finish - start;
+
+			printf("Successfully exported mesh in %f seconds\n\n", time.count());
             
             return true;
         }

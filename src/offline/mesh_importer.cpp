@@ -4,6 +4,7 @@
 #include <assimp/postprocess.h>
 #include <unordered_map>
 #include <common/filesystem.h>
+#include <chrono> 
 
 #include <iostream>
 
@@ -37,9 +38,24 @@ namespace ast
         
         return false;
     }
+
+	int32_t find_material_index(std::vector<Material> &materials, std::string &current_material)
+	{
+		for (int32_t i = 0; i < materials.size(); i++)
+		{
+			if (materials[i].name == current_material)
+				return i;
+		}
+
+		return -1;
+	}
     
     bool import_mesh(const std::string& file, Mesh& mesh)
     {
+		printf("Importing Mesh...\n\n");
+
+		auto start = std::chrono::high_resolution_clock::now();
+
         const aiScene* scene;
         Assimp::Importer importer;
         
@@ -69,232 +85,243 @@ namespace ast
                 
                 vertex_count += scene->mMeshes[i]->mNumVertices;
                 index_count += mesh.submeshes[i].index_count;
-                
+
                 if (!does_material_exist(processed_mat_ids, scene->mMeshes[i]->mMaterialIndex))
                 {
                     Material mat;
                     
                     mat.name = scene->mMeshes[i]->mName.C_Str();
-                    
-					mat.name.erase(std::remove(mat.name.begin(), mat.name.end(), ':'), mat.name.end());
-					mat.name.erase(std::remove(mat.name.begin(), mat.name.end(), '.'), mat.name.end());
 
-                    if (mat.name.empty())
-                    {
-                        mat.name =  mesh.name;
-                        mat.name += "_unnamed_material_";
-                        mat.name += std::to_string(unnamed_mats++);
-                    }
-                    
-                    temp_material = scene->mMaterials[scene->mMeshes[i]->mMaterialIndex];
-                    
-                    int two_sided = 0;
-                    temp_material->Get(AI_MATKEY_TWOSIDED, two_sided);
-                    mat.double_sided = (bool)two_sided;
-                    
-                    mat.blend_mode = BLEND_MODE_OPAQUE;
-                    mat.metallic_workflow = true;
-                    mat.lighting_model = LIGHTING_MODEL_LIT;
-                    mat.displacement_type = DISPLACEMENT_NONE;
-                    mat.shading_model = SHADING_MODEL_STANDARD;
-                    mat.fragment_shader_func_id = "";
-                    mat.fragment_shader_func_src = "";
-                    mat.vertex_shader_func_id = "";
-                    mat.vertex_shader_func_src = "";
-                    
-                    // Try to find Diffuse texture
-                    std::string albedo_path = get_texture_path(temp_material, aiTextureType_DIFFUSE);
-                    
-                    if (albedo_path.empty())
-                    {
-                        aiColor3D diffuse = aiColor3D(1.0f, 1.0f, 1.0f);
-                        
-                        // Try loading in a Diffuse material property
-                        temp_material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
-                        
-                        MaterialProperty property;
-                        
-                        property.type = PROPERTY_ALBEDO;
-                        property.vec4_value[0] = diffuse.r;
-                        property.vec4_value[1] = diffuse.g;
-                        property.vec4_value[2] = diffuse.b;
-                        property.vec4_value[3] = 1.0f;
-                        
-                        mat.properties.push_back(property);
-                    }
-                    else
-                    {
-                        std::replace(albedo_path.begin(), albedo_path.end(), '\\', '/');
-                        
-                        Texture mat_desc;
-                        
-                        mat_desc.srgb = true;
-                        mat_desc.type = TEXTURE_ALBEDO;
-                        mat_desc.path = albedo_path;
-                        
-                        mat.textures.push_back(mat_desc);
-                    }
-                    
-                    // Try to find Roughness texture
-                    std::string roughness_path = get_texture_path(temp_material, aiTextureType_SHININESS);
-                    
-                    if (roughness_path.empty())
-                    {
-                        float roughness = 0.0f;
-                        
-                        MaterialProperty property;
-                        
-                        property.type = PROPERTY_ROUGHNESS;
-                        property.float_value = roughness;
-                        
-                        mat.properties.push_back(property);
-                    }
-                    else
-                    {
-                        std::replace(roughness_path.begin(), roughness_path.end(), '\\', '/');
-                        
-                        Texture mat_desc;
-                        
-                        mat_desc.srgb = false;
-                        mat_desc.type = TEXTURE_ROUGHNESS;
-                        mat_desc.path = roughness_path;
-                        
-                        mat.textures.push_back(mat_desc);
-                    }
-                    
-                    // Try to find Metalness texture
-                    std::string metalness_path = get_texture_path(temp_material, aiTextureType_AMBIENT);
-                    
-                    if (metalness_path.empty())
-                    {
-                        float metalness = 0.0f;
-                        
-                        MaterialProperty property;
-                        
-                        property.type = PROPERTY_METALNESS;
-                        property.float_value = metalness;
-                        
-                        mat.properties.push_back(property);
-                    }
-                    else
-                    {
-                        std::replace(metalness_path.begin(), metalness_path.end(), '\\', '/');
-                        
-                        Texture mat_desc;
-                        
-                        mat_desc.srgb = false;
-                        mat_desc.type = TEXTURE_METALNESS;
-                        mat_desc.path = metalness_path;
-                        
-                        mat.textures.push_back(mat_desc);
-                    }
-                    
-                    // Try to find Emissive texture
-                    std::string emissive_path = get_texture_path(temp_material, aiTextureType_EMISSIVE);
-                    
-                    if (emissive_path.empty())
-                    {
-                        aiColor3D emissive;
-                        
-                        // Try loading in a Emissive material property
-                        if (temp_material->Get(AI_MATKEY_COLOR_EMISSIVE, emissive))
-                        {
-                            MaterialProperty property;
-                            
-                            property.type = PROPERTY_EMISSIVE;
-                            property.vec4_value[0] = emissive.r;
-                            property.vec4_value[1] = emissive.g;
-                            property.vec4_value[2] = emissive.b;
-                            property.vec4_value[3] = 1.0f;
-                            
-                            mat.properties.push_back(property);
-                        }
-                    }
-                    else
-                    {
-                        std::replace(emissive_path.begin(), emissive_path.end(), '\\', '/');
-                        
-                        Texture mat_desc;
-                        
-                        mat_desc.srgb = false;
-                        mat_desc.type = TEXTURE_EMISSIVE;
-                        mat_desc.path = emissive_path;
-                        
-                        mat.textures.push_back(mat_desc);
-                    }
-                    
-                    // Try to find Specular texture
-                    std::string specular_path = get_texture_path(temp_material, aiTextureType_SPECULAR);
-                    
-                    if (specular_path.empty())
-                    {
-                        aiColor3D specular;
-                        
-                        // Try loading in a Specular material property
-                        if (temp_material->Get(AI_MATKEY_COLOR_SPECULAR, specular))
-                        {
-                            MaterialProperty property;
-                            
-                            property.type = PROPERTY_SPECULAR;
-                            property.vec4_value[0] = specular.r;
-                            property.vec4_value[1] = specular.g;
-                            property.vec4_value[2] = specular.b;
-                            property.vec4_value[3] = 1.0f;
-                            
-                            mat.properties.push_back(property);
-                        }
-                    }
-                    else
-                    {
-                        std::replace(specular_path.begin(), specular_path.end(), '\\', '/');
-                        
-                        Texture mat_desc;
-                        
-                        mat_desc.srgb = false;
-                        mat_desc.type = TEXTURE_SPECULAR;
-                        mat_desc.path = specular_path;
-                        
-                        mat.textures.push_back(mat_desc);
-                    }
-                    
-                    // Try to find Normal texture
-                    std::string normal_path = get_texture_path(temp_material, aiTextureType_NORMALS);
-                    
-                    if (!normal_path.empty())
-                    {
-                        std::replace(normal_path.begin(), normal_path.end(), '\\', '/');
-                        
-                        Texture mat_desc;
-                        
-                        mat_desc.srgb = false;
-                        mat_desc.type = TEXTURE_NORMAL;
-                        mat_desc.path = normal_path;
-                        
-                        mat.textures.push_back(mat_desc);
-                    }
-                    
-                    // Try to find Height texture
-                    std::string height_path = get_texture_path(temp_material, aiTextureType_HEIGHT);
-                    
-                    if (!height_path.empty())
-                    {
-                        std::replace(height_path.begin(), height_path.end(), '\\', '/');
-                        
-                        Texture mat_desc;
-                        
-                        mat_desc.srgb = true;
-                        mat_desc.type = TEXTURE_DISPLACEMENT;
-                        mat_desc.path = height_path;
-                        
-                        mat.textures.push_back(mat_desc);
-                        
-                        mat.displacement_type = DISPLACEMENT_PARALLAX_OCCLUSION;
-                    }
-                    
-                    mat_id_mapping[scene->mMeshes[i]->mMaterialIndex] = mesh.materials.size();
-                    processed_mat_ids.push_back(scene->mMeshes[i]->mMaterialIndex);
-                    
-                    mesh.materials.push_back(mat);
+					// Does a material with the same name exist?
+					int32_t name_index = find_material_index(mesh.materials, mat.name);
+
+					if (name_index != -1)
+					{
+						mat_id_mapping[scene->mMeshes[i]->mMaterialIndex] = name_index;
+						processed_mat_ids.push_back(scene->mMeshes[i]->mMaterialIndex);
+					}
+					else
+					{
+						mat.name.erase(std::remove(mat.name.begin(), mat.name.end(), ':'), mat.name.end());
+						mat.name.erase(std::remove(mat.name.begin(), mat.name.end(), '.'), mat.name.end());
+
+						if (mat.name.empty())
+						{
+							mat.name = mesh.name;
+							mat.name += "_unnamed_material_";
+							mat.name += std::to_string(unnamed_mats++);
+						}
+
+						temp_material = scene->mMaterials[scene->mMeshes[i]->mMaterialIndex];
+
+						int two_sided = 0;
+						temp_material->Get(AI_MATKEY_TWOSIDED, two_sided);
+						mat.double_sided = (bool)two_sided;
+
+						mat.blend_mode = BLEND_MODE_OPAQUE;
+						mat.metallic_workflow = true;
+						mat.lighting_model = LIGHTING_MODEL_LIT;
+						mat.displacement_type = DISPLACEMENT_NONE;
+						mat.shading_model = SHADING_MODEL_STANDARD;
+						mat.fragment_shader_func_id = "";
+						mat.fragment_shader_func_src = "";
+						mat.vertex_shader_func_id = "";
+						mat.vertex_shader_func_src = "";
+
+						// Try to find Diffuse texture
+						std::string albedo_path = get_texture_path(temp_material, aiTextureType_DIFFUSE);
+
+						if (albedo_path.empty())
+						{
+							aiColor3D diffuse = aiColor3D(1.0f, 1.0f, 1.0f);
+
+							// Try loading in a Diffuse material property
+							temp_material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
+
+							MaterialProperty property;
+
+							property.type = PROPERTY_ALBEDO;
+							property.vec4_value[0] = diffuse.r;
+							property.vec4_value[1] = diffuse.g;
+							property.vec4_value[2] = diffuse.b;
+							property.vec4_value[3] = 1.0f;
+
+							mat.properties.push_back(property);
+						}
+						else
+						{
+							std::replace(albedo_path.begin(), albedo_path.end(), '\\', '/');
+
+							Texture mat_desc;
+
+							mat_desc.srgb = true;
+							mat_desc.type = TEXTURE_ALBEDO;
+							mat_desc.path = albedo_path;
+
+							mat.textures.push_back(mat_desc);
+						}
+
+						// Try to find Roughness texture
+						std::string roughness_path = get_texture_path(temp_material, aiTextureType_SHININESS);
+
+						if (roughness_path.empty())
+						{
+							float roughness = 0.0f;
+
+							MaterialProperty property;
+
+							property.type = PROPERTY_ROUGHNESS;
+							property.float_value = roughness;
+
+							mat.properties.push_back(property);
+						}
+						else
+						{
+							std::replace(roughness_path.begin(), roughness_path.end(), '\\', '/');
+
+							Texture mat_desc;
+
+							mat_desc.srgb = false;
+							mat_desc.type = TEXTURE_ROUGHNESS;
+							mat_desc.path = roughness_path;
+
+							mat.textures.push_back(mat_desc);
+						}
+
+						// Try to find Metalness texture
+						std::string metalness_path = get_texture_path(temp_material, aiTextureType_AMBIENT);
+
+						if (metalness_path.empty())
+						{
+							float metalness = 0.0f;
+
+							MaterialProperty property;
+
+							property.type = PROPERTY_METALNESS;
+							property.float_value = metalness;
+
+							mat.properties.push_back(property);
+						}
+						else
+						{
+							std::replace(metalness_path.begin(), metalness_path.end(), '\\', '/');
+
+							Texture mat_desc;
+
+							mat_desc.srgb = false;
+							mat_desc.type = TEXTURE_METALNESS;
+							mat_desc.path = metalness_path;
+
+							mat.textures.push_back(mat_desc);
+						}
+
+						// Try to find Emissive texture
+						std::string emissive_path = get_texture_path(temp_material, aiTextureType_EMISSIVE);
+
+						if (emissive_path.empty())
+						{
+							aiColor3D emissive;
+
+							// Try loading in a Emissive material property
+							if (temp_material->Get(AI_MATKEY_COLOR_EMISSIVE, emissive))
+							{
+								MaterialProperty property;
+
+								property.type = PROPERTY_EMISSIVE;
+								property.vec4_value[0] = emissive.r;
+								property.vec4_value[1] = emissive.g;
+								property.vec4_value[2] = emissive.b;
+								property.vec4_value[3] = 1.0f;
+
+								mat.properties.push_back(property);
+							}
+						}
+						else
+						{
+							std::replace(emissive_path.begin(), emissive_path.end(), '\\', '/');
+
+							Texture mat_desc;
+
+							mat_desc.srgb = false;
+							mat_desc.type = TEXTURE_EMISSIVE;
+							mat_desc.path = emissive_path;
+
+							mat.textures.push_back(mat_desc);
+						}
+
+						// Try to find Specular texture
+						std::string specular_path = get_texture_path(temp_material, aiTextureType_SPECULAR);
+
+						if (specular_path.empty())
+						{
+							aiColor3D specular;
+
+							// Try loading in a Specular material property
+							if (temp_material->Get(AI_MATKEY_COLOR_SPECULAR, specular))
+							{
+								MaterialProperty property;
+
+								property.type = PROPERTY_SPECULAR;
+								property.vec4_value[0] = specular.r;
+								property.vec4_value[1] = specular.g;
+								property.vec4_value[2] = specular.b;
+								property.vec4_value[3] = 1.0f;
+
+								mat.properties.push_back(property);
+							}
+						}
+						else
+						{
+							std::replace(specular_path.begin(), specular_path.end(), '\\', '/');
+
+							Texture mat_desc;
+
+							mat_desc.srgb = false;
+							mat_desc.type = TEXTURE_SPECULAR;
+							mat_desc.path = specular_path;
+
+							mat.textures.push_back(mat_desc);
+						}
+
+						// Try to find Normal texture
+						std::string normal_path = get_texture_path(temp_material, aiTextureType_NORMALS);
+
+						if (!normal_path.empty())
+						{
+							std::replace(normal_path.begin(), normal_path.end(), '\\', '/');
+
+							Texture mat_desc;
+
+							mat_desc.srgb = false;
+							mat_desc.type = TEXTURE_NORMAL;
+							mat_desc.path = normal_path;
+
+							mat.textures.push_back(mat_desc);
+						}
+
+						// Try to find Height texture
+						std::string height_path = get_texture_path(temp_material, aiTextureType_HEIGHT);
+
+						if (!height_path.empty())
+						{
+							std::replace(height_path.begin(), height_path.end(), '\\', '/');
+
+							Texture mat_desc;
+
+							mat_desc.srgb = true;
+							mat_desc.type = TEXTURE_DISPLACEMENT;
+							mat_desc.path = height_path;
+
+							mat.textures.push_back(mat_desc);
+
+							mat.displacement_type = DISPLACEMENT_PARALLAX_OCCLUSION;
+						}
+
+						mat_id_mapping[scene->mMeshes[i]->mMaterialIndex] = mesh.materials.size();
+						processed_mat_ids.push_back(scene->mMeshes[i]->mMaterialIndex);
+
+						mesh.materials.push_back(mat);
+					}
                 }
                 
                 mesh.submeshes[i].material_index = mat_id_mapping[scene->mMeshes[i]->mMaterialIndex];
@@ -384,7 +411,12 @@ namespace ast
                 if (mesh.submeshes[i].min_extents.z < mesh.min_extents.z)
                     mesh.min_extents.z = mesh.submeshes[i].min_extents.z;
             }
-            
+
+			auto finish = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> time = finish - start;
+
+			printf("Successfully imported mesh in %f seconds\n\n", time.count());
+
             return true;
         }
     
