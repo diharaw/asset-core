@@ -90,7 +90,9 @@ namespace ast
                 {
                     Material mat;
                     
-                    mat.name = scene->mMeshes[i]->mName.C_Str();
+					mat.name = mesh.name;
+					mat.name += "_";
+					mat.name += scene->mMeshes[i]->mName.C_Str();
 
 					// Does a material with the same name exist?
 					int32_t name_index = find_material_index(mesh.materials, mat.name);
@@ -308,7 +310,7 @@ namespace ast
 
 							Texture mat_desc;
 
-							mat_desc.srgb = true;
+							mat_desc.srgb = false;
 							mat_desc.type = TEXTURE_DISPLACEMENT;
 							mat_desc.path = height_path;
 

@@ -149,7 +149,7 @@ namespace ast
 			auto finish = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> time = finish - start;
 
-			printf("Successfully exported mesh in %f seconds\n\n", time.count());
+			printf("Successfully exported mesh(%s) in %f seconds\n\n", desc.name.c_str(), time.count());
             
             return true;
         }
