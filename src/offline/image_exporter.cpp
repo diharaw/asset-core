@@ -231,8 +231,15 @@ namespace ast
                 // If generate_mipmaps is false or if the full mipchain has to be generated, set the data for the initial mip level.
                 if (!generate_mipmaps || (generate_mipmaps && options.output_mips == -1) || (generate_mipmaps && options.output_mips > 1))
                 {
-                    if (img.components == 4)
-                        current_img = &img;
+					if (img.components == 4)
+					{
+						if (options.compression == COMPRESSION_NONE)
+							img.argb_to_rgba(i, 0);
+						else
+							img.to_bgra(i, 0);
+
+						current_img = &img;
+					}
                     else
                         img.to_rgba(temp_img, i, 0);
                     
@@ -246,7 +253,14 @@ namespace ast
                     for (int mip = 0; mip < img.mip_slices; mip++)
                     {
                         if (img.components == 4)
-                            current_img = &img;
+						{
+							if (options.compression == COMPRESSION_NONE)
+								img.argb_to_rgba(i, 0);
+							else
+								img.to_bgra(i, 0);
+
+							current_img = &img;
+						}
                         else
                             img.to_rgba(temp_img, i, 0);
                         

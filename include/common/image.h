@@ -82,6 +82,7 @@ namespace ast
         void deallocate();
         size_t size(int array_slice, int mip_slice) const;
         void to_bgra(int array_slice, int mip_slice);
+		void argb_to_rgba(int array_slice, int mip_slice);
         bool to_rgba(Image& img, int array_slice, int mip_slice);
 	};
 }

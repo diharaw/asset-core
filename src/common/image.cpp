@@ -3,19 +3,39 @@
 namespace ast
 {
 #define TO_BGRA(type, imgData)                                              \
-Pixel<type, 4>* src = (Pixel<type, 4>*)imgData.data;                        \
-\
-for (int y = 0; y < imgData.height; y++)                                    \
-{                                                                           \
-for (int x = 0; x < imgData.width; x++)                                 \
-{                                                                       \
-type red = src[y * imgData.width + x].c[2];                         \
-\
-src[y * imgData.width + x].c[0] = src[y * imgData.width + x].c[2];  \
-src[y * imgData.width + x].c[2] = red;                              \
-}                                                                       \
+Pixel<type, 4>* src = (Pixel<type, 4>*)imgData.data;						\
+																			\
+for (int y = 0; y < imgData.height; y++)                            		\
+{                                                                   		\
+	for (int x = 0; x < imgData.width; x++)                             	\
+	{                                                                   	\
+		type g = src[y * imgData.width + x].c[2];                         	\
+																			\
+		src[y * imgData.width + x].c[2] = src[y * imgData.width + x].c[0];  \
+		src[y * imgData.width + x].c[0] = g;                              	\
+	}                                                                   	\
 }
     
+#define ARGB_TO_RGBA(type, imgData)				    \
+Pixel<type, 4>* src = (Pixel<type, 4>*)imgData.data;\
+													\
+for (int y = 0; y < imgData.height; y++)			\
+{													\
+	for (int x = 0; x < imgData.width; x++)			\
+	{												\
+		type r = src[y * imgData.width + x].c[0];	\
+		type g = src[y * imgData.width + x].c[1];	\
+		type b = src[y * imgData.width + x].c[2];	\
+		type a = src[y * imgData.width + x].c[3];	\
+													\
+		src[y * imgData.width + x].c[0] = g;		\
+		src[y * imgData.width + x].c[1] = b;		\
+		src[y * imgData.width + x].c[2] = a;		\
+		src[y * imgData.width + x].c[3] = r;		\
+	}												\
+}
+
+
 #define TO_RGBA(type, num_components, dst_data)                                     \
 Pixel<type, 4>* dst = (Pixel<type, 4>*) dst_data;                                   \
 Pixel<type, num_components>* src = (Pixel<type, num_components>*)imgData.data;      \
@@ -126,6 +146,24 @@ dst[y * imgData.width + x].c[c] = src[y * imgData.width + x].c[c];  \
             TO_BGRA(float, imgData)
         }
     }
+
+	void Image::argb_to_rgba(int array_slice, int mip_slice)
+	{
+		Data& imgData = data[array_slice][mip_slice];
+
+		if (type == PIXEL_TYPE_UNORM8)
+		{
+			ARGB_TO_RGBA(uint8_t, imgData);
+		}
+		else if (type == PIXEL_TYPE_FLOAT16)
+		{
+			ARGB_TO_RGBA(int16_t, imgData);
+		}
+		else if (type == PIXEL_TYPE_FLOAT32)
+		{
+			ARGB_TO_RGBA(float, imgData);
+		}
+	}
     
     bool Image::to_rgba(Image& img, int array_slice, int mip_slice)
     {
