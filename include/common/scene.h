@@ -77,14 +77,45 @@ namespace ast
         std::string path;
         glm::vec3   position;
     };
+
+	struct PointLight
+	{
+		glm::vec3 color;
+		glm::vec3 position;
+		float range;
+		float intensity;
+		bool casts_shadows;
+	};
+
+	struct SpotLight
+	{
+		glm::vec3 color;
+		glm::vec3 position;
+		glm::vec3 rotation;
+		float cone_angle;
+		float range;
+		float intensity;
+		bool casts_shadows;
+	};
+
+	struct DirectionalLight
+	{
+		glm::vec3 color;
+		glm::vec3 rotation;
+		float intensity;
+		bool casts_shadows;
+	};
     
     struct Scene
     {
-        std::string                  name;
-        Camera                       camera;
-        Skybox                       skybox;
-        std::vector<ReflectionProbe> reflection_probes;
-        std::vector<GIProbe>         gi_probes;
-        std::vector<Entity>          entities;
+        std::string                   name;
+        Camera                        camera;
+        Skybox                        skybox;
+        std::vector<ReflectionProbe>  reflection_probes;
+        std::vector<GIProbe>          gi_probes;
+        std::vector<Entity>           entities;
+		std::vector<DirectionalLight> directional_lights;
+		std::vector<SpotLight>		  spot_lights;
+		std::vector<PointLight>		  point_lights;
     };
 }

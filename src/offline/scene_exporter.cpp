@@ -115,6 +115,103 @@ namespace ast
         }
         
         doc["gi_probes"] = gi_probes;
+
+		// Directional Lights
+		auto directional_lights_array = doc.array();
+
+		for (const auto& dir_light : scene.directional_lights)
+		{
+			nlohmann::json json_dir_light;
+
+			auto color = doc.array();
+			color.push_back(dir_light.color[0]);
+			color.push_back(dir_light.color[1]);
+			color.push_back(dir_light.color[2]);
+
+			json_dir_light["color"] = color;
+
+			auto rotation = doc.array();
+			rotation.push_back(dir_light.rotation[0]);
+			rotation.push_back(dir_light.rotation[1]);
+			rotation.push_back(dir_light.rotation[2]);
+
+			json_dir_light["rotation"] = rotation;
+
+			json_dir_light["intensity"] = dir_light.intensity;
+			json_dir_light["cast_shadows"] = dir_light.casts_shadows;
+
+			directional_lights_array.push_back(json_dir_light);
+		}
+
+		doc["directional_lights"] = directional_lights_array;
+
+		// Point Lights
+		auto point_lights_array = doc.array();
+
+		for (const auto& point_light : scene.point_lights)
+		{
+			nlohmann::json json_point_light;
+
+			auto color = doc.array();
+			color.push_back(point_light.color[0]);
+			color.push_back(point_light.color[1]);
+			color.push_back(point_light.color[2]);
+
+			json_point_light["color"] = color;
+
+			auto position = doc.array();
+			position.push_back(point_light.position[0]);
+			position.push_back(point_light.position[1]);
+			position.push_back(point_light.position[2]);
+
+			json_point_light["position"] = position;
+
+			json_point_light["range"] = point_light.range;
+			json_point_light["intensity"] = point_light.intensity;
+			json_point_light["cast_shadows"] = point_light.casts_shadows;
+
+			point_lights_array.push_back(json_point_light);
+		}
+
+		doc["point_lights"] = point_lights_array;
+
+		// Spot Lights
+		auto spot_lights_array = doc.array();
+
+		for (const auto& spot_light : scene.spot_lights)
+		{
+			nlohmann::json json_spot_light;
+
+			auto color = doc.array();
+			color.push_back(spot_light.color[0]);
+			color.push_back(spot_light.color[1]);
+			color.push_back(spot_light.color[2]);
+
+			json_spot_light["color"] = color;
+
+			auto position = doc.array();
+			position.push_back(spot_light.position[0]);
+			position.push_back(spot_light.position[1]);
+			position.push_back(spot_light.position[2]);
+
+			json_spot_light["position"] = position;
+
+			auto rotation = doc.array();
+			rotation.push_back(spot_light.rotation[0]);
+			rotation.push_back(spot_light.rotation[1]);
+			rotation.push_back(spot_light.rotation[2]);
+
+			json_spot_light["rotation"] = rotation;
+
+			json_spot_light["cone_angle"] = spot_light.cone_angle;
+			json_spot_light["range"] = spot_light.range;
+			json_spot_light["intensity"] = spot_light.intensity;
+			json_spot_light["cast_shadows"] = spot_light.casts_shadows;
+
+			spot_lights_array.push_back(json_spot_light);
+		}
+
+		doc["spot_lights"] = spot_lights_array;
         
         // Entity
         auto entity_array = doc.array();

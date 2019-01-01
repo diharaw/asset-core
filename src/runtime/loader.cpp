@@ -558,7 +558,71 @@ namespace ast
                 scene.gi_probes.push_back(new_probe);
             }
         }
-        
+
+		if (j.find("directional_lights") != j.end())
+		{
+			auto directional_lights = j["directional_lights"];
+
+			for (auto json_light : directional_lights)
+			{
+				DirectionalLight light;
+
+				if (json_light.find("intensity") != directional_lights.end())
+					light.intensity = json_light["intensity"];
+
+				if (json_light.find("casts_shadows") != directional_lights.end())
+					light.casts_shadows = json_light["casts_shadows"];
+
+				JSON_PARSE_VECTOR(json_light, light.color, color, 3);
+				JSON_PARSE_VECTOR(json_light, light.rotation, rotation, 3);
+
+				scene.directional_lights.push_back(light);
+			}
+		}
+
+		if (j.find("point_lights") != j.end())
+		{
+			auto point_lights = j["point_lights"];
+
+			for (auto json_light : point_lights)
+			{
+				PointLight light;
+
+				if (json_light.find("intensity") != point_lights.end())
+					light.intensity = json_light["intensity"];
+
+				if (json_light.find("casts_shadows") != point_lights.end())
+					light.casts_shadows = json_light["casts_shadows"];
+
+				JSON_PARSE_VECTOR(json_light, light.color, color, 3);
+				JSON_PARSE_VECTOR(json_light, light.position, position, 3);
+
+				scene.point_lights.push_back(light);
+			}
+		}
+
+		if (j.find("spot_lights") != j.end())
+		{
+			auto spot_lights = j["spot_lights"];
+
+			for (auto json_light : spot_lights)
+			{
+				SpotLight light;
+
+				if (json_light.find("intensity") != spot_lights.end())
+					light.intensity = json_light["intensity"];
+
+				if (json_light.find("casts_shadows") != spot_lights.end())
+					light.casts_shadows = json_light["casts_shadows"];
+
+				JSON_PARSE_VECTOR(json_light, light.color, color, 3);
+				JSON_PARSE_VECTOR(json_light, light.position, position, 3);
+				JSON_PARSE_VECTOR(json_light, light.rotation, rotation, 3);
+
+				scene.spot_lights.push_back(light);
+			}
+		}
+
         if (j.find("entities") != j.end())
         {
             auto entities = j["entities"];
