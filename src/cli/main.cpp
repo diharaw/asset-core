@@ -65,6 +65,7 @@ void print_usage()
 	printf("  -T<path>      Relative path for textures.\n");
 	printf("  -M<path>		Relative path for Materials.\n");
 	printf("  -C			Disable texture compression for output textures.\n");
+	printf("  -F			Flip normal map green channel.\n");
 }
 
 int main(int argc, char * argv[])
@@ -133,6 +134,8 @@ int main(int argc, char * argv[])
 					else
 						export_options.relative_material_path = path;
 				}
+				else if (c == 'f')
+					export_options.normal_map_flip_green = true;
 				else if (c == 'c')
 					export_options.use_compression = false;
 			}

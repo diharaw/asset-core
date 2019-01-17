@@ -12,6 +12,7 @@ namespace ast
         PixelType pixel_type = PIXEL_TYPE_UNORM8;
         CompressionType compression = COMPRESSION_NONE;
         bool normal_map = false;
+		bool flip_green = false;
         int output_mips = 0;
     };
     

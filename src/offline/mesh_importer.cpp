@@ -286,7 +286,7 @@ namespace ast
 						}
 
 						// Try to find Normal texture
-						std::string normal_path = get_texture_path(temp_material, aiTextureType_NORMALS);
+						std::string normal_path = get_texture_path(temp_material, aiTextureType_HEIGHT);
 
 						if (!normal_path.empty())
 						{
@@ -302,7 +302,7 @@ namespace ast
 						}
 
 						// Try to find Height texture
-						std::string height_path = get_texture_path(temp_material, aiTextureType_HEIGHT);
+						std::string height_path = get_texture_path(temp_material, aiTextureType_NORMALS);
 
 						if (!height_path.empty())
 						{

@@ -7,7 +7,7 @@
 
 namespace ast
 {
-    void export_texture(const std::string& src_path, const std::string& dst_path, bool normal_map, bool use_compression)
+    void export_texture(const std::string& src_path, const std::string& dst_path, bool normal_map, bool use_compression, bool normal_map_flip_green)
     {
         Image img;
         
@@ -19,6 +19,7 @@ namespace ast
             options.normal_map = normal_map;
             options.path = dst_path;
             options.compression = COMPRESSION_NONE;
+			options.flip_green = normal_map_flip_green;
             
             if (use_compression)
             {
@@ -111,7 +112,7 @@ namespace ast
             bool exists = filesystem::does_file_exist(full_dst_path);
 
             if (options.texture_source_path != "" && options.dst_texture_path != "" && !exists)
-                export_texture(src_path, dst_path, texture_desc.type == TEXTURE_NORMAL ? true : false, options.use_compression);
+                export_texture(src_path, dst_path, texture_desc.type == TEXTURE_NORMAL ? true : false, options.use_compression, texture_desc.type == TEXTURE_NORMAL ? options.normal_map_flip_green : false);
             
             texture["path"] = path;
             texture["srgb"] = texture_desc.srgb;

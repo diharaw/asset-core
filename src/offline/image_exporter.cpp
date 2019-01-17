@@ -73,7 +73,18 @@ namespace ast
 #endif
         }
     };
-    
+
+#define FLIP_GREEN(type, num_components, dst_data)													\
+Image::Pixel<type, num_components>* dst = (Image::Pixel<type, num_components>*)dst_data.data;		\
+for (int y = 0; y < dst_data.height; y++)															\
+{																									\
+	for (int x = 0; x < dst_data.width; x++)														\
+	{																								\
+		type value = dst[y * dst_data.width + x].c[1];												\
+		dst[y * dst_data.width + x].c[1] = std::numeric_limits<type>::max() - value;				\
+	}																								\
+}
+
     bool export_image(Image& img, const ImageExportOptions& options)
     {
         // Make sure that float images either use no compression or BC6
@@ -82,6 +93,51 @@ namespace ast
             std::cout << "ERROR::Float images must use either no compression or BC6!" << std::endl;
             return false;
         }
+
+		if (options.flip_green)
+		{
+			for (uint32_t layer = 0; layer < img.array_slices; layer++)
+			{
+				for (uint32_t mip = 0; mip < img.mip_slices; mip++)
+				{
+					Image::Data& data = img.data[layer][mip];
+
+					if (img.type == PIXEL_TYPE_UNORM8)
+					{
+						if (img.components == 4)
+						{
+							FLIP_GREEN(uint8_t, 4, data)
+						}
+						else
+						{
+							FLIP_GREEN(uint8_t, 3, data)
+						}
+					}
+					else if (img.type == PIXEL_TYPE_FLOAT16)
+					{
+						if (img.components == 4)
+						{
+							FLIP_GREEN(int16_t, 4, data)
+						}
+						else
+						{
+							FLIP_GREEN(int16_t, 3, data)
+						}
+					}
+					else if (img.type == PIXEL_TYPE_FLOAT32)
+					{
+						if (img.components == 4)
+						{
+							FLIP_GREEN(float, 4, data)
+						}
+						else
+						{
+							FLIP_GREEN(float, 3, data)
+						}
+					}
+				}
+			}
+		}
         
         BINFileHeader fh;
         char* magic = (char*)&fh.magic;

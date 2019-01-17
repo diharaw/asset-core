@@ -115,6 +115,7 @@ namespace ast
                 mat_exp_options.texture_source_path = options.texture_source_path;
                 mat_exp_options.dst_texture_path = texture_path;
                 mat_exp_options.use_compression = options.use_compression;
+				mat_exp_options.normal_map_flip_green = options.normal_map_flip_green;
                 
                 if (export_material(material, mat_exp_options))
                 {
