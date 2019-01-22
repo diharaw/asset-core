@@ -1,9 +1,12 @@
+#include <offline/image_exporter.h>
+#include <common/filesystem.h>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <stdint.h>
 #include <algorithm>
 #include <glm.hpp>
+#include <chrono> 
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -11,25 +14,37 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
+#define NUM_COEFFICIENTS 9
+
+// ----------------------------------------------------------------------------
+
 static const float Pi = 3.141592654f;
 static const float CosineA0 = Pi;
 static const float CosineA1 = (2.0f * Pi) / 3.0f;
 static const float CosineA2 = Pi * 0.25f;
+
+// ----------------------------------------------------------------------------
 
 inline float lerp(float a, float b, float t) 
 {
 	return a * (1.f - t) + b * t;
 }
 
+// ----------------------------------------------------------------------------
+
 inline float area_integral(float x, float y) 
 {
 	return std::atan2f(x*y, std::sqrtf(x*x + y * y + 1));
 }
 
+// ----------------------------------------------------------------------------
+
 inline float unlerp(int val, int max) 
 {
 	return (val + 0.5f) / max;
 }
+
+// ----------------------------------------------------------------------------
 
 struct SH9
 {
@@ -42,6 +57,8 @@ struct SH9
 	}
 };
 
+// ----------------------------------------------------------------------------
+
 struct SH9Color
 {
 	glm::vec3 c[9];
@@ -52,6 +69,8 @@ struct SH9Color
 			c[i] = glm::vec3(0.0f);
 	}
 };
+
+// ----------------------------------------------------------------------------
 
 SH9 project_onto_sh9(glm::vec3 dir)
 {
@@ -75,6 +94,8 @@ SH9 project_onto_sh9(glm::vec3 dir)
 	return sh;
 }
 
+// ----------------------------------------------------------------------------
+
 glm::vec3 evaluate_sh9(const SH9Color& coef, const glm::vec3& direction)
 {
 	SH9 basis = project_onto_sh9(direction);
@@ -90,6 +111,8 @@ glm::vec3 evaluate_sh9(const SH9Color& coef, const glm::vec3& direction)
 
 	return color;
 }
+
+// ----------------------------------------------------------------------------
 
 glm::vec3 evaluate_sh9_irradiance(const SH9Color& coef, const glm::vec3& direction)
 {
@@ -117,6 +140,7 @@ glm::vec3 evaluate_sh9_irradiance(const SH9Color& coef, const glm::vec3& directi
 	return color;
 }
 
+// ----------------------------------------------------------------------------
 
 struct Cubemap
 {
@@ -283,6 +307,8 @@ struct Cubemap
 	}
 };
 
+// ----------------------------------------------------------------------------
+
 void output_irradiance_cube_map(const SH9Color& coef, const std::string& name, const int32_t& w, const int32_t& h)
 {
 	std::string endings[] =
@@ -318,6 +344,8 @@ void output_irradiance_cube_map(const SH9Color& coef, const std::string& name, c
 			std::cout << "Failed to output cubemap face: " + path << std::endl;
 	}
 }
+
+// ----------------------------------------------------------------------------
 
 void output_cube_map(const SH9Color& coef, const std::string& name, const int32_t& w, const int32_t& h)
 {
@@ -355,27 +383,95 @@ void output_cube_map(const SH9Color& coef, const std::string& name, const int32_
 	}
 }
 
-int main()
+// ----------------------------------------------------------------------------
+
+void print_usage()
 {
-	std::string faces[] = 
+	printf("usage: brdf_lut [input_common_name] [outpath]\n\n");
+
+	printf("Input options:\n");
+	printf("  [input_common_name]	All faces must be HDR images with the name followed by '_posx', '_negx' etc \n");
+}
+
+// ----------------------------------------------------------------------------
+
+int main(int argc, char * argv[])
+{
+	if (argc == 1)
 	{
-		"C:/Users/LIVEROOM/Desktop/output_skybox_posx.hdr",
-		"C:/Users/LIVEROOM/Desktop/output_skybox_negx.hdr",
-		"C:/Users/LIVEROOM/Desktop/output_skybox_posy.hdr",
-		"C:/Users/LIVEROOM/Desktop/output_skybox_negy.hdr",
-		"C:/Users/LIVEROOM/Desktop/output_skybox_posz.hdr",
-		"C:/Users/LIVEROOM/Desktop/output_skybox_negz.hdr"
-	};
+		print_usage();
+		return 1;
+	}
+	else
+	{
+		std::string input = argv[1];
+		std::string output = argv[2];
 
-	Cubemap cubemap(faces);
+		if (input.size() == 0)
+		{
+			printf("ERROR: Invalid input path: %s\n\n", argv[1]);
+			print_usage();
 
-	SH9Color coef = cubemap.project_sh9();
+			return 1;
+		}
+		else if (output.size() == 0)
+		{
+			printf("ERROR: Invalid output path: %s\n\n", argv[1]);
+			print_usage();
 
-	for (uint32_t i = 0; i < 9; i++)
-		printf("%f %f %f\n", coef.c[i].x, coef.c[i].y, coef.c[i].z);
+			return 1;
+		}
 
-	output_irradiance_cube_map(coef, "skybox", cubemap.width, cubemap.height);
+		auto start = std::chrono::high_resolution_clock::now();
 
-	std::cin.get();
+		ast::ImageExportOptions options;
+		options.compression = ast::COMPRESSION_NONE;
+		options.pixel_type = ast::PIXEL_TYPE_FLOAT32;
+		options.normal_map = false;
+		options.flip_green = false;
+		options.output_mips = 0;
+
+		std::string filename = filesystem::get_filename(output);
+		std::string path = filesystem::get_file_path(output);
+
+		if (path.size() > 0)
+			options.path = path;
+		else
+			options.path = "";
+
+		ast::Image img;
+		img.name = filename;
+		img.allocate(ast::PIXEL_TYPE_FLOAT32, NUM_COEFFICIENTS, 1, 3, 1, 1);
+
+		glm::vec3* pixels = (glm::vec3*)img.data[0][0].data;
+
+		std::string faces[] =
+		{
+			input + "_posx.hdr",
+			input + "_negx.hdr",
+			input + "_posy.hdr",
+			input + "_negy.hdr",
+			input + "_posz.hdr",
+			input + "_negz.hdr"
+		};
+
+		Cubemap cubemap(faces);
+
+		SH9Color coef = cubemap.project_sh9();
+
+		for (uint32_t i = 0; i < NUM_COEFFICIENTS; i++)
+			pixels[i] = coef.c[i];
+
+		if (!export_image(img, options))
+			printf("Failed to output Spherical Harmonics coefficients: %s\n", output.c_str());
+
+		auto finish = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> time = finish - start;
+
+		printf("\nSuccessfully generated Spherical Harmonics coefficients in %f seconds\n\n", time.count());
+	}
+
 	return 0;
 }
+
+// ----------------------------------------------------------------------------

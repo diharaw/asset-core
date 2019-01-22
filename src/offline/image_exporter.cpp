@@ -194,13 +194,22 @@ for (int y = 0; y < dst_data.height; y++)															\
         image_header.num_mip_slices = mip_levels;
         
         std::string filename = img.name;
-        std::string path = options.path;
-        path += "/";
+        std::string path;
+
+		if (options.path.size() > 0)
+		{
+			path = options.path;
+			path += "/";
+		}
+       
         path += filename;
         path += ".ast";
         
         std::fstream f(path, std::ios::out | std::ios::binary);
-        
+
+		if (!f.is_open())
+			std::cout << "Failed to open file: " << path << std::endl;
+
         long offset = 0;
         f.seekp(offset);
         

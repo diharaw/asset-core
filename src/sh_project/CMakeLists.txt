@@ -9,3 +9,6 @@ file(GLOB_RECURSE SH_PROJECT_SOURCE ${PROJECT_SOURCE_DIR}/src/sh_project/*.cpp
 								  	${PROJECT_SOURCE_DIR}/src/sh_project/*.h)
 
 add_executable(sh_project ${SH_PROJECT_SOURCE})
+
+target_link_libraries(sh_project AssetCoreOffline)
+target_link_libraries(sh_project AssetCoreRuntime)

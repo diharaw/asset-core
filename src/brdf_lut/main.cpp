@@ -4,9 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <glm.hpp>
-
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
+#include <chrono> 
 
 #define BRDF_LUT_SIZE 512
 
@@ -129,10 +127,14 @@ glm::vec2 integrate_brdf(float NdotV, float roughness)
 	return glm::vec2(A, B);
 }
 
+// ----------------------------------------------------------------------------
+
 void print_usage()
 {
 	printf("usage: brdf_lut [outpath]\n\n");
 }
+
+// ----------------------------------------------------------------------------
 
 int main(int argc, char * argv[])
 {
@@ -153,8 +155,28 @@ int main(int argc, char * argv[])
 			return 1;
 		}
 
-		std::vector<glm::vec3> brdf;
-		brdf.resize(BRDF_LUT_SIZE * BRDF_LUT_SIZE);
+		auto start = std::chrono::high_resolution_clock::now();
+
+		ast::ImageExportOptions options;
+		options.compression = ast::COMPRESSION_NONE;
+		options.pixel_type = ast::PIXEL_TYPE_FLOAT32;
+		options.normal_map = false;
+		options.flip_green = false;
+		options.output_mips = 0;
+
+		std::string filename = filesystem::get_filename(output);
+		std::string path = filesystem::get_file_path(output);
+
+		if (path.size() > 0)
+			options.path = path;
+		else
+			options.path = "";
+
+		ast::Image img;
+		img.name = filename;
+		img.allocate(ast::PIXEL_TYPE_FLOAT32, BRDF_LUT_SIZE, BRDF_LUT_SIZE, 2, 1, 1);
+
+		glm::vec2* pixels = (glm::vec2*)img.data[0][0].data;
 
 #ifndef __APPLE__
 		#pragma omp parallel for
@@ -165,13 +187,20 @@ int main(int argc, char * argv[])
 			{
 				glm::vec2 tex_coord = glm::vec2(float(x), float(y)) / float(BRDF_LUT_SIZE - 1);
 
-				brdf[(BRDF_LUT_SIZE - 1 - y) * BRDF_LUT_SIZE + x] = glm::vec3(integrate_brdf(tex_coord.x, tex_coord.y), 0.0f);
+				pixels[(BRDF_LUT_SIZE - 1 - y) * BRDF_LUT_SIZE + x] = integrate_brdf(tex_coord.x, tex_coord.y);
 			}
 		}
 
-		if (stbi_write_hdr(output.c_str(), BRDF_LUT_SIZE, BRDF_LUT_SIZE, 3, &brdf[0].x) == 0)
-			std::cout << "Failed to output BRDF LUT: " + output << std::endl;
-		
+		if (!export_image(img, options))
+			printf("Failed to output BRDF LUT: %s\n", output.c_str());
+
+		auto finish = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> time = finish - start;
+
+		printf("\nSuccessfully generated BRDF LUT in %f seconds\n\n", time.count());
+
 		return 0;
 	}
 }
+
+// ----------------------------------------------------------------------------
