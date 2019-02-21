@@ -1,9 +1,4 @@
-//#include <offline/importer.h>
-//#include <offline/exporter.h>
 #include <offline/image_exporter.h>
-#include <offline/mesh_importer.h>
-#include <offline/mesh_exporter.h>
-#include <offline/scene_exporter.h>
 #include <common/filesystem.h>
 #include <runtime/loader.h>
 #include <stdio.h>
@@ -24,7 +19,10 @@ void read_and_export_image(const std::string& input)
             for (int j = 0; j < image.mip_slices; j++)
             {
                 std::string output_name = filesystem::get_file_path(input);
-                output_name += "/";
+
+				if (output_name != "")
+					output_name += "/";
+
                 output_name += name;
                 output_name += "_";
                 output_name += std::to_string(i);
@@ -58,14 +56,12 @@ void read_and_export_image(const std::string& input)
 
 void print_usage()
 {
-	printf("usage: AssetCore [options] infile [outpath]\n\n");
+	printf("usage: image_export [options] infile [outpath]\n\n");
 
 	printf("Input options:\n");
-	printf("  -S<path>		Source path for textures.\n");
-	printf("  -T<path>      Relative path for textures.\n");
-	printf("  -M<path>		Relative path for Materials.\n");
-	printf("  -C			Disable texture compression for output textures.\n");
-	printf("  -F			Flip normal map green channel.\n");
+	printf("  -D			Debug Output.\n");
+	printf("  -R			Generate radiance.\n");
+	printf("  -I			Generate irradiance.\n");
 }
 
 int main(int argc, char * argv[])
@@ -78,9 +74,9 @@ int main(int argc, char * argv[])
 	else
 	{
 		std::string input;
-		ast::MeshExportOption export_options;
-		ast::Mesh mesh;
-
+		ast::CubemapImageExportOptions export_options;
+		bool debug = false;
+	
 		int32_t input_idx = 99999;
 
 		for (int32_t i = 0; i < argc; i++)
@@ -89,55 +85,12 @@ int main(int argc, char * argv[])
 			{
 				char c = tolower(argv[i][1]);
 
-				if (c == 's')
-				{
-					std::string str = argv[i];
-					std::string path = str.substr(2, str.size() - 2);
-
-					if (path.size() == 0)
-					{
-						printf("ERROR: Invalid parameter: -S (%s)\n\n", argv[i]);
-						print_usage();
-
-						return 1;
-					}
-					else
-						export_options.texture_source_path = path;
-				}
-				else if (c == 't')
-				{
-					std::string str = argv[i];
-					std::string path = str.substr(2, str.size() - 2);
-
-					if (path.size() == 0)
-					{
-						printf("ERROR: Invalid parameter: -T (%s)\n\n", argv[i]);
-						print_usage();
-
-						return 1;
-					}
-					else
-						export_options.relative_texture_path = path;
-				}
-				else if (c == 'm')
-				{
-					std::string str = argv[i];
-					std::string path = str.substr(2, str.size() - 2);
-
-					if (path.size() == 0)
-					{
-						printf("ERROR: Invalid parameter: -M (%s)\n\n", argv[i]);
-						print_usage();
-
-						return 1;
-					}
-					else
-						export_options.relative_material_path = path;
-				}
-				else if (c == 'f')
-					export_options.normal_map_flip_green = true;
-				else if (c == 'c')
-					export_options.use_compression = false;
+				if (c == 'd')
+					debug = true;
+				else if (c == 'r')
+					export_options.radiance = true;
+				else if (c == 'i')
+					export_options.irradiance = true;
 			}
 			else if (i > 0)
 			{
@@ -160,7 +113,7 @@ int main(int argc, char * argv[])
 
 					if (export_options.path.size() == 0)
 					{
-						printf("ERROR: Invalid input path: %s\n\n", argv[i]);
+						printf("ERROR: Invalid output path: %s\n\n", argv[i]);
 						print_usage();
 
 						return 1;
@@ -169,20 +122,33 @@ int main(int argc, char * argv[])
 			}
 		}
 
-		if (ast::import_mesh(input, mesh))
+		if (!ast::cubemap_from_latlong(input, export_options))
 		{
-			if (!ast::export_mesh(mesh, export_options))
-			{
-				printf("ERROR: Failed to export mesh!\n\n");
-				return 1;
-			}
-		}
-		else
-		{
-			printf("ERROR: Failed to import mesh!\n\n");
+			printf("ERROR: Failed to export mesh!\n\n");
 			return 1;
 		}
 
+		if (debug)
+		{
+			std::string env_path = export_options.path + "/" + filesystem::get_filename(input) + ".ast";
+			std::cout << env_path << std::endl;
+			read_and_export_image(env_path);
+
+			if (export_options.radiance)
+			{
+				std::string rad_path = export_options.path + "/" + filesystem::get_filename(input) + "_radiance.ast";
+				std::cout << rad_path << std::endl;
+				read_and_export_image(rad_path);
+			}
+			
+			if (export_options.irradiance)
+			{
+				std::string irr_path = export_options.path + "/" + filesystem::get_filename(input) + "_irradiance.ast";
+				std::cout << irr_path << std::endl;
+				read_and_export_image(irr_path);
+			}
+		}
+		
 		return 0;
 	}
 }

@@ -76,12 +76,31 @@ namespace ast
                 return true;
             }
         }
+		else if (ext == "hdr")
+		{
+			img.type = PIXEL_TYPE_FLOAT32;
+			img.data[0][0].data = stbi_loadf(file.c_str(), &img.data[0][0].width, &img.data[0][0].height, &img.components, force_cmp);
+
+			if (img.data[0][0].data != nullptr)
+            {
+                img.array_slices = 1;
+                img.mip_slices = 1;
+                
+                return true;
+            }
+		}
         else
         {
-            if (type == PIXEL_TYPE_UNORM8)
-                img.data[0][0].data = stbi_load(file.c_str(), &img.data[0][0].width, &img.data[0][0].height, &img.components, force_cmp);
-            else if (type == PIXEL_TYPE_FLOAT32)
-                img.data[0][0].data = stbi_loadf(file.c_str(), &img.data[0][0].width, &img.data[0][0].height, &img.components, force_cmp);
+			if (type == PIXEL_TYPE_UNORM8)
+			{
+				img.type = PIXEL_TYPE_UNORM8;
+				img.data[0][0].data = stbi_load(file.c_str(), &img.data[0][0].width, &img.data[0][0].height, &img.components, force_cmp);
+			}
+			else if (type == PIXEL_TYPE_FLOAT32)
+			{
+				img.type = PIXEL_TYPE_FLOAT32;
+				img.data[0][0].data = stbi_loadf(file.c_str(), &img.data[0][0].width, &img.data[0][0].height, &img.components, force_cmp);
+			}
             
             if (img.data[0][0].data != nullptr)
             {

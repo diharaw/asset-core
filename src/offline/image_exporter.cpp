@@ -433,6 +433,7 @@ for (int y = 0; y < dst_data.height; y++)															\
             irradiance_cube.components = src.components;
             irradiance_cube.array_slices = 6;
             irradiance_cube.mip_slices = 1;
+			irradiance_cube.type = src.type;
             
             for (int i = 0; i < 6; i++)
             {
@@ -449,6 +450,7 @@ for (int y = 0; y < dst_data.height; y++)															\
             irradiance_exp_options.normal_map = false;
             irradiance_exp_options.output_mips = 0;
             irradiance_exp_options.path = options.path;
+			irradiance_exp_options.pixel_type = src.type;
             
             if (!export_image(irradiance_cube, irradiance_exp_options))
             {
@@ -457,6 +459,9 @@ for (int y = 0; y < dst_data.height; y++)															\
             }
             
             cmft::imageUnload(cmft_irradiance_cube);
+
+			for (int i = 0; i < 6; i++)
+                irradiance_cube.data[i][0].data = nullptr;
         }
         
         if (options.radiance)
@@ -489,7 +494,7 @@ for (int y = 0; y < dst_data.height; y++)															\
             
             radiance_cube.name = src.name;
             radiance_cube.name += "_radiance";
-            
+            radiance_cube.type = src.type;
             radiance_cube.components = src.components;
             radiance_cube.array_slices = 6;
             radiance_cube.mip_slices = 7;
@@ -512,6 +517,7 @@ for (int y = 0; y < dst_data.height; y++)															\
             radiance_exp_options.normal_map = false;
             radiance_exp_options.output_mips = 0;
             radiance_exp_options.path = options.path;
+			radiance_exp_options.pixel_type = src.type;
             
             if (!export_image(radiance_cube, radiance_exp_options))
             {
@@ -520,6 +526,12 @@ for (int y = 0; y < dst_data.height; y++)															\
             }
             
             cmft::imageUnload(cmft_radiance_cube);
+
+			for (int i = 0; i < 6; i++)
+			{
+				for (int j = 0; j < 7; j++)
+					radiance_cube.data[i][j].data = nullptr;
+			}
         }
         
         uint32_t img_offsets[CUBE_FACE_NUM][MAX_MIP_NUM];
@@ -527,6 +539,7 @@ for (int y = 0; y < dst_data.height; y++)															\
         
         Image cubemap;
         
+		cubemap.type = src.type;
         cubemap.name = src.name;
         cubemap.components = src.components;
         cubemap.array_slices = 6;
@@ -546,7 +559,7 @@ for (int y = 0; y < dst_data.height; y++)															\
         exp_options.compression = options.compression;
         exp_options.normal_map = false;
         exp_options.output_mips = options.output_mips;
-        exp_options.pixel_type = options.pixel_type;
+        exp_options.pixel_type = src.type;
         exp_options.path = options.path;
         
         if (!export_image(cubemap, exp_options))
@@ -557,6 +570,9 @@ for (int y = 0; y < dst_data.height; y++)															\
         
         cmft::imageUnload(cmft_cube);
         src.deallocate();
+
+		 for (int i = 0; i < 6; i++)
+            cubemap.data[i][0].data = nullptr;
         
         return true;
     }

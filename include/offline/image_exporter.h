@@ -19,7 +19,6 @@ namespace ast
     struct CubemapImageExportOptions
     {
         std::string path;
-        PixelType pixel_type = PIXEL_TYPE_UNORM8;
         CompressionType compression = COMPRESSION_NONE;
         int output_mips = 0;
         bool irradiance = false;
