@@ -319,6 +319,38 @@ namespace ast
 							mat.displacement_type = DISPLACEMENT_PARALLAX_OCCLUSION;
 						}
 
+						// Try to get Shininess Value
+						{
+							float shininess;
+
+							// Try loading in a Emissive material property
+							if (temp_material->Get(AI_MATKEY_SHININESS, shininess))
+							{
+								MaterialProperty property;
+
+								property.type = PROPERTY_SHININESS;
+								property.float_value = shininess;
+
+								mat.properties.push_back(property);
+							}
+						}
+
+						// Try to get Reflectivity Value
+						{
+							float reflectivity;
+
+							// Try loading in a Emissive material property
+							if (temp_material->Get(AI_MATKEY_REFLECTIVITY, reflectivity))
+							{
+								MaterialProperty property;
+
+								property.type = PROPERTY_REFLECTIVITY;
+								property.float_value = reflectivity;
+
+								mat.properties.push_back(property);
+							}
+						}
+
 						mat_id_mapping[scene->mMeshes[i]->mMaterialIndex] = mesh.materials.size();
 						processed_mat_ids.push_back(scene->mMeshes[i]->mMaterialIndex);
 

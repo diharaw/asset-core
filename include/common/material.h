@@ -27,7 +27,9 @@ namespace ast
         "PROPERTY_METALNESS",
         "PROPERTY_ROUGHNESS",
         "PROPERTY_SPECULAR",
-        "PROPERTY_GLOSSINESS"
+        "PROPERTY_GLOSSINESS",
+		"PROPERTY_SHININESS",
+		"PROPERTY_REFLECTIVITY"
     };
     
     static const std::string kShadingModel[] =
@@ -78,7 +80,9 @@ namespace ast
         PROPERTY_METALNESS,
         PROPERTY_ROUGHNESS,
         PROPERTY_SPECULAR,
-        PROPERTY_GLOSSINESS
+        PROPERTY_GLOSSINESS,
+		PROPERTY_SHININESS,
+		PROPERTY_REFLECTIVITY
     };
     
     enum ShadingModel

@@ -153,7 +153,9 @@ namespace ast
             }
             else if (property_desc.type == PROPERTY_METALNESS ||
                      property_desc.type == PROPERTY_ROUGHNESS ||
-                     property_desc.type == PROPERTY_GLOSSINESS)
+                     property_desc.type == PROPERTY_GLOSSINESS || 
+					 property_desc.type == PROPERTY_SHININESS|| 
+					 property_desc.type == PROPERTY_REFLECTIVITY)
                 property["value"] = property_desc.float_value;
             
             property_array.push_back(property);

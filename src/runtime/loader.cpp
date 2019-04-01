@@ -435,6 +435,24 @@ namespace ast
                         
                         found = true;
                     }
+					else if (type == kPropertyType[PROPERTY_SHININESS])
+                    {
+                        property.type = PROPERTY_SHININESS;
+                        
+                        if (json_property.find("value") != json_property.end())
+                            property.float_value = json_property["value"];
+                        
+                        found = true;
+                    }
+					else if (type == kPropertyType[PROPERTY_REFLECTIVITY])
+                    {
+                        property.type = PROPERTY_REFLECTIVITY;
+                        
+                        if (json_property.find("value") != json_property.end())
+                            property.float_value = json_property["value"];
+                        
+                        found = true;
+                    }
                 }
                 
                 if (found)
