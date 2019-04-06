@@ -6,8 +6,6 @@
 #include <common/filesystem.h>
 #include <chrono> 
 
-#include <iostream>
-
 namespace ast
 {
     std::string get_texture_path(aiMaterial* material, aiTextureType texture_type)
@@ -88,15 +86,17 @@ namespace ast
 
                 if (!does_material_exist(processed_mat_ids, scene->mMeshes[i]->mMaterialIndex))
                 {
+                    temp_material = scene->mMaterials[scene->mMeshes[i]->mMaterialIndex];
+                    
                     Material mat;
                     
 					mat.name = mesh.name;
 					mat.name += "_";
-					mat.name += scene->mMeshes[i]->mName.C_Str();
+                    mat.name += temp_material->GetName().C_Str();
 
 					// Does a material with the same name exist?
 					int32_t name_index = find_material_index(mesh.materials, mat.name);
-
+        
 					if (name_index != -1)
 					{
 						mat_id_mapping[scene->mMeshes[i]->mMaterialIndex] = name_index;
@@ -113,8 +113,6 @@ namespace ast
 							mat.name += "_unnamed_material_";
 							mat.name += std::to_string(unnamed_mats++);
 						}
-
-						temp_material = scene->mMaterials[scene->mMeshes[i]->mMaterialIndex];
 
 						int two_sided = 0;
 						temp_material->Get(AI_MATKEY_TWOSIDED, two_sided);
