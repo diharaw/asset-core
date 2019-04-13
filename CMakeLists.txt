@@ -57,3 +57,13 @@ if (BUILD_ASSET_CORE_TOOLS)
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/brdf_lut")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/sh_project")
 endif()
+
+find_program(CLANG_FORMAT_EXE NAMES "clang-format" DOC "Path to clang-format executable")
+
+file(GLOB_RECURSE FORMAT_HEADERS ${PROJECT_SOURCE_DIR}/src/*.h)
+
+file(GLOB_RECURSE FORMAT_SOURCE ${PROJECT_SOURCE_DIR}/src/*.cpp)
+
+if(CLANG_FORMAT_EXE)
+    add_custom_target(clang-format-project-files COMMAND ${CLANG_FORMAT_EXE} -i -style=file ${FORMAT_HEADERS} ${FORMAT_SOURCE})
+endif()

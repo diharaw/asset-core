@@ -7,446 +7,447 @@
 #include <fstream>
 
 #ifdef _WIN32
-#include <direct.h>
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#define getcwd _getcwd
+#    include <direct.h>
+#    define WIN32_LEAN_AND_MEAN
+#    include <Windows.h>
+#    define getcwd _getcwd
 #else
-#include <unistd.h>
+#    include <unistd.h>
 #endif
 
 #ifdef __APPLE__
-#include <mach-o/dyld.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <errno.h>
+#    include <mach-o/dyld.h>
+#    include <dirent.h>
+#    include <sys/stat.h>
+#    include <errno.h>
 #endif
 
 #define PATH_MAX_STRING_SIZE 256
 
 namespace filesystem
 {
-    std::vector<std::string> m_directory_list;
-    std::vector<std::string> m_archive_list;
-	FILE* m_CurrentWriteTarget;
-    
-    bool find_directory(std::string _path)
-    {
-        {
-            for (int i = 0; i < m_directory_list.size(); i++)
-            {
-                if (m_directory_list[i] == _path)
-                    return true;
-            }
-            
-            return false;
-        }
-    }
-    
-    bool find_archive(std::string _path)
-    {
-        {
-            for (int i = 0; i < m_archive_list.size(); i++)
-            {
-                if (m_archive_list[i] == _path)
-                    return true;
-            }
-            
-            return false;
-        }
-    }
-    
-    void add_directory(std::string _path)
-    {
-        if (!find_directory(_path))
-            m_directory_list.push_back(_path);
-    }
-    
-    void add_archive(std::string _path)
-    {
-        if (!find_archive(_path))
-            m_archive_list.push_back(_path);
-    }
-    
-    FILE * open_file_from_directory(std::string _path, bool _text)
-    {
-        const char* name = _path.c_str();
+std::vector<std::string> m_directory_list;
+std::vector<std::string> m_archive_list;
+FILE*                    m_CurrentWriteTarget;
 
-#ifdef __APPLE__
-        FILE *f;
-        
-        if(_text)
-            f = fopen(name, "r");
-        else
-            f = fopen(name, "rb");
-#else
-		FILE *f = fopen(name, "rb");
-#endif
-        return f;
-    }
-    
-    void close_file_from_directory(FILE * _file)
+bool find_directory(std::string _path)
+{
     {
-        fclose(_file);
-    }
-    
-    FileHandle read_file(std::string _path, bool _text, bool _absolute)
-    {
-        FileHandle file;
-        
-        char* buffer;
-
-		file.buffer = nullptr;
-		file.size = 0;
-        
-#ifdef __APPLE__
-        std::string cwd = get_current_working_directory();
-#endif
-        
         for (int i = 0; i < m_directory_list.size(); i++)
         {
-            std::string currentDirectory;
-      
-			if (!_absolute)
-			{
-#ifdef __APPLE__
-				currentDirectory = cwd;
-#endif
-				currentDirectory += m_directory_list[i] + "/";
-				currentDirectory += _path;
-			}
-			else
-			{
-				currentDirectory = _path;
-			}
-            
-            FILE* currentFile = open_file_from_directory(currentDirectory, _text);
-            
-            if (currentFile)
-            {
-                fseek(currentFile, 0, SEEK_END);
-                long fsize = ftell(currentFile);
-                fseek(currentFile, 0, SEEK_SET);
-                buffer = (char*)malloc(fsize + 1);
-                fread(buffer, fsize, 1, currentFile);
-                
-                if (_text)
-                    buffer[fsize] = '\0';
-                
-                close_file_from_directory(currentFile);
-            
-                file.buffer = buffer;
-                file.size = fsize;
-                
-                return file;
-            }
-            
-            // If file does not exist, the FILE handle should be NULL, so i should be able to remove the following line.
-            //close_file_from_directory(currentFile);
-        }
-        
-        return file;
-    }
-
-
-	std::string get_file_extention(const std::string& _fileName)
-	{
-
-		size_t i = _fileName.rfind('.', _fileName.length());
-		if (i != std::string::npos)
-			return(_fileName.substr(i + 1, _fileName.length() - i));
-
-		return("");
-	}
-
-	std::string get_filename(const std::string& _fileName)
-	{
-		size_t start = _fileName.find_last_of("/");
-		size_t startAlt = _fileName.find_last_of("\\");
-
-		if (start == std::string::npos)
-			start = startAlt;
-
-		size_t end = _fileName.find_last_of(".");
-
-		return _fileName.substr(start + 1, (end - start) - 1);
-	}
-
-	std::string get_file_name_and_extention(const std::string& _filePath)
-	{
-		size_t start = _filePath.find_last_of("/");
-		size_t startAlt = _filePath.find_last_of("\\");
-
-		if (start == std::string::npos)
-			start = startAlt;
-
-		return _filePath.substr(start + 1, _filePath.length());
-	}
-
-	std::string get_file_path(const std::string& _filePath)
-	{
-		size_t start = _filePath.find_last_of("/");
-		size_t startAlt = _filePath.find_last_of("\\");
-
-		if (start == std::string::npos)
-			start = startAlt;
-
-		return _filePath.substr(0, start + 1);
-	}
-
-    std::string get_current_working_directory()
-    {
-#ifdef __APPLE__
-        char pathbuf[PATH_MAX + 1];
-        uint32_t  bufsize = sizeof(pathbuf);
-        _NSGetExecutablePath(pathbuf, &bufsize);
-        chdir( pathbuf );
-        std::string path = std::string(pathbuf);
-        
-        size_t index = path.find_last_of(".");
-        
-        return path.substr(0, index);
-#else
-        std::string s_cwd(getcwd(NULL,0));
-        return s_cwd;
-#endif
-    }
-    
-    bool is_absolute_path(const std::string& path)
-    {
-#ifdef __APPLE__
-        if (path.length() == 0)
-            return false;
-        else
-        {
-            if (path[0] == '/')
+            if (m_directory_list[i] == _path)
                 return true;
-            else
-                return false;
         }
-#else
-        if (path.length() < 2)
-            return false;
-        else
+
+        return false;
+    }
+}
+
+bool find_archive(std::string _path)
+{
+    {
+        for (int i = 0; i < m_archive_list.size(); i++)
         {
-            if (path[1] == ':')
+            if (m_archive_list[i] == _path)
                 return true;
-            else
-                return false;
         }
-#endif
+
+        return false;
     }
+}
 
-#ifdef WIN32
-	size_t get_file_size(const std::string& _fileName)
-	{
-        struct stat st;
-		if (stat(_fileName.c_str(), &st) != 0) {
-			return 0;
-		}
-		return st.st_size;
-	}
+void add_directory(std::string _path)
+{
+    if (!find_directory(_path))
+        m_directory_list.push_back(_path);
+}
 
-	bool does_directory_exist(const std::string& _name)
-	{
-		struct stat st;
-		if (stat(_name.c_str(), &st) == 0)
-			return true;
-		return false;
-	}
+void add_archive(std::string _path)
+{
+    if (!find_archive(_path))
+        m_archive_list.push_back(_path);
+}
 
-	bool does_file_exist(const std::string& _name)
-	{
-		GetFileAttributes(_name.c_str());
+FILE* open_file_from_directory(std::string _path, bool _text)
+{
+    const char* name = _path.c_str();
 
-		if (INVALID_FILE_ATTRIBUTES == GetFileAttributes(_name.c_str()) && GetLastError() == ERROR_FILE_NOT_FOUND)
-			return false;
-		else
-			return true;
-	}
+#ifdef __APPLE__
+    FILE* f;
+
+    if (_text)
+        f = fopen(name, "r");
+    else
+        f = fopen(name, "rb");
+#else
+    FILE*       f = fopen(name, "rb");
 #endif
-    
-	bool write_begin(std::string _path)
-	{
-		const char* path = _path.c_str();
-		m_CurrentWriteTarget = fopen(path, "wb");
-		if (!m_CurrentWriteTarget)
-			return false;
+    return f;
+}
 
-		return true;
-	}
+void close_file_from_directory(FILE* _file)
+{
+    fclose(_file);
+}
 
-	void write(void* _Buffer, size_t _Size, size_t _Count, long _Offset)
-	{
-		if (m_CurrentWriteTarget)
-		{
-			fseek(m_CurrentWriteTarget, _Offset, SEEK_SET);
-			fwrite(_Buffer, _Size, _Count, m_CurrentWriteTarget);
-		}
-	}
+FileHandle read_file(std::string _path, bool _text, bool _absolute)
+{
+    FileHandle file;
 
-	void write_end()
-	{
-		if (m_CurrentWriteTarget)
-		{
-			fclose(m_CurrentWriteTarget);
-			m_CurrentWriteTarget = NULL;
-		}
-	}
+    char* buffer;
 
-	void copy_file(std::string input, std::string output)
-	{
-		std::ifstream source(input, std::ios::binary);
-		std::ofstream dest(output, std::ios::binary);
+    file.buffer = nullptr;
+    file.size   = 0;
 
-		std::istreambuf_iterator<char> begin_source(source);
-		std::istreambuf_iterator<char> end_source;
-		std::ostreambuf_iterator<char> begin_dest(dest);
-		std::copy(begin_source, end_source, begin_dest);
+#ifdef __APPLE__
+    std::string cwd = get_current_working_directory();
+#endif
 
-		source.close();
-		dest.close();
-	}
-    
-    void destroy_handle(FileHandle& handle)
+    for (int i = 0; i < m_directory_list.size(); i++)
     {
-        if(handle.buffer)
+        std::string currentDirectory;
+
+        if (!_absolute)
         {
-            free(handle.buffer);
+#ifdef __APPLE__
+            currentDirectory = cwd;
+#endif
+            currentDirectory += m_directory_list[i] + "/";
+            currentDirectory += _path;
         }
+        else
+        {
+            currentDirectory = _path;
+        }
+
+        FILE* currentFile = open_file_from_directory(currentDirectory, _text);
+
+        if (currentFile)
+        {
+            fseek(currentFile, 0, SEEK_END);
+            long fsize = ftell(currentFile);
+            fseek(currentFile, 0, SEEK_SET);
+            buffer = (char*)malloc(fsize + 1);
+            fread(buffer, fsize, 1, currentFile);
+
+            if (_text)
+                buffer[fsize] = '\0';
+
+            close_file_from_directory(currentFile);
+
+            file.buffer = buffer;
+            file.size   = fsize;
+
+            return file;
+        }
+
+        // If file does not exist, the FILE handle should be NULL, so i should be able to remove the following line.
+        //close_file_from_directory(currentFile);
     }
 
-#ifdef WIN32
-    bool directory_exists_internal(const std::string& path)
-    {
-        DWORD dwAttrib = GetFileAttributes(path.c_str());
-        return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
-    }
+    return file;
+}
 
-    bool create_directory(const std::string& path)
+std::string get_file_extention(const std::string& _fileName)
+{
+    size_t i = _fileName.rfind('.', _fileName.length());
+    if (i != std::string::npos)
+        return (_fileName.substr(i + 1, _fileName.length() - i));
+
+    return ("");
+}
+
+std::string get_filename(const std::string& _fileName)
+{
+    size_t start    = _fileName.find_last_of("/");
+    size_t startAlt = _fileName.find_last_of("\\");
+
+    if (start == std::string::npos)
+        start = startAlt;
+
+    size_t end = _fileName.find_last_of(".");
+
+    return _fileName.substr(start + 1, (end - start) - 1);
+}
+
+std::string get_file_name_and_extention(const std::string& _filePath)
+{
+    size_t start    = _filePath.find_last_of("/");
+    size_t startAlt = _filePath.find_last_of("\\");
+
+    if (start == std::string::npos)
+        start = startAlt;
+
+    return _filePath.substr(start + 1, _filePath.length());
+}
+
+std::string get_file_path(const std::string& _filePath)
+{
+    size_t start    = _filePath.find_last_of("/");
+    size_t startAlt = _filePath.find_last_of("\\");
+
+    if (start == std::string::npos)
+        start = startAlt;
+
+    return _filePath.substr(0, start + 1);
+}
+
+std::string get_current_working_directory()
+{
+#ifdef __APPLE__
+    char     pathbuf[PATH_MAX + 1];
+    uint32_t bufsize = sizeof(pathbuf);
+    _NSGetExecutablePath(pathbuf, &bufsize);
+    chdir(pathbuf);
+    std::string path = std::string(pathbuf);
+
+    size_t index = path.find_last_of(".");
+
+    return path.substr(0, index);
+#else
+    std::string s_cwd(getcwd(NULL, 0));
+    return s_cwd;
+#endif
+}
+
+bool is_absolute_path(const std::string& path)
+{
+#ifdef __APPLE__
+    if (path.length() == 0)
+        return false;
+    else
     {
-        std::string str_path = path;;
-        
-        int ret = _mkdir(path.c_str());
-        
-        if (ret == 0)
+        if (path[0] == '/')
             return true;
-        
-        switch (errno)
-        {
-            case ENOENT:
-            {
-                int pos = static_cast<int>(str_path.find_last_of('/'));
-                if (pos == std::string::npos)
-                    pos = str_path.find_last_of('\\');
-                if (pos == std::string::npos)
-                    return false;
-                if (!create_directory(str_path.substr(0, pos).c_str()))
-                    return false;
-            }
-                
-                return 0 == _mkdir(path.c_str());
-                
-            case EEXIST:
-                return directory_exists_internal(path);
-                
-            default:
-                return false;
-        }
+        else
+            return false;
     }
 #else
-    bool does_file_exist(const std::string& _name)
+    if (path.length() < 2)
+        return false;
+    else
     {
-        int res = access(_name.c_str(), R_OK);
-        
-        if (res < 0)
-            return false;
-        else
+        if (path[1] == ':')
             return true;
-    }
-    
-    bool directory_exists_internal(const std::string& path)
-    {
-        DIR *dir;
-        bool exists = false;
-        
-        dir = opendir(path.c_str());
-        
-        if (dir != NULL)
-        {
-            exists = true;
-            closedir(dir);
-        }
-        
-        return exists;
-    }
-    
-    int mkdir_p(const char *dir, const mode_t mode)
-    {
-        char tmp[PATH_MAX_STRING_SIZE];
-        char *p = NULL;
-        struct stat sb;
-        size_t len;
-        
-        /* copy path */
-        len = strnlen (dir, PATH_MAX_STRING_SIZE);
-        if (len == 0 || len == PATH_MAX_STRING_SIZE)
-            return -1;
-        
-        memcpy (tmp, dir, len);
-        tmp[len] = '\0';
-        
-        /* remove trailing slash */
-        if(tmp[len - 1] == '/')
-            tmp[len - 1] = '\0';
-        
-        /* check if path exists and is a directory */
-        if (stat (tmp, &sb) == 0)
-        {
-            if (S_ISDIR (sb.st_mode))
-            {
-                return 0;
-            }
-        }
-        
-        /* recursive mkdir */
-        for(p = tmp + 1; *p; p++)
-        {
-            if(*p == '/')
-            {
-                *p = 0;
-                /* test path */
-                if (stat(tmp, &sb) != 0)
-                {
-                    /* path does not exist - create directory */
-                    if (mkdir(tmp, mode) < 0)
-                        return -1;
-                }
-                else if (!S_ISDIR(sb.st_mode))
-                    return -1; /* not a directory */
-                *p = '/';
-            }
-        }
-        /* test path */
-        if (stat(tmp, &sb) != 0)
-        {
-            /* path does not exist - create directory */
-            if (mkdir(tmp, mode) < 0)
-                return -1;
-        }
-        else if (!S_ISDIR(sb.st_mode))
-            return -1; /* not a directory */
-        
-        return 0;
-    }
-    
-    bool create_directory(const std::string& path)
-    {
-        std::string str_path = path;;
-        
-        mode_t mode = 0755;
-        
-        return mkdir_p(path.c_str(), mode) != -1;
+        else
+            return false;
     }
 #endif
 }
+
+#ifdef WIN32
+size_t get_file_size(const std::string& _fileName)
+{
+    struct stat st;
+    if (stat(_fileName.c_str(), &st) != 0)
+    {
+        return 0;
+    }
+    return st.st_size;
+}
+
+bool does_directory_exist(const std::string& _name)
+{
+    struct stat st;
+    if (stat(_name.c_str(), &st) == 0)
+        return true;
+    return false;
+}
+
+bool does_file_exist(const std::string& _name)
+{
+    GetFileAttributes(_name.c_str());
+
+    if (INVALID_FILE_ATTRIBUTES == GetFileAttributes(_name.c_str()) && GetLastError() == ERROR_FILE_NOT_FOUND)
+        return false;
+    else
+        return true;
+}
+#endif
+
+bool write_begin(std::string _path)
+{
+    const char* path     = _path.c_str();
+    m_CurrentWriteTarget = fopen(path, "wb");
+    if (!m_CurrentWriteTarget)
+        return false;
+
+    return true;
+}
+
+void write(void* _Buffer, size_t _Size, size_t _Count, long _Offset)
+{
+    if (m_CurrentWriteTarget)
+    {
+        fseek(m_CurrentWriteTarget, _Offset, SEEK_SET);
+        fwrite(_Buffer, _Size, _Count, m_CurrentWriteTarget);
+    }
+}
+
+void write_end()
+{
+    if (m_CurrentWriteTarget)
+    {
+        fclose(m_CurrentWriteTarget);
+        m_CurrentWriteTarget = NULL;
+    }
+}
+
+void copy_file(std::string input, std::string output)
+{
+    std::ifstream source(input, std::ios::binary);
+    std::ofstream dest(output, std::ios::binary);
+
+    std::istreambuf_iterator<char> begin_source(source);
+    std::istreambuf_iterator<char> end_source;
+    std::ostreambuf_iterator<char> begin_dest(dest);
+    std::copy(begin_source, end_source, begin_dest);
+
+    source.close();
+    dest.close();
+}
+
+void destroy_handle(FileHandle& handle)
+{
+    if (handle.buffer)
+    {
+        free(handle.buffer);
+    }
+}
+
+#ifdef WIN32
+bool directory_exists_internal(const std::string& path)
+{
+    DWORD dwAttrib = GetFileAttributes(path.c_str());
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+bool create_directory(const std::string& path)
+{
+    std::string str_path = path;
+    ;
+
+    int ret = _mkdir(path.c_str());
+
+    if (ret == 0)
+        return true;
+
+    switch (errno)
+    {
+        case ENOENT:
+        {
+            int pos = static_cast<int>(str_path.find_last_of('/'));
+            if (pos == std::string::npos)
+                pos = str_path.find_last_of('\\');
+            if (pos == std::string::npos)
+                return false;
+            if (!create_directory(str_path.substr(0, pos).c_str()))
+                return false;
+        }
+
+            return 0 == _mkdir(path.c_str());
+
+        case EEXIST:
+            return directory_exists_internal(path);
+
+        default:
+            return false;
+    }
+}
+#else
+bool does_file_exist(const std::string& _name)
+{
+    int res = access(_name.c_str(), R_OK);
+
+    if (res < 0)
+        return false;
+    else
+        return true;
+}
+
+bool directory_exists_internal(const std::string& path)
+{
+    DIR* dir;
+    bool exists = false;
+
+    dir = opendir(path.c_str());
+
+    if (dir != NULL)
+    {
+        exists = true;
+        closedir(dir);
+    }
+
+    return exists;
+}
+
+int mkdir_p(const char* dir, const mode_t mode)
+{
+    char tmp[PATH_MAX_STRING_SIZE];
+    char* p = NULL;
+    struct stat sb;
+    size_t len;
+
+    /* copy path */
+    len = strnlen(dir, PATH_MAX_STRING_SIZE);
+    if (len == 0 || len == PATH_MAX_STRING_SIZE)
+        return -1;
+
+    memcpy(tmp, dir, len);
+    tmp[len] = '\0';
+
+    /* remove trailing slash */
+    if (tmp[len - 1] == '/')
+        tmp[len - 1] = '\0';
+
+    /* check if path exists and is a directory */
+    if (stat(tmp, &sb) == 0)
+    {
+        if (S_ISDIR(sb.st_mode))
+        {
+            return 0;
+        }
+    }
+
+    /* recursive mkdir */
+    for (p = tmp + 1; *p; p++)
+    {
+        if (*p == '/')
+        {
+            *p = 0;
+            /* test path */
+            if (stat(tmp, &sb) != 0)
+            {
+                /* path does not exist - create directory */
+                if (mkdir(tmp, mode) < 0)
+                    return -1;
+            }
+            else if (!S_ISDIR(sb.st_mode))
+                return -1; /* not a directory */
+            *p = '/';
+        }
+    }
+    /* test path */
+    if (stat(tmp, &sb) != 0)
+    {
+        /* path does not exist - create directory */
+        if (mkdir(tmp, mode) < 0)
+            return -1;
+    }
+    else if (!S_ISDIR(sb.st_mode))
+        return -1; /* not a directory */
+
+    return 0;
+}
+
+bool create_directory(const std::string& path)
+{
+    std::string str_path = path;
+    ;
+
+    mode_t mode = 0755;
+
+    return mkdir_p(path.c_str(), mode) != -1;
+}
+#endif
+} // namespace filesystem

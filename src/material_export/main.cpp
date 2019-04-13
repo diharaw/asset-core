@@ -14,11 +14,11 @@
 void read_and_export_image(const std::string& input)
 {
     ast::Image image;
-    
+
     if (ast::load_image(input, image))
     {
         std::string name = filesystem::get_filename(input);
-        
+
         for (int i = 0; i < image.array_slices; i++)
         {
             for (int j = 0; j < image.mip_slices; j++)
@@ -30,13 +30,13 @@ void read_and_export_image(const std::string& input)
                 output_name += std::to_string(i);
                 output_name += "_";
                 output_name += std::to_string(j);
-                
+
                 if (image.type == ast::PIXEL_TYPE_UNORM8)
                 {
                     if (image.components == 1)
                     {
                         output_name += ".png";
-                         stbi_write_png(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, image.data[i][j].data, image.data[i][j].width * image.type * image.components);
+                        stbi_write_png(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, image.data[i][j].data, image.data[i][j].width * image.type * image.components);
                     }
                     else
                     {
@@ -58,131 +58,131 @@ void read_and_export_image(const std::string& input)
 
 void print_usage()
 {
-	printf("usage: AssetCore [options] infile [outpath]\n\n");
+    printf("usage: AssetCore [options] infile [outpath]\n\n");
 
-	printf("Input options:\n");
-	printf("  -S<path>		Source path for textures.\n");
-	printf("  -T<path>      Relative path for textures.\n");
-	printf("  -M<path>		Relative path for Materials.\n");
-	printf("  -C			Disable texture compression for output textures.\n");
-	printf("  -F			Flip normal map green channel.\n");
+    printf("Input options:\n");
+    printf("  -S<path>		Source path for textures.\n");
+    printf("  -T<path>      Relative path for textures.\n");
+    printf("  -M<path>		Relative path for Materials.\n");
+    printf("  -C			Disable texture compression for output textures.\n");
+    printf("  -F			Flip normal map green channel.\n");
 }
 
-int main(int argc, char * argv[])
+int main(int argc, char* argv[])
 {
     if (argc == 1)
     {
-		print_usage();
+        print_usage();
         return 1;
     }
-	else
-	{
-		std::string input;
-		ast::MeshExportOption export_options;
-		ast::Mesh mesh;
+    else
+    {
+        std::string           input;
+        ast::MeshExportOption export_options;
+        ast::Mesh             mesh;
 
-		int32_t input_idx = 99999;
+        int32_t input_idx = 99999;
 
-		for (int32_t i = 0; i < argc; i++)
-		{
-			if (argv[i][0] == '-')
-			{
-				char c = tolower(argv[i][1]);
+        for (int32_t i = 0; i < argc; i++)
+        {
+            if (argv[i][0] == '-')
+            {
+                char c = tolower(argv[i][1]);
 
-				if (c == 's')
-				{
-					std::string str = argv[i];
-					std::string path = str.substr(2, str.size() - 2);
+                if (c == 's')
+                {
+                    std::string str  = argv[i];
+                    std::string path = str.substr(2, str.size() - 2);
 
-					if (path.size() == 0)
-					{
-						printf("ERROR: Invalid parameter: -S (%s)\n\n", argv[i]);
-						print_usage();
+                    if (path.size() == 0)
+                    {
+                        printf("ERROR: Invalid parameter: -S (%s)\n\n", argv[i]);
+                        print_usage();
 
-						return 1;
-					}
-					else
-						export_options.texture_source_path = path;
-				}
-				else if (c == 't')
-				{
-					std::string str = argv[i];
-					std::string path = str.substr(2, str.size() - 2);
+                        return 1;
+                    }
+                    else
+                        export_options.texture_source_path = path;
+                }
+                else if (c == 't')
+                {
+                    std::string str  = argv[i];
+                    std::string path = str.substr(2, str.size() - 2);
 
-					if (path.size() == 0)
-					{
-						printf("ERROR: Invalid parameter: -T (%s)\n\n", argv[i]);
-						print_usage();
+                    if (path.size() == 0)
+                    {
+                        printf("ERROR: Invalid parameter: -T (%s)\n\n", argv[i]);
+                        print_usage();
 
-						return 1;
-					}
-					else
-						export_options.relative_texture_path = path;
-				}
-				else if (c == 'm')
-				{
-					std::string str = argv[i];
-					std::string path = str.substr(2, str.size() - 2);
+                        return 1;
+                    }
+                    else
+                        export_options.relative_texture_path = path;
+                }
+                else if (c == 'm')
+                {
+                    std::string str  = argv[i];
+                    std::string path = str.substr(2, str.size() - 2);
 
-					if (path.size() == 0)
-					{
-						printf("ERROR: Invalid parameter: -M (%s)\n\n", argv[i]);
-						print_usage();
+                    if (path.size() == 0)
+                    {
+                        printf("ERROR: Invalid parameter: -M (%s)\n\n", argv[i]);
+                        print_usage();
 
-						return 1;
-					}
-					else
-						export_options.relative_material_path = path;
-				}
-				else if (c == 'f')
-					export_options.normal_map_flip_green = true;
-				else if (c == 'c')
-					export_options.use_compression = false;
-			}
-			else if (i > 0)
-			{
-				if (i < input_idx)
-				{
-					input_idx = 1;
-					input = argv[i];
+                        return 1;
+                    }
+                    else
+                        export_options.relative_material_path = path;
+                }
+                else if (c == 'f')
+                    export_options.normal_map_flip_green = true;
+                else if (c == 'c')
+                    export_options.use_compression = false;
+            }
+            else if (i > 0)
+            {
+                if (i < input_idx)
+                {
+                    input_idx = 1;
+                    input     = argv[i];
 
-					if (input.size() == 0)
-					{
-						printf("ERROR: Invalid input path: %s\n\n", argv[i]);
-						print_usage();
+                    if (input.size() == 0)
+                    {
+                        printf("ERROR: Invalid input path: %s\n\n", argv[i]);
+                        print_usage();
 
-						return 1;
-					}
-				}
-				else
-				{
-					export_options.path = argv[i];
+                        return 1;
+                    }
+                }
+                else
+                {
+                    export_options.path = argv[i];
 
-					if (export_options.path.size() == 0)
-					{
-						printf("ERROR: Invalid input path: %s\n\n", argv[i]);
-						print_usage();
+                    if (export_options.path.size() == 0)
+                    {
+                        printf("ERROR: Invalid input path: %s\n\n", argv[i]);
+                        print_usage();
 
-						return 1;
-					}
-				}
-			}
-		}
+                        return 1;
+                    }
+                }
+            }
+        }
 
-		if (ast::import_mesh(input, mesh))
-		{
-			if (!ast::export_mesh(mesh, export_options))
-			{
-				printf("ERROR: Failed to export mesh!\n\n");
-				return 1;
-			}
-		}
-		else
-		{
-			printf("ERROR: Failed to import mesh!\n\n");
-			return 1;
-		}
+        if (ast::import_mesh(input, mesh))
+        {
+            if (!ast::export_mesh(mesh, export_options))
+            {
+                printf("ERROR: Failed to export mesh!\n\n");
+                return 1;
+            }
+        }
+        else
+        {
+            printf("ERROR: Failed to import mesh!\n\n");
+            return 1;
+        }
 
-		return 0;
-	}
+        return 0;
+    }
 }
