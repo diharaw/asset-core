@@ -15,6 +15,9 @@ namespace ast
     {
 		auto start = std::chrono::high_resolution_clock::now();
 
+		if (!filesystem::does_directory_exist(options.path))
+			filesystem::create_directory(options.path);
+
         std::string material_path = options.path;
         
         if (options.relative_material_path != "")
