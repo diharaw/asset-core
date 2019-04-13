@@ -2,6 +2,7 @@
 #include <offline/material_exporter.h>
 #include <common/filesystem.h>
 #include <common/header.h>
+#include <json.hpp>
 #include <iostream>
 #include <fstream>
 #include <chrono>
@@ -24,7 +25,11 @@ namespace ast
         else
             material_path += "/materials";
         
-        filesystem::create_directory(material_path);
+        if (!filesystem::create_directory(material_path))
+        {
+            std::cout << "Invalid Material path!" << std::endl;
+            return false;
+        }
         
         std::string texture_path = options.path;
         
@@ -36,7 +41,11 @@ namespace ast
         else
             texture_path += "/textures";
         
-        filesystem::create_directory(texture_path);
+        if (!filesystem::create_directory(texture_path))
+        {
+            std::cout << "Invalid Texture path!" << std::endl;
+            return false;
+        }
         
         std::string output_path = options.path;
         output_path += "/";
@@ -146,6 +155,79 @@ namespace ast
             }
 
             f.close();
+            
+            if (options.output_metadata)
+            {
+                nlohmann::json doc;
+                
+                doc["name"] = desc.name;
+                doc["vertex_count"] = desc.vertices.size();
+                doc["index_count"] = desc.indices.size();
+                doc["submesh_count"] = desc.submeshes.size();
+                doc["material_count"] = desc.materials.size();
+                
+                auto submesh_array = doc.array();
+                
+                for (auto& submesh_desc : desc.submeshes)
+                {
+                    nlohmann::json submesh;
+      
+                    submesh["name"] = submesh_desc.name;
+                    submesh["material_index"] = submesh_desc.material_index;
+                    submesh["index_count"] = submesh_desc.index_count;
+                    submesh["base_vertex"] = submesh_desc.base_vertex;
+                    submesh["base_index"] = submesh_desc.base_index;
+                    
+                    auto min_array = doc.array();
+                    min_array.push_back(submesh_desc.min_extents[0]);
+                    min_array.push_back(submesh_desc.min_extents[1]);
+                    min_array.push_back(submesh_desc.min_extents[2]);
+                    
+                    submesh["min_extents"] = min_array;
+                    
+                    auto max_array = doc.array();
+                    max_array.push_back(submesh_desc.max_extents[0]);
+                    max_array.push_back(submesh_desc.max_extents[1]);
+                    max_array.push_back(submesh_desc.max_extents[2]);
+                    
+                    submesh["max_extents"] = max_array;
+                    
+                    submesh_array.push_back(submesh);
+                }
+                
+                doc["submeshes"] = submesh_array;
+                
+                auto material_array = doc.array();
+                
+                for (int mat_id = 0; mat_id < desc.materials.size(); mat_id++)
+                {
+                    nlohmann::json material;
+                    
+                    material["index"] = mat_id;
+                    material["path"] = options.relative_material_path + "/" + desc.materials[mat_id].name + ".json";
+                    
+                    material_array.push_back(material);
+                }
+                
+                doc["materials"] = material_array;
+                
+                std::string output_path = options.path;
+                output_path += "/";
+                output_path += desc.name;
+                output_path += "_metadata.json";
+                
+                std::string output_str = doc.dump(4);
+                
+                std::fstream f(output_path, std::ios::out);
+                
+                if (f.is_open())
+                {
+                    f.write(output_str.c_str(), output_str.size());
+                    f.close();
+                }
+                else
+                    std::cout << "Failed to write Metadata JSON!" << std::endl;
+            }
 
 			auto finish = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> time = finish - start;

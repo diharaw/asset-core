@@ -13,6 +13,7 @@ namespace ast
         std::string texture_source_path = "";
         bool use_compression = true;
 		bool normal_map_flip_green = false;
+        bool output_metadata = false;
     };
     
     extern bool export_mesh(const Mesh& desc, const MeshExportOption& options);

@@ -66,6 +66,7 @@ void print_usage()
 	printf("  -M<path>		Relative path for Materials.\n");
 	printf("  -C			Disable texture compression for output textures.\n");
 	printf("  -F			Flip normal map green channel.\n");
+    printf("  -J            Output metadata JSON.\n");
 }
 
 int main(int argc, char * argv[])
@@ -138,6 +139,8 @@ int main(int argc, char * argv[])
 					export_options.normal_map_flip_green = true;
 				else if (c == 'c')
 					export_options.use_compression = false;
+                else if (c == 'j')
+                    export_options.output_metadata = true;
 			}
 			else if (i > 0)
 			{

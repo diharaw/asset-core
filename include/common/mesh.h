@@ -26,12 +26,13 @@ namespace ast
     
     struct SubMesh
     {
-        uint32_t  material_index;
-        uint32_t  index_count;
-        uint32_t  base_vertex;
-        uint32_t  base_index;
-        glm::vec3 max_extents;
-        glm::vec3 min_extents;
+        std::string name;
+        uint32_t    material_index;
+        uint32_t    index_count;
+        uint32_t    base_vertex;
+        uint32_t    base_index;
+        glm::vec3   max_extents;
+        glm::vec3   min_extents;
     };
     
     struct Mesh

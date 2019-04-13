@@ -22,6 +22,8 @@
 #include <errno.h>
 #endif
 
+#define PATH_MAX_STRING_SIZE 256
+
 namespace filesystem
 {
     std::vector<std::string> m_directory_list;
@@ -354,34 +356,72 @@ namespace filesystem
         return exists;
     }
     
+    int mkdir_p(const char *dir, const mode_t mode)
+    {
+        char tmp[PATH_MAX_STRING_SIZE];
+        char *p = NULL;
+        struct stat sb;
+        size_t len;
+        
+        /* copy path */
+        len = strnlen (dir, PATH_MAX_STRING_SIZE);
+        if (len == 0 || len == PATH_MAX_STRING_SIZE)
+            return -1;
+        
+        memcpy (tmp, dir, len);
+        tmp[len] = '\0';
+        
+        /* remove trailing slash */
+        if(tmp[len - 1] == '/')
+            tmp[len - 1] = '\0';
+        
+        /* check if path exists and is a directory */
+        if (stat (tmp, &sb) == 0)
+        {
+            if (S_ISDIR (sb.st_mode))
+            {
+                return 0;
+            }
+        }
+        
+        /* recursive mkdir */
+        for(p = tmp + 1; *p; p++)
+        {
+            if(*p == '/')
+            {
+                *p = 0;
+                /* test path */
+                if (stat(tmp, &sb) != 0)
+                {
+                    /* path does not exist - create directory */
+                    if (mkdir(tmp, mode) < 0)
+                        return -1;
+                }
+                else if (!S_ISDIR(sb.st_mode))
+                    return -1; /* not a directory */
+                *p = '/';
+            }
+        }
+        /* test path */
+        if (stat(tmp, &sb) != 0)
+        {
+            /* path does not exist - create directory */
+            if (mkdir(tmp, mode) < 0)
+                return -1;
+        }
+        else if (!S_ISDIR(sb.st_mode))
+            return -1; /* not a directory */
+        
+        return 0;
+    }
+    
     bool create_directory(const std::string& path)
     {
         std::string str_path = path;;
         
         mode_t mode = 0755;
-        int ret = mkdir(str_path.c_str(), mode);
         
-        if (ret == 0)
-            return true;
-        
-        switch (errno)
-        {
-            case ENOENT:
-            {
-                int pos = static_cast<int>(str_path.find_last_of('/'));
-                if (pos == std::string::npos)
-                    return false;
-                if (!create_directory(str_path.substr(0, pos).c_str()))
-                    return false;
-                
-                return 0 == mkdir(path.c_str(), mode);
-            }
-            case EEXIST:
-                return directory_exists_internal(path);
-                
-            default:
-                return false;
-        }
+        return mkdir_p(path.c_str(), mode) != -1;
     }
 #endif
 }

@@ -77,6 +77,12 @@ namespace ast
             
             for (int i = 0; i < scene->mNumMeshes; i++)
             {
+                std::string submesh_name = scene->mMeshes[i]->mName.C_Str();
+                
+                if (submesh_name.length() == 0)
+                    submesh_name = "submesh_" + std::to_string(i);
+                
+                mesh.submeshes[i].name = submesh_name;
                 mesh.submeshes[i].index_count = scene->mMeshes[i]->mNumFaces * 3;
                 mesh.submeshes[i].base_index = index_count;
                 mesh.submeshes[i].base_vertex = vertex_count;
