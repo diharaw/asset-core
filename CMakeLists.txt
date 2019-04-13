@@ -7,6 +7,7 @@ project("AssetCore")
 set(BUILD_ASSET_CORE_RUNTIME true CACHE BOOL "Build Runtime Asset Core Library")
 set(BUILD_ASSET_CORE_OFFLINE true CACHE BOOL "Build Offline Asset Core Library")
 set(BUILD_ASSET_CORE_TOOLS true CACHE BOOL "Build Asset Core tools")
+set(ENABLE_CLANG_FORMAT true CACHE BOOL "Enable code formatting")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
@@ -64,6 +65,6 @@ file(GLOB_RECURSE FORMAT_HEADERS ${PROJECT_SOURCE_DIR}/src/*.h)
 
 file(GLOB_RECURSE FORMAT_SOURCE ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
-if(CLANG_FORMAT_EXE)
+if(CLANG_FORMAT_EXE AND ENABLE_CLANG_FORMAT)
     add_custom_target(clang-format-project-files COMMAND ${CLANG_FORMAT_EXE} -i -style=file ${FORMAT_HEADERS} ${FORMAT_SOURCE})
 endif()
