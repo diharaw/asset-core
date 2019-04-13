@@ -66,6 +66,8 @@ namespace filesystem
     
     extern bool does_file_exist(const std::string& _name);
     
+    extern bool is_absolute_path(const std::string& path);
+    
     /**
      * Returns current working directory.
      * @return string Current working directory.

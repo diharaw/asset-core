@@ -61,7 +61,7 @@ void print_usage()
 	printf("usage: AssetCore [options] infile [outpath]\n\n");
 
 	printf("Input options:\n");
-	printf("  -S<path>		Source path for textures.\n");
+	printf("  -S<path>      Source path for textures.\n");
 	printf("  -T<path>      Relative path for textures.\n");
 	printf("  -M<path>		Relative path for Materials.\n");
 	printf("  -C			Disable texture compression for output textures.\n");
@@ -171,7 +171,26 @@ int main(int argc, char * argv[])
 				}
 			}
 		}
-
+        
+        // If a relative Texture Sourc Path is not specified, it will be automatically set to the absolute path to the
+        // folder containing the input mesh
+        if (export_options.texture_source_path.length() == 0)
+        {
+            std::string mesh_path = filesystem::get_file_path(input);
+            
+            if (filesystem::is_absolute_path(input))
+                export_options.texture_source_path = mesh_path;
+            else
+            {
+                std::string cwd_path = filesystem::get_current_working_directory();
+                
+                export_options.texture_source_path = cwd_path;
+                
+                if (mesh_path.length() != 0)
+                    export_options.texture_source_path = export_options.texture_source_path + "/" + mesh_path;
+            }
+        }
+        
 		if (ast::import_mesh(input, mesh))
 		{
 			if (!ast::export_mesh(mesh, export_options))

@@ -203,12 +203,37 @@ namespace filesystem
         chdir( pathbuf );
         std::string path = std::string(pathbuf);
         
-        size_t index = path.find_last_of("/");
+        size_t index = path.find_last_of(".");
         
-        return path.substr(0, index + 1);
+        return path.substr(0, index);
 #else
         std::string s_cwd(getcwd(NULL,0));
         return s_cwd;
+#endif
+    }
+    
+    bool is_absolute_path(const std::string& path)
+    {
+#ifdef __APPLE__
+        if (path.length() == 0)
+            return false;
+        else
+        {
+            if (path[0] == '/')
+                return true;
+            else
+                return false;
+        }
+#else
+        if (path.length() < 2)
+            return false;
+        else
+        {
+            if (path[1] == ':')
+                return true;
+            else
+                return false;
+        }
 #endif
     }
 
