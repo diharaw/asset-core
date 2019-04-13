@@ -1,4 +1,6 @@
 #include <offline/image_exporter.h>
+#include <runtime/loader.h>
+#include <common/filesystem.h>
 #include <common/header.h>
 #include <cmft/image.h>
 #include <cmft/cubemapfilter.h>
@@ -6,6 +8,9 @@
 #include <nvimage/Image.h>
 #include <nvimage/DirectDrawSurface.h>
 #include <thread>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #define RADIANCE_MAP_SIZE 256
 #define CMFT_GLOSS_SCALE 10
@@ -19,7 +24,8 @@
 
 namespace ast
 {
-const nvtt::Format kCompression[] = {
+const nvtt::Format kCompression[] = 
+{
     nvtt::Format_RGB,
     nvtt::Format_BC1,
     nvtt::Format_BC1a,
@@ -87,6 +93,58 @@ struct NVTTOutputHandler : public nvtt::OutputHandler
         }                                                                                         \
     }
 
+void debug_export_image(const std::string& output, const std::string& name, ast::Image& image)
+{
+	for (int i = 0; i < image.array_slices; i++)
+	{
+	    for (int j = 0; j < image.mip_slices; j++)
+	    {
+	        std::string output_name = output;
+	
+	        if (output_name != "")
+	            output_name += "/";
+	
+	        output_name += name;
+	        output_name += "_";
+	        output_name += std::to_string(i);
+	        output_name += "_";
+	        output_name += std::to_string(j);
+
+	        if (image.type == ast::PIXEL_TYPE_UNORM8)
+	        {
+	            if (image.components == 1)
+	            {
+	                output_name += ".png";
+	                stbi_write_png(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, image.data[i][j].data, image.data[i][j].width * image.type * image.components);
+	            }
+	            else
+	            {
+	                output_name += ".bmp";
+	                stbi_write_bmp(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, image.data[i][j].data);
+	            }
+	        }
+	        else
+	        {
+	            output_name += ".hdr";
+	            stbi_write_hdr(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, (float*)image.data[i][j].data);
+	        }
+	    }
+	}
+}
+
+void debug_read_and_export_image(const std::string& input, const std::string& name)
+{
+    ast::Image image;
+
+    if (load_image(input, image))
+    {
+		std::string path = filesystem::get_file_path(input);
+		debug_export_image(path, name, image);
+    }
+    else
+        printf("Failed to Load Image!\n");
+}
+
 bool export_image(Image& img, const ImageExportOptions& options)
 {
     // Make sure that float images either use no compression or BC6
@@ -95,6 +153,12 @@ bool export_image(Image& img, const ImageExportOptions& options)
         std::cout << "ERROR::Float images must use either no compression or BC6!" << std::endl;
         return false;
     }
+
+	if (!filesystem::does_directory_exist(options.path))
+		filesystem::create_directory(options.path);
+
+	if (options.debug_output)
+		debug_export_image(options.path, img.name + "_post_import", img);
 
     if (options.flip_green)
     {
@@ -281,9 +345,20 @@ bool export_image(Image& img, const ImageExportOptions& options)
         else if (options.pixel_type == PIXEL_TYPE_FLOAT32)
             input_options.setFormat(nvtt::InputFormat_RGBA_32F);
 
-        input_options.setNormalMap(options.normal_map);
-        input_options.setConvertToNormalMap(false);
-        input_options.setNormalizeMipmaps(false);
+		if (options.normal_map)
+		{
+			input_options.setNormalMap(true);
+			input_options.setConvertToNormalMap(false);
+			input_options.setGamma(1.0f, 1.0f);
+			input_options.setNormalizeMipmaps(true);
+		}
+		else
+		{
+			input_options.setNormalMap(false);
+			input_options.setConvertToNormalMap(false);
+			input_options.setGamma(2.2f, 2.2f);
+			input_options.setNormalizeMipmaps(false);
+		}
 
         output_options.setOutputHeader(false);
         output_options.setOutputHandler(&handler);
@@ -307,8 +382,13 @@ bool export_image(Image& img, const ImageExportOptions& options)
 
                     current_img = &img;
                 }
-                else
-                    img.to_rgba(temp_img, i, 0);
+				else
+				{
+					img.to_rgba(temp_img, i, 0);
+
+					if (options.compression != COMPRESSION_NONE)
+						temp_img.to_bgra(i, 0);
+				}
 
                 input_options.setMipmapGeneration(generate_mipmaps);
                 input_options.setMipmapData(current_img->data[i][0].data, img.data[i][0].width, img.data[i][0].height);
@@ -346,10 +426,25 @@ bool export_image(Image& img, const ImageExportOptions& options)
 
             temp_img.deallocate();
         }
+
+		if (options.debug_output) 
+		{
+			if (options.compression == COMPRESSION_NONE)
+				debug_read_and_export_image(path, img.name + "_post_export");
+			else
+			{
+				std::string name = filesystem::get_file_path(path) + "/" + img.name + "_post_export.dds";
+				output_options.setFileName(name.c_str());
+				output_options.setOutputHeader(true);
+				output_options.setContainer(nvtt::Container_DDS);
+
+				compressor.process(input_options, compression_options, output_options);
+			}
+		}
     }
 
     f.close();
-
+		
     return true;
 }
 
@@ -453,6 +548,7 @@ bool cubemap_from_latlong(Image& src, const CubemapImageExportOptions& options)
         irradiance_exp_options.output_mips = 0;
         irradiance_exp_options.path        = options.path;
         irradiance_exp_options.pixel_type  = src.type;
+		irradiance_exp_options.debug_output = options.debug_output;
 
         if (!export_image(irradiance_cube, irradiance_exp_options))
         {
@@ -520,6 +616,7 @@ bool cubemap_from_latlong(Image& src, const CubemapImageExportOptions& options)
         radiance_exp_options.output_mips = 0;
         radiance_exp_options.path        = options.path;
         radiance_exp_options.pixel_type  = src.type;
+		radiance_exp_options.debug_output = options.debug_output;
 
         if (!export_image(radiance_cube, radiance_exp_options))
         {
@@ -563,6 +660,7 @@ bool cubemap_from_latlong(Image& src, const CubemapImageExportOptions& options)
     exp_options.output_mips = options.output_mips;
     exp_options.pixel_type  = src.type;
     exp_options.path        = options.path;
+	exp_options.debug_output = options.debug_output;
 
     if (!export_image(cubemap, exp_options))
     {

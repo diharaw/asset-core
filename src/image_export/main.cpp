@@ -3,65 +3,19 @@
 #include <runtime/loader.h>
 #include <stdio.h>
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
-
-void read_and_export_image(const std::string& input)
-{
-    ast::Image image;
-
-    if (ast::load_image(input, image))
-    {
-        std::string name = filesystem::get_filename(input);
-
-        for (int i = 0; i < image.array_slices; i++)
-        {
-            for (int j = 0; j < image.mip_slices; j++)
-            {
-                std::string output_name = filesystem::get_file_path(input);
-
-                if (output_name != "")
-                    output_name += "/";
-
-                output_name += name;
-                output_name += "_";
-                output_name += std::to_string(i);
-                output_name += "_";
-                output_name += std::to_string(j);
-
-                if (image.type == ast::PIXEL_TYPE_UNORM8)
-                {
-                    if (image.components == 1)
-                    {
-                        output_name += ".png";
-                        stbi_write_png(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, image.data[i][j].data, image.data[i][j].width * image.type * image.components);
-                    }
-                    else
-                    {
-                        output_name += ".bmp";
-                        stbi_write_bmp(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, image.data[i][j].data);
-                    }
-                }
-                else
-                {
-                    output_name += ".hdr";
-                    stbi_write_hdr(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, (float*)image.data[i][j].data);
-                }
-            }
-        }
-    }
-    else
-        printf("Failed to Load Image!\n");
-}
-
 void print_usage()
 {
     printf("usage: image_export [options] infile [outpath]\n\n");
 
     printf("Input options:\n");
+	printf("  -E			Cubemap.\n");
+	printf("  -C			Compressed.\n");
     printf("  -D			Debug Output.\n");
     printf("  -R			Generate radiance.\n");
     printf("  -I			Generate irradiance.\n");
+	printf("  -M			Generate mipmaps.\n");
+	printf("  -N			Normal map.\n");
+	printf("  -F			Flip green channel.\n");
 }
 
 int main(int argc, char* argv[])
@@ -74,9 +28,11 @@ int main(int argc, char* argv[])
     else
     {
         std::string                    input;
-        ast::CubemapImageExportOptions export_options;
-        bool                           debug = false;
-
+        ast::CubemapImageExportOptions cubemap_export_options;
+		ast::ImageExportOptions		   image_export_options;
+		bool                           cubemap = false;
+		bool						   compression = false;
+	
         int32_t input_idx = 99999;
 
         for (int32_t i = 0; i < argc; i++)
@@ -85,12 +41,25 @@ int main(int argc, char* argv[])
             {
                 char c = tolower(argv[i][1]);
 
-                if (c == 'd')
-                    debug = true;
-                else if (c == 'r')
-                    export_options.radiance = true;
-                else if (c == 'i')
-                    export_options.irradiance = true;
+				if (c == 'd')
+				{
+					cubemap_export_options.debug_output = true;
+					image_export_options.debug_output = true;
+				}
+				else if (c == 'r')
+					cubemap_export_options.radiance = true;
+				else if (c == 'i')
+					cubemap_export_options.irradiance = true;
+				else if (c == 'c')
+					compression = true;
+				else if (c == 'e')
+					cubemap = true;
+				else if (c == 'n')
+					image_export_options.normal_map = true;
+				else if (c == 'm')
+					image_export_options.output_mips = -1;
+				else if (c == 'f')
+					image_export_options.flip_green = true;
             }
             else if (i > 0)
             {
@@ -109,9 +78,10 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
-                    export_options.path = argv[i];
+                    cubemap_export_options.path = argv[i];
+					image_export_options.path = argv[i];
 
-                    if (export_options.path.size() == 0)
+                    if (cubemap_export_options.path.size() == 0)
                     {
                         printf("ERROR: Invalid output path: %s\n\n", argv[i]);
                         print_usage();
@@ -122,33 +92,42 @@ int main(int argc, char* argv[])
             }
         }
 
-        if (!ast::cubemap_from_latlong(input, export_options))
-        {
-            printf("ERROR: Failed to export mesh!\n\n");
-            return 1;
-        }
+		if (cubemap)
+		{
+			if (!ast::cubemap_from_latlong(input, cubemap_export_options))
+			{
+				printf("ERROR: Failed to export cubemap!\n\n");
+				return 1;
+			}
+		}
+		else
+		{
+			ast::Image img;
 
-        if (debug)
-        {
-            std::string env_path = export_options.path + "/" + filesystem::get_filename(input) + ".ast";
-            std::cout << env_path << std::endl;
-            read_and_export_image(env_path);
+			if (ast::import_image(img, input))
+			{
+				if (compression)
+				{
+					if (img.components == 1)
+						image_export_options.compression = ast::COMPRESSION_BC4;
+					else if (img.components == 3)
+						image_export_options.compression = ast::COMPRESSION_BC1;
+					else if (img.components == 4)
+						image_export_options.compression = ast::COMPRESSION_BC3;
+				}
+				else
+					image_export_options.compression = ast::COMPRESSION_NONE;
 
-            if (export_options.radiance)
-            {
-                std::string rad_path = export_options.path + "/" + filesystem::get_filename(input) + "_radiance.ast";
-                std::cout << rad_path << std::endl;
-                read_and_export_image(rad_path);
-            }
+				if (!ast::export_image(img, image_export_options))
+				{
+					printf("ERROR: Failed to export image!\n\n");
+					return 1;
+				}
 
-            if (export_options.irradiance)
-            {
-                std::string irr_path = export_options.path + "/" + filesystem::get_filename(input) + "_irradiance.ast";
-                std::cout << irr_path << std::endl;
-                read_and_export_image(irr_path);
-            }
-        }
-
+				img.deallocate();
+			}
+		}
+        
         return 0;
     }
 }

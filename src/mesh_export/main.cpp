@@ -1,5 +1,3 @@
-//#include <offline/importer.h>
-//#include <offline/exporter.h>
 #include <offline/image_exporter.h>
 #include <offline/mesh_importer.h>
 #include <offline/mesh_exporter.h>
@@ -7,54 +5,6 @@
 #include <common/filesystem.h>
 #include <runtime/loader.h>
 #include <stdio.h>
-
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
-
-void read_and_export_image(const std::string& input)
-{
-    ast::Image image;
-
-    if (ast::load_image(input, image))
-    {
-        std::string name = filesystem::get_filename(input);
-
-        for (int i = 0; i < image.array_slices; i++)
-        {
-            for (int j = 0; j < image.mip_slices; j++)
-            {
-                std::string output_name = filesystem::get_file_path(input);
-                output_name += "/";
-                output_name += name;
-                output_name += "_";
-                output_name += std::to_string(i);
-                output_name += "_";
-                output_name += std::to_string(j);
-
-                if (image.type == ast::PIXEL_TYPE_UNORM8)
-                {
-                    if (image.components == 1)
-                    {
-                        output_name += ".png";
-                        stbi_write_png(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, image.data[i][j].data, image.data[i][j].width * image.type * image.components);
-                    }
-                    else
-                    {
-                        output_name += ".bmp";
-                        stbi_write_bmp(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, image.data[i][j].data);
-                    }
-                }
-                else
-                {
-                    output_name += ".hdr";
-                    stbi_write_hdr(output_name.c_str(), image.data[i][j].width, image.data[i][j].height, image.components, (float*)image.data[i][j].data);
-                }
-            }
-        }
-    }
-    else
-        printf("Failed to Load Image!\n");
-}
 
 void print_usage()
 {

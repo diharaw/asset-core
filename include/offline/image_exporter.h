@@ -13,6 +13,7 @@ namespace ast
         CompressionType compression = COMPRESSION_NONE;
         bool normal_map = false;
 		bool flip_green = false;
+		bool debug_output = false;
         int output_mips = 0;
     };
     
@@ -23,6 +24,7 @@ namespace ast
         int output_mips = 0;
         bool irradiance = false;
         bool radiance = false;
+		bool debug_output = false;
     };
     
     extern bool export_image(Image& img, const ImageExportOptions& options);
