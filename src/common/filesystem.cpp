@@ -246,14 +246,6 @@ size_t get_file_size(const std::string& _fileName)
     return st.st_size;
 }
 
-bool does_directory_exist(const std::string& _name)
-{
-    struct stat st;
-    if (stat(_name.c_str(), &st) == 0)
-        return true;
-    return false;
-}
-
 bool does_file_exist(const std::string& _name)
 {
     GetFileAttributes(_name.c_str());
@@ -264,6 +256,14 @@ bool does_file_exist(const std::string& _name)
         return true;
 }
 #endif
+    
+bool does_directory_exist(const std::string& _name)
+{
+    struct stat st;
+    if (stat(_name.c_str(), &st) == 0)
+        return true;
+    return false;
+}
 
 bool write_begin(std::string _path)
 {

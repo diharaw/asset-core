@@ -249,19 +249,23 @@ bool load_material(const std::string& path, Material& material)
     {
         auto shader_func_obj = j["fragment_shader_func"];
 
-        if (shader_func_obj.find("id") != shader_func_obj.end() && shader_func_obj.find("source") != shader_func_obj.end())
+        if (shader_func_obj.find("id") != shader_func_obj.end() && shader_func_obj.find("path") != shader_func_obj.end())
         {
-            auto        shader_id    = shader_func_obj["id"];
-            auto        shader_lines = shader_func_obj["source"];
-            std::string source       = "";
-
-            for (auto& line : shader_lines)
-            {
-                std::string str_line = line;
-                source += str_line;
-                source += "\n";
-            }
-
+            std::string shader_id     = shader_func_obj["id"];
+            std::string relative_path = shader_func_obj["path"];
+            std::string parent_path   = filesystem::get_file_path(path);
+            std::string shader_path = "";
+            
+            if (parent_path.length() == 0)
+                shader_path = relative_path;
+            else
+                shader_path = parent_path + relative_path;
+            
+            // Read fragment shader func
+            FileHandle f = filesystem::read_file(shader_path, true, true);
+            std::string source = f.buffer;
+            filesystem::destroy_handle(f);
+            
             material.fragment_shader_func_id  = shader_id;
             material.fragment_shader_func_src = source;
         }
@@ -271,18 +275,22 @@ bool load_material(const std::string& path, Material& material)
     {
         auto shader_func_obj = j["vertex_shader_func"];
 
-        if (shader_func_obj.find("id") != shader_func_obj.end() && shader_func_obj.find("source") != shader_func_obj.end())
+        if (shader_func_obj.find("id") != shader_func_obj.end() && shader_func_obj.find("path") != shader_func_obj.end())
         {
-            auto        shader_id    = shader_func_obj["id"];
-            auto        shader_lines = shader_func_obj["source"];
-            std::string source       = "";
+            std::string shader_id     = shader_func_obj["id"];
+            std::string relative_path = shader_func_obj["path"];
+            std::string parent_path   = filesystem::get_file_path(path);
+            std::string shader_path = "";
+            
+            if (parent_path.length() == 0)
+                shader_path = relative_path;
+            else
+                shader_path = parent_path + relative_path;
 
-            for (auto& line : shader_lines)
-            {
-                std::string str_line = line;
-                source += str_line;
-                source += "\n";
-            }
+            // Read vertex shader func
+            FileHandle f = filesystem::read_file(shader_path, true, true);
+            std::string source = f.buffer;
+            filesystem::destroy_handle(f);
 
             material.vertex_shader_func_id  = shader_id;
             material.vertex_shader_func_src = source;

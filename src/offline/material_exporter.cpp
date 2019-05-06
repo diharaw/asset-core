@@ -49,30 +49,25 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
     doc["shading_model"]     = kShadingModel[desc.shading_model];
     doc["lighting_model"]    = kLightingModel[desc.lighting_model];
 
-    nlohmann::json vertex_func;
-
-    vertex_func["id"] = options.vertex_func_id;
-    auto vs_source    = doc.array();
-
-    for (auto& line : options.vertex_func)
-        vs_source.push_back(line);
-
-    vertex_func["source"] = vs_source;
-
-    doc["vertex_shader_func"] = vertex_func;
-
-    nlohmann::json fragment_func;
-
-    fragment_func["id"] = options.fragment_func_id;
-
-    auto fs_source = doc.array();
-
-    for (auto& line : options.fragment_func)
-        fs_source.push_back(line);
-
-    fragment_func["source"] = fs_source;
-
-    doc["fragment_shader_func"] = fragment_func;
+    if (options.vertex_func_id.size() == 0 || options.vertex_func_path.size() == 0)
+    {
+        nlohmann::json vertex_func;
+        
+        vertex_func["id"] = options.vertex_func_id;
+        vertex_func["path"] = options.vertex_func_path;
+        
+        doc["vertex_shader_func"] = vertex_func;
+    }
+    
+    if (options.fragment_func_id.size() == 0 || options.fragment_func_path.size() == 0)
+    {
+        nlohmann::json fragment_func;
+        
+        fragment_func["id"] = options.fragment_func_id;
+        fragment_func["path"] = options.fragment_func_path;
+        
+        doc["fragment_shader_func"] = fragment_func;
+    }
 
     auto texture_array = doc.array();
 
