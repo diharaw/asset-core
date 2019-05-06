@@ -261,13 +261,8 @@ bool load_material(const std::string& path, Material& material)
             else
                 shader_path = parent_path + relative_path;
             
-            // Read fragment shader func
-            FileHandle f = filesystem::read_file(shader_path, true, true);
-            std::string source = f.buffer;
-            filesystem::destroy_handle(f);
-            
             material.fragment_shader_func_id  = shader_id;
-            material.fragment_shader_func_src = source;
+            material.fragment_shader_func_path = shader_path;
         }
     }
 
@@ -287,13 +282,8 @@ bool load_material(const std::string& path, Material& material)
             else
                 shader_path = parent_path + relative_path;
 
-            // Read vertex shader func
-            FileHandle f = filesystem::read_file(shader_path, true, true);
-            std::string source = f.buffer;
-            filesystem::destroy_handle(f);
-
             material.vertex_shader_func_id  = shader_id;
-            material.vertex_shader_func_src = source;
+            material.vertex_shader_func_path = shader_path;
         }
     }
 

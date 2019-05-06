@@ -121,7 +121,7 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
         // Export materials
         std::vector<BINMeshMaterialJson> mats;
 
-        for (const auto& material : desc.materials)
+        for (Material material : desc.materials)
         {
             MaterialExportOptions mat_exp_options;
 
@@ -131,10 +131,11 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
             mat_exp_options.dst_texture_path      = texture_path;
             mat_exp_options.use_compression       = options.use_compression;
             mat_exp_options.normal_map_flip_green = options.normal_map_flip_green;
-            mat_exp_options.vertex_func_id        = options.vertex_func_id;
-            mat_exp_options.vertex_func_path      = options.vertex_func_path;
-            mat_exp_options.fragment_func_id      = options.fragment_func_id;
-            mat_exp_options.fragment_func_path    = options.fragment_func_path;
+            
+            material.vertex_shader_func_id = options.vertex_func_id;
+            material.vertex_shader_func_path = options.vertex_func_path;
+            material.fragment_shader_func_id = options.fragment_func_id;
+            material.fragment_shader_func_path = options.fragment_func_path;
 
             if (export_material(material, mat_exp_options))
             {
