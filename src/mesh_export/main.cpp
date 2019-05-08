@@ -15,8 +15,10 @@ void print_usage()
     printf("  -T<path>      Relative path for textures.\n");
     printf("  -M<path>		Relative path for Materials.\n");
     printf("  -C			Disable texture compression for output textures.\n");
-    printf("  -F			Flip normal map green channel.\n");
+    printf("  -G			Flip normal map green channel.\n");
     printf("  -J            Output metadata JSON.\n");
+    printf("  -V            Vertex function path.\n");
+    printf("  -F            Fragment function path.\n");
 }
 
 int main(int argc, char* argv[])
@@ -85,7 +87,37 @@ int main(int argc, char* argv[])
                     else
                         export_options.relative_material_path = path;
                 }
+                else if (c == 'v')
+                {
+                    std::string str  = argv[i];
+                    std::string path = str.substr(2, str.size() - 2);
+                    
+                    if (path.size() == 0)
+                    {
+                        printf("ERROR: Invalid parameter: -V (%s)\n\n", argv[i]);
+                        print_usage();
+                        
+                        return 1;
+                    }
+                    else
+                        export_options.vertex_func_path = path;
+                }
                 else if (c == 'f')
+                {
+                    std::string str  = argv[i];
+                    std::string path = str.substr(2, str.size() - 2);
+                    
+                    if (path.size() == 0)
+                    {
+                        printf("ERROR: Invalid parameter: -V (%s)\n\n", argv[i]);
+                        print_usage();
+                        
+                        return 1;
+                    }
+                    else
+                        export_options.fragment_func_path = path;
+                }
+                else if (c == 'g')
                     export_options.normal_map_flip_green = true;
                 else if (c == 'c')
                     export_options.use_compression = false;
