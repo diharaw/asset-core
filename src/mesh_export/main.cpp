@@ -8,7 +8,7 @@
 
 void print_usage()
 {
-    printf("usage: AssetCore [options] infile [outpath]\n\n");
+    printf("usage: mesh_export [options] infile [outpath]\n\n");
 
     printf("Input options:\n");
     printf("  -S<path>      Source path for textures.\n");

@@ -53,7 +53,6 @@ endif()
 
 if (BUILD_ASSET_CORE_TOOLS)
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/mesh_export")
-	add_subdirectory("${PROJECT_SOURCE_DIR}/src/material_export")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/image_export")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/brdf_lut")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/sh_project")
