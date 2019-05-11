@@ -11,7 +11,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
+//#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
 #define NUM_COEFFICIENTS 9
@@ -323,6 +323,8 @@ struct Cubemap
             }
         }
 
+		printf("Weight Sum = %f\n", weight_sum);
+
         float scale = (4.0f * Pi) / weight_sum;
 
         for (uint32_t i = 0; i < 9; i++)
@@ -414,6 +416,8 @@ void print_usage()
 
     printf("Input options:\n");
     printf("  [input_common_name]	All faces must be HDR images with the name followed by '_posx', '_negx' etc \n");
+    printf("  -P					Print spherical harmonics coefficients.\n");
+    printf("  -I					Output irradiance map.\n");
 }
 
 // ----------------------------------------------------------------------------
@@ -427,22 +431,52 @@ int main(int argc, char* argv[])
     }
     else
     {
-        std::string input  = argv[1];
-        std::string output = argv[2];
+        std::string input;
+        std::string output;
+        bool        print_coefficients = false;
+        bool        output_irradiance  = false;
 
-        if (input.size() == 0)
+        int32_t input_idx = 99999;
+
+        for (int32_t i = 0; i < argc; i++)
         {
-            printf("ERROR: Invalid input path: %s\n\n", argv[1]);
-            print_usage();
+            if (argv[i][0] == '-')
+            {
+                char c = tolower(argv[i][1]);
 
-            return 1;
-        }
-        else if (output.size() == 0)
-        {
-            printf("ERROR: Invalid output path: %s\n\n", argv[1]);
-            print_usage();
+                if (c == 'p')
+                    print_coefficients = true;
+                else if (c == 'i')
+                    output_irradiance = true;
+            }
+            else if (i > 0)
+            {
+                if (i < input_idx)
+                {
+                    input_idx = 1;
+                    input     = argv[i];
 
-            return 1;
+                    if (input.size() == 0)
+                    {
+                        printf("ERROR: Invalid input path: %s\n\n", argv[i]);
+                        print_usage();
+
+                        return 1;
+                    }
+                }
+                else
+                {
+                    output = argv[i];
+
+                    if (output.size() == 0)
+                    {
+                        printf("ERROR: Invalid output path: %s\n\n", argv[i]);
+                        print_usage();
+
+                        return 1;
+                    }
+                }
+            }
         }
 
         auto start = std::chrono::high_resolution_clock::now();
@@ -481,8 +515,17 @@ int main(int argc, char* argv[])
 
         SH9Color coef = cubemap.project_sh9();
 
-        for (uint32_t i = 0; i < NUM_COEFFICIENTS; i++)
-            pixels[i] = coef.c[i];
+		if (print_coefficients)
+		{
+			for (uint32_t i = 0; i < NUM_COEFFICIENTS; i++)
+			{
+			    printf("%i = [ %f, %f, %f ]\n", i, coef.c[i].x, coef.c[i].y, coef.c[i].z);
+			    pixels[i] = coef.c[i];
+			}
+		}
+
+		if (output_irradiance)
+			output_irradiance_cube_map(coef, "output_irradiance_", 512, 512);
 
         if (!export_image(img, options))
             printf("Failed to output Spherical Harmonics coefficients: %s\n", output.c_str());
