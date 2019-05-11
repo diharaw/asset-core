@@ -19,6 +19,7 @@ void print_usage()
     printf("  -J            Output metadata JSON.\n");
     printf("  -V            Vertex function path.\n");
     printf("  -F            Fragment function path.\n");
+    printf("  -D            Displacement as normal.\n");
 }
 
 int main(int argc, char* argv[])
@@ -31,6 +32,7 @@ int main(int argc, char* argv[])
     else
     {
         std::string           input;
+        ast::MeshImportOptions import_options;
         ast::MeshExportOption export_options;
         ast::Mesh             mesh;
 
@@ -123,6 +125,8 @@ int main(int argc, char* argv[])
                     export_options.use_compression = false;
                 else if (c == 'j')
                     export_options.output_metadata = true;
+                else if (c == 'd')
+                    import_options.displacement_as_normal = true;
             }
             else if (i > 0)
             {
@@ -173,7 +177,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        if (ast::import_mesh(input, mesh))
+        if (ast::import_mesh(input, mesh, import_options))
         {
             if (!ast::export_mesh(mesh, export_options))
             {

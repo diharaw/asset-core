@@ -53,10 +53,10 @@ bool import_image(Image& img, const std::string& file, const PixelType& type, in
                 for (uint32_t i = 0; i < n; i++)
                 {
                     nv::Color32 color = nv_img.pixel(i);
-                    data[4 * i + 0]   = color.g;
-                    data[4 * i + 1]   = color.b;
-                    data[4 * i + 2]   = color.a;
-                    data[4 * i + 3]   = color.r;
+                    data[4 * i + 0]   = color.r;
+                    data[4 * i + 1]   = color.g;
+                    data[4 * i + 2]   = color.b;
+                    data[4 * i + 3]   = color.a;
                 }
             }
             else if (nv_img.format() == nv::Image::Format_RGB)

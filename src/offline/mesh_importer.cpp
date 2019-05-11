@@ -48,7 +48,7 @@ int32_t find_material_index(std::vector<Material>& materials, std::string& curre
     return -1;
 }
 
-bool import_mesh(const std::string& file, Mesh& mesh)
+bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 {
     printf("Importing Mesh...\n\n");
 
@@ -292,6 +292,9 @@ bool import_mesh(const std::string& file, Mesh& mesh)
                     // Try to find Normal texture
                     std::string normal_path = get_texture_path(temp_material, aiTextureType_HEIGHT);
 
+					if (options.displacement_as_normal)
+                        normal_path = get_texture_path(temp_material, aiTextureType_NORMALS);
+
                     if (!normal_path.empty())
                     {
                         std::replace(normal_path.begin(), normal_path.end(), '\\', '/');
@@ -306,22 +309,25 @@ bool import_mesh(const std::string& file, Mesh& mesh)
                     }
 
                     // Try to find Height texture
-                    std::string height_path = get_texture_path(temp_material, aiTextureType_NORMALS);
+					if (!options.displacement_as_normal)
+					{
+						std::string height_path = get_texture_path(temp_material, aiTextureType_NORMALS);
 
-                    if (!height_path.empty())
-                    {
-                        std::replace(height_path.begin(), height_path.end(), '\\', '/');
+						if (!height_path.empty())
+						{
+						    std::replace(height_path.begin(), height_path.end(), '\\', '/');
 
-                        Texture mat_desc;
+						    Texture mat_desc;
 
-                        mat_desc.srgb = false;
-                        mat_desc.type = TEXTURE_DISPLACEMENT;
-                        mat_desc.path = height_path;
+						    mat_desc.srgb = false;
+						    mat_desc.type = TEXTURE_DISPLACEMENT;
+						    mat_desc.path = height_path;
 
-                        mat.textures.push_back(mat_desc);
+						    mat.textures.push_back(mat_desc);
 
-                        mat.displacement_type = DISPLACEMENT_PARALLAX_OCCLUSION;
-                    }
+						    mat.displacement_type = DISPLACEMENT_PARALLAX_OCCLUSION;
+						}
+					}
 
                     // Try to get Shininess Value
                     {
