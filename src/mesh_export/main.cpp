@@ -13,9 +13,9 @@ void print_usage()
     printf("Input options:\n");
     printf("  -S<path>      Source path for textures.\n");
     printf("  -T<path>      Relative path for textures.\n");
-    printf("  -M<path>		Relative path for Materials.\n");
-    printf("  -C			Disable texture compression for output textures.\n");
-    printf("  -G			Flip normal map green channel.\n");
+    printf("  -M<path>      Relative path for Materials.\n");
+    printf("  -C            Disable texture compression for output textures.\n");
+    printf("  -G            Flip normal map green channel.\n");
     printf("  -J            Output metadata JSON.\n");
     printf("  -V            Vertex function path.\n");
     printf("  -F            Fragment function path.\n");

@@ -49,25 +49,11 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
     doc["shading_model"]     = kShadingModel[desc.shading_model];
     doc["lighting_model"]    = kLightingModel[desc.lighting_model];
 
-    if (desc.vertex_shader_func_id.size() == 0 || desc.vertex_shader_func_path.size() == 0)
-    {
-        nlohmann::json vertex_func;
-        
-        vertex_func["id"] = desc.vertex_shader_func_id;
-        vertex_func["path"] = desc.vertex_shader_func_path;
-        
-        doc["vertex_shader_func"] = vertex_func;
-    }
+    if (desc.vertex_shader_func_path.size() == 0)
+        doc["vertex_shader_func"] = desc.vertex_shader_func_path;
     
-    if (desc.fragment_shader_func_id.size() == 0 || desc.fragment_shader_func_path.size() == 0)
-    {
-        nlohmann::json fragment_func;
-        
-        fragment_func["id"] = desc.fragment_shader_func_id;
-        fragment_func["path"] = desc.fragment_shader_func_path;
-        
-        doc["fragment_shader_func"] = fragment_func;
-    }
+    if (desc.fragment_shader_func_path.size() == 0)
+        doc["fragment_shader_func"] = desc.fragment_shader_func_path;
 
     auto texture_array = doc.array();
 

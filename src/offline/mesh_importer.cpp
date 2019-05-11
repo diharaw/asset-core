@@ -129,9 +129,7 @@ bool import_mesh(const std::string& file, Mesh& mesh)
                     mat.lighting_model           = LIGHTING_MODEL_LIT;
                     mat.displacement_type        = DISPLACEMENT_NONE;
                     mat.shading_model            = SHADING_MODEL_STANDARD;
-                    mat.fragment_shader_func_id  = "";
                     mat.fragment_shader_func_path = "";
-                    mat.vertex_shader_func_id    = "";
                     mat.vertex_shader_func_path  = "";
 
                     // Try to find Diffuse texture
@@ -274,6 +272,7 @@ bool import_mesh(const std::string& file, Mesh& mesh)
                             property.vec4_value[3] = 1.0f;
 
                             mat.properties.push_back(property);
+                            mat.metallic_workflow = false;
                         }
                     }
                     else
@@ -287,6 +286,7 @@ bool import_mesh(const std::string& file, Mesh& mesh)
                         mat_desc.path = specular_path;
 
                         mat.textures.push_back(mat_desc);
+                        mat.metallic_workflow = false;
                     }
 
                     // Try to find Normal texture

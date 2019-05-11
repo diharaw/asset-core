@@ -247,44 +247,30 @@ bool load_material(const std::string& path, Material& material)
 
     if (j.find("fragment_shader_func") != j.end())
     {
-        auto shader_func_obj = j["fragment_shader_func"];
-
-        if (shader_func_obj.find("id") != shader_func_obj.end() && shader_func_obj.find("path") != shader_func_obj.end())
-        {
-            std::string shader_id     = shader_func_obj["id"];
-            std::string relative_path = shader_func_obj["path"];
-            std::string parent_path   = filesystem::get_file_path(path);
-            std::string shader_path = "";
-            
-            if (parent_path.length() == 0)
-                shader_path = relative_path;
-            else
-                shader_path = parent_path + relative_path;
-            
-            material.fragment_shader_func_id  = shader_id;
-            material.fragment_shader_func_path = shader_path;
-        }
+        std::string relative_path = j["fragment_shader_func"];
+        std::string parent_path   = filesystem::get_file_path(path);
+        std::string shader_path = "";
+        
+        if (parent_path.length() == 0)
+            shader_path = relative_path;
+        else
+            shader_path = parent_path + relative_path;
+        
+        material.fragment_shader_func_path = shader_path;
     }
 
     if (j.find("vertex_shader_func") != j.end())
     {
-        auto shader_func_obj = j["vertex_shader_func"];
-
-        if (shader_func_obj.find("id") != shader_func_obj.end() && shader_func_obj.find("path") != shader_func_obj.end())
-        {
-            std::string shader_id     = shader_func_obj["id"];
-            std::string relative_path = shader_func_obj["path"];
-            std::string parent_path   = filesystem::get_file_path(path);
-            std::string shader_path = "";
-            
-            if (parent_path.length() == 0)
-                shader_path = relative_path;
-            else
-                shader_path = parent_path + relative_path;
-
-            material.vertex_shader_func_id  = shader_id;
-            material.vertex_shader_func_path = shader_path;
-        }
+        std::string relative_path = j["vertex_shader_func"];
+        std::string parent_path   = filesystem::get_file_path(path);
+        std::string shader_path = "";
+        
+        if (parent_path.length() == 0)
+            shader_path = relative_path;
+        else
+            shader_path = parent_path + relative_path;
+    
+        material.vertex_shader_func_path = shader_path;
     }
 
     if (j.find("textures") != j.end())
