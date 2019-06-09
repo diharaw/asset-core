@@ -158,6 +158,9 @@ bool load_material(const std::string& path, Material& material)
 {
     std::ifstream i(path);
 
+	if (!i.is_open())
+        return false;
+
     nlohmann::json j;
     i >> j;
 
@@ -451,6 +454,9 @@ bool load_material(const std::string& path, Material& material)
 bool load_scene(const std::string& path, Scene& scene)
 {
     std::ifstream i(path);
+
+	if (!i.is_open())
+        return false;
 
     nlohmann::json j;
     i >> j;
