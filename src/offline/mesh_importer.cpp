@@ -82,7 +82,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
             if (submesh_name.length() == 0)
                 submesh_name = "submesh_" + std::to_string(i);
 
-			strcpy(mesh.submeshes[i].name, submesh_name.c_str());
+            strcpy(mesh.submeshes[i].name, submesh_name.c_str());
             mesh.submeshes[i].index_count = scene->mMeshes[i]->mNumFaces * 3;
             mesh.submeshes[i].base_index  = index_count;
             mesh.submeshes[i].base_vertex = vertex_count;
@@ -124,13 +124,13 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                     temp_material->Get(AI_MATKEY_TWOSIDED, two_sided);
                     mat.double_sided = (bool)two_sided;
 
-                    mat.blend_mode               = BLEND_MODE_OPAQUE;
-                    mat.metallic_workflow        = true;
-                    mat.lighting_model           = LIGHTING_MODEL_LIT;
-                    mat.displacement_type        = DISPLACEMENT_NONE;
-                    mat.shading_model            = SHADING_MODEL_STANDARD;
+                    mat.blend_mode                = BLEND_MODE_OPAQUE;
+                    mat.metallic_workflow         = true;
+                    mat.lighting_model            = LIGHTING_MODEL_LIT;
+                    mat.displacement_type         = DISPLACEMENT_NONE;
+                    mat.shading_model             = SHADING_MODEL_STANDARD;
                     mat.fragment_shader_func_path = "";
-                    mat.vertex_shader_func_path  = "";
+                    mat.vertex_shader_func_path   = "";
 
                     // Try to find Diffuse texture
                     std::string albedo_path = get_texture_path(temp_material, aiTextureType_DIFFUSE);
@@ -292,7 +292,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                     // Try to find Normal texture
                     std::string normal_path = get_texture_path(temp_material, aiTextureType_HEIGHT);
 
-					if (options.displacement_as_normal)
+                    if (options.displacement_as_normal)
                         normal_path = get_texture_path(temp_material, aiTextureType_NORMALS);
 
                     if (!normal_path.empty())
@@ -309,25 +309,25 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                     }
 
                     // Try to find Height texture
-					if (!options.displacement_as_normal)
-					{
-						std::string height_path = get_texture_path(temp_material, aiTextureType_NORMALS);
+                    if (!options.displacement_as_normal)
+                    {
+                        std::string height_path = get_texture_path(temp_material, aiTextureType_NORMALS);
 
-						if (!height_path.empty())
-						{
-						    std::replace(height_path.begin(), height_path.end(), '\\', '/');
+                        if (!height_path.empty())
+                        {
+                            std::replace(height_path.begin(), height_path.end(), '\\', '/');
 
-						    Texture mat_desc;
+                            Texture mat_desc;
 
-						    mat_desc.srgb = false;
-						    mat_desc.type = TEXTURE_DISPLACEMENT;
-						    mat_desc.path = height_path;
+                            mat_desc.srgb = false;
+                            mat_desc.type = TEXTURE_DISPLACEMENT;
+                            mat_desc.path = height_path;
 
-						    mat.textures.push_back(mat_desc);
+                            mat.textures.push_back(mat_desc);
 
-						    mat.displacement_type = DISPLACEMENT_PARALLAX_OCCLUSION;
-						}
-					}
+                            mat.displacement_type = DISPLACEMENT_PARALLAX_OCCLUSION;
+                        }
+                    }
 
                     // Try to get Shininess Value
                     {

@@ -131,8 +131,8 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
             mat_exp_options.dst_texture_path      = texture_path;
             mat_exp_options.use_compression       = options.use_compression;
             mat_exp_options.normal_map_flip_green = options.normal_map_flip_green;
-            
-            material.vertex_shader_func_path = options.vertex_func_path;
+
+            material.vertex_shader_func_path   = options.vertex_func_path;
             material.fragment_shader_func_path = options.fragment_func_path;
 
             if (export_material(material, mat_exp_options))

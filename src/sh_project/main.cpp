@@ -323,7 +323,7 @@ struct Cubemap
             }
         }
 
-		printf("Weight Sum = %f\n", weight_sum);
+        printf("Weight Sum = %f\n", weight_sum);
 
         float scale = (4.0f * Pi) / weight_sum;
 
@@ -515,17 +515,17 @@ int main(int argc, char* argv[])
 
         SH9Color coef = cubemap.project_sh9();
 
-		if (print_coefficients)
-		{
-			for (uint32_t i = 0; i < NUM_COEFFICIENTS; i++)
-			{
-			    printf("%i = [ %f, %f, %f ]\n", i, coef.c[i].x, coef.c[i].y, coef.c[i].z);
-			    pixels[i] = coef.c[i];
-			}
-		}
+        if (print_coefficients)
+        {
+            for (uint32_t i = 0; i < NUM_COEFFICIENTS; i++)
+            {
+                printf("%i = [ %f, %f, %f ]\n", i, coef.c[i].x, coef.c[i].y, coef.c[i].z);
+                pixels[i] = coef.c[i];
+            }
+        }
 
-		if (output_irradiance)
-			output_irradiance_cube_map(coef, "output_irradiance_", 512, 512);
+        if (output_irradiance)
+            output_irradiance_cube_map(coef, "output_irradiance_", 512, 512);
 
         if (!export_image(img, options))
             printf("Failed to output Spherical Harmonics coefficients: %s\n", output.c_str());

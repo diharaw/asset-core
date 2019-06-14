@@ -31,10 +31,10 @@ int main(int argc, char* argv[])
     }
     else
     {
-        std::string           input;
+        std::string            input;
         ast::MeshImportOptions import_options;
-        ast::MeshExportOption export_options;
-        ast::Mesh             mesh;
+        ast::MeshExportOption  export_options;
+        ast::Mesh              mesh;
 
         int32_t input_idx = 99999;
 
@@ -93,12 +93,12 @@ int main(int argc, char* argv[])
                 {
                     std::string str  = argv[i];
                     std::string path = str.substr(2, str.size() - 2);
-                    
+
                     if (path.size() == 0)
                     {
                         printf("ERROR: Invalid parameter: -V (%s)\n\n", argv[i]);
                         print_usage();
-                        
+
                         return 1;
                     }
                     else
@@ -108,12 +108,12 @@ int main(int argc, char* argv[])
                 {
                     std::string str  = argv[i];
                     std::string path = str.substr(2, str.size() - 2);
-                    
+
                     if (path.size() == 0)
                     {
                         printf("ERROR: Invalid parameter: -V (%s)\n\n", argv[i]);
                         print_usage();
-                        
+
                         return 1;
                     }
                     else

@@ -256,7 +256,7 @@ bool does_file_exist(const std::string& _name)
         return true;
 }
 #endif
-    
+
 bool does_directory_exist(const std::string& _name)
 {
     struct stat st;

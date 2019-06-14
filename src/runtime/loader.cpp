@@ -158,7 +158,7 @@ bool load_material(const std::string& path, Material& material)
 {
     std::ifstream i(path);
 
-	if (!i.is_open())
+    if (!i.is_open())
         return false;
 
     nlohmann::json j;
@@ -252,13 +252,13 @@ bool load_material(const std::string& path, Material& material)
     {
         std::string relative_path = j["fragment_shader_func"];
         std::string parent_path   = filesystem::get_file_path(path);
-        std::string shader_path = "";
-        
+        std::string shader_path   = "";
+
         if (parent_path.length() == 0)
             shader_path = relative_path;
         else
             shader_path = parent_path + relative_path;
-        
+
         material.fragment_shader_func_path = shader_path;
     }
 
@@ -266,13 +266,13 @@ bool load_material(const std::string& path, Material& material)
     {
         std::string relative_path = j["vertex_shader_func"];
         std::string parent_path   = filesystem::get_file_path(path);
-        std::string shader_path = "";
-        
+        std::string shader_path   = "";
+
         if (parent_path.length() == 0)
             shader_path = relative_path;
         else
             shader_path = parent_path + relative_path;
-    
+
         material.vertex_shader_func_path = shader_path;
     }
 
@@ -455,7 +455,7 @@ bool load_scene(const std::string& path, Scene& scene)
 {
     std::ifstream i(path);
 
-	if (!i.is_open())
+    if (!i.is_open())
         return false;
 
     nlohmann::json j;
@@ -501,11 +501,11 @@ bool load_scene(const std::string& path, Scene& scene)
                 scene.camera.movement_speed = camera["movement_speed"];
         }
 
-		if (camera.find("near_plane") != camera.end())
+        if (camera.find("near_plane") != camera.end())
             scene.camera.near_plane = camera["near_plane"];
 
-		if (camera.find("far_plane") != camera.end())
-			scene.camera.far_plane = camera["far_plane"];
+        if (camera.find("far_plane") != camera.end())
+            scene.camera.far_plane = camera["far_plane"];
     }
 
     if (j.find("skybox") != j.end())

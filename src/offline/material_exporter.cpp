@@ -51,7 +51,7 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
 
     if (desc.vertex_shader_func_path.size() != 0)
         doc["vertex_shader_func"] = desc.vertex_shader_func_path;
-    
+
     if (desc.fragment_shader_func_path.size() != 0)
         doc["fragment_shader_func"] = desc.fragment_shader_func_path;
 
