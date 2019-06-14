@@ -53,6 +53,10 @@ namespace ast
         // Orbit Properties
         glm::vec3  orbit_center;
         float      orbit_boom_length;
+
+		// General Properties
+        float near_plane;
+        float far_plane;
     };
     
     struct Skybox

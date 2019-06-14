@@ -20,6 +20,8 @@ bool export_scene(const Scene& scene, const std::string& path)
 
     camera["type"]           = kCameraTypes[scene.camera.type];
     camera["rotation_speed"] = scene.camera.rotation_speed;
+    camera["near_plane"] = scene.camera.near_plane;
+    camera["far_plane"] = scene.camera.far_plane;
 
     if (scene.camera.type == CAMERA_ORBIT)
     {

@@ -500,6 +500,12 @@ bool load_scene(const std::string& path, Scene& scene)
             if (camera.find("movement_speed") != camera.end())
                 scene.camera.movement_speed = camera["movement_speed"];
         }
+
+		if (camera.find("near_plane") != camera.end())
+            scene.camera.near_plane = camera["near_plane"];
+
+		if (camera.find("far_plane") != camera.end())
+			scene.camera.far_plane = camera["far_plane"];
     }
 
     if (j.find("skybox") != j.end())
