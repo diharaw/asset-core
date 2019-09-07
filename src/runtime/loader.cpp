@@ -582,10 +582,10 @@ bool load_scene(const std::string& path, Scene& scene)
         {
             DirectionalLight light;
 
-            if (json_light.find("intensity") != directional_lights.end())
+            if (json_light.find("intensity") != json_light.end())
                 light.intensity = json_light["intensity"];
 
-            if (json_light.find("casts_shadows") != directional_lights.end())
+            if (json_light.find("casts_shadows") != json_light.end())
                 light.casts_shadows = json_light["casts_shadows"];
 
             JSON_PARSE_VECTOR(json_light, light.color, color, 3);
@@ -603,10 +603,10 @@ bool load_scene(const std::string& path, Scene& scene)
         {
             PointLight light;
 
-            if (json_light.find("intensity") != point_lights.end())
+            if (json_light.find("intensity") != json_light.end())
                 light.intensity = json_light["intensity"];
 
-            if (json_light.find("casts_shadows") != point_lights.end())
+            if (json_light.find("casts_shadows") != json_light.end())
                 light.casts_shadows = json_light["casts_shadows"];
 
             JSON_PARSE_VECTOR(json_light, light.color, color, 3);
@@ -624,10 +624,10 @@ bool load_scene(const std::string& path, Scene& scene)
         {
             SpotLight light;
 
-            if (json_light.find("intensity") != spot_lights.end())
+            if (json_light.find("intensity") != json_light.end())
                 light.intensity = json_light["intensity"];
 
-            if (json_light.find("casts_shadows") != spot_lights.end())
+            if (json_light.find("casts_shadows") != json_light.end())
                 light.casts_shadows = json_light["casts_shadows"];
 
             JSON_PARSE_VECTOR(json_light, light.color, color, 3);
