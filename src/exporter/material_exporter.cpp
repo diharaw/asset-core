@@ -1,5 +1,5 @@
-#include <offline/material_exporter.h>
-#include <offline/image_exporter.h>
+#include <exporter/material_exporter.h>
+#include <exporter/image_exporter.h>
 #include <common/filesystem.h>
 #include <json.hpp>
 #include <iostream>
@@ -42,19 +42,15 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
     nlohmann::json doc;
 
     doc["name"]              = desc.name;
-    doc["metallic_workflow"] = desc.metallic_workflow;
     doc["double_sided"]      = desc.double_sided;
-    doc["blend_mode"]        = kBlendMode[desc.blend_mode];
-    doc["displacement_type"] = kDisplacementType[desc.displacement_type];
+    doc["alpha_mask"]      = desc.alpha_mask;
+    doc["orca"]      = desc.orca;
+    doc["metallic_workflow"] = desc.metallic_workflow;
+    doc["material_type"]     = kMaterialType[desc.material_type];
     doc["shading_model"]     = kShadingModel[desc.shading_model];
     doc["lighting_model"]    = kLightingModel[desc.lighting_model];
 
-    if (desc.vertex_shader_func_path.size() != 0)
-        doc["vertex_shader_func"] = desc.vertex_shader_func_path;
-
-    if (desc.fragment_shader_func_path.size() != 0)
-        doc["fragment_shader_func"] = desc.fragment_shader_func_path;
-
+ 
     auto texture_array = doc.array();
 
     for (auto& texture_desc : desc.textures)
@@ -122,7 +118,7 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
 
             property["value"] = float_array;
         }
-        else if (property_desc.type == PROPERTY_EMISSIVE || property_desc.type == PROPERTY_SPECULAR)
+        else if (property_desc.type == PROPERTY_EMISSIVE || (desc.metallic_workflow && property_desc.type == PROPERTY_METALNESS_SPECULAR))
         {
             auto float_array = doc.array();
             float_array.push_back(property_desc.vec3_value[0]);
@@ -131,7 +127,7 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
 
             property["value"] = float_array;
         }
-        else if (property_desc.type == PROPERTY_METALNESS || property_desc.type == PROPERTY_ROUGHNESS || property_desc.type == PROPERTY_GLOSSINESS || property_desc.type == PROPERTY_SHININESS || property_desc.type == PROPERTY_REFLECTIVITY)
+        else if ((!desc.metallic_workflow && property_desc.type == PROPERTY_METALNESS_SPECULAR) || property_desc.type == PROPERTY_ROUGHNESS_GLOSSINESS)
             property["value"] = property_desc.float_value;
 
         property_array.push_back(property);

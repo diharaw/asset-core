@@ -1,5 +1,5 @@
-#include <offline/mesh_exporter.h>
-#include <offline/material_exporter.h>
+#include <exporter/mesh_exporter.h>
+#include <exporter/material_exporter.h>
 #include <common/filesystem.h>
 #include <common/header.h>
 #include <json.hpp>
@@ -131,9 +131,7 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
             mat_exp_options.dst_texture_path      = texture_path;
             mat_exp_options.use_compression       = options.use_compression;
             mat_exp_options.normal_map_flip_green = options.normal_map_flip_green;
-
-            material.vertex_shader_func_path   = options.vertex_func_path;
-            material.fragment_shader_func_path = options.fragment_func_path;
+            mat_exp_options.is_orca_material      = options.is_orca_mesh;
 
             if (export_material(material, mat_exp_options))
             {

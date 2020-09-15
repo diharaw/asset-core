@@ -4,9 +4,10 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project("AssetCore")
 
 # Options
-set(BUILD_ASSET_CORE_RUNTIME true CACHE BOOL "Build Runtime Asset Core Library")
-set(BUILD_ASSET_CORE_OFFLINE true CACHE BOOL "Build Offline Asset Core Library")
-set(BUILD_ASSET_CORE_TOOLS true CACHE BOOL "Build Asset Core tools")
+set(BUILD_ASSET_CORE_LOADER_LIBRARY true CACHE BOOL "Build loader library")
+set(BUILD_ASSET_CORE_EXPORTER_LIBRARY true CACHE BOOL "Build exporter library")
+set(BUILD_ASSET_CORE_IMPORTER_LIBRARY true CACHE BOOL "Build importer library")
+set(BUILD_ASSET_CORE_TOOLS true CACHE BOOL "Build tools")
 set(ENABLE_CLANG_FORMAT true CACHE BOOL "Enable code formatting")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
@@ -40,18 +41,22 @@ include_directories("${ASSIMP_INCLUDE_DIRS}"
 
 add_subdirectory("${PROJECT_SOURCE_DIR}/src/common")
 
-if (BUILD_ASSET_CORE_OFFLINE)
+if (BUILD_ASSET_CORE_IMPORTER_LIBRARY)
 	add_subdirectory("${PROJECT_SOURCE_DIR}/external/cmft")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/external/nvidia-texture-tools")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/external/assimp")
-	add_subdirectory("${PROJECT_SOURCE_DIR}/src/offline")
+	add_subdirectory("${PROJECT_SOURCE_DIR}/src/importer")
 endif()
 
-if (BUILD_ASSET_CORE_RUNTIME)
-	add_subdirectory("${PROJECT_SOURCE_DIR}/src/runtime")
+if (BUILD_ASSET_CORE_EXPORTER_LIBRARY)
+	add_subdirectory("${PROJECT_SOURCE_DIR}/src/exporter")
 endif()
 
-if (BUILD_ASSET_CORE_TOOLS)
+if (BUILD_ASSET_CORE_LOADER_LIBRARY)
+	add_subdirectory("${PROJECT_SOURCE_DIR}/src/loader")
+endif()
+
+if (BUILD_ASSET_CORE_TOOLS AND BUILD_ASSET_CORE_IMPORTER_LIBRARY AND BUILD_ASSET_CORE_EXPORTER_LIBRARY)
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/mesh_export")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/image_export")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/brdf_lut")

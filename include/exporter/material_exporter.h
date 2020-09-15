@@ -13,6 +13,7 @@ namespace ast
         std::string dst_texture_path = "";
         bool use_compression = true;
 		bool normal_map_flip_green = false;
+        bool        is_orca_material      = false;
     };
     
     extern bool export_material(const Material& desc, const MaterialExportOptions& options);
