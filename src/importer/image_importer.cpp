@@ -1,4 +1,4 @@
-#include <offline/image_importer.h>
+#include <importer/image_importer.h>
 #include <common/filesystem.h>
 #include <thread>
 #include <nvtt/nvtt.h>

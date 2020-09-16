@@ -1,4 +1,4 @@
-#include <offline/mesh_importer.h>
+#include <importer/mesh_importer.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
