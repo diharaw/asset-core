@@ -123,14 +123,12 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                     int two_sided = 0;
                     temp_material->Get(AI_MATKEY_TWOSIDED, two_sided);
                     mat.double_sided = (bool)two_sided;
-
-                    mat.blend_mode                = BLEND_MODE_OPAQUE;
+                    mat.alpha_mask                = false;
+                    mat.orca                      = options.is_orca_mesh;
                     mat.metallic_workflow         = true;
-                    mat.lighting_model            = LIGHTING_MODEL_LIT;
-                    mat.displacement_type         = DISPLACEMENT_NONE;
+                    mat.material_type             = MATERIAL_OPAQUE;
                     mat.shading_model             = SHADING_MODEL_STANDARD;
-                    mat.fragment_shader_func_path = "";
-                    mat.vertex_shader_func_path   = "";
+                    mat.lighting_model            = LIGHTING_MODEL_LIT;
 
                     // Try to find Diffuse texture
                     std::string albedo_path = get_texture_path(temp_material, aiTextureType_DIFFUSE);
@@ -174,7 +172,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 
                         MaterialProperty property;
 
-                        property.type        = PROPERTY_ROUGHNESS;
+                        property.type        = PROPERTY_ROUGHNESS_GLOSSINESS;
                         property.float_value = roughness;
 
                         mat.properties.push_back(property);
@@ -186,7 +184,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                         Texture mat_desc;
 
                         mat_desc.srgb = false;
-                        mat_desc.type = TEXTURE_ROUGHNESS;
+                        mat_desc.type = TEXTURE_ROUGHNESS_GLOSSINESS;
                         mat_desc.path = roughness_path;
 
                         mat.textures.push_back(mat_desc);
@@ -201,7 +199,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 
                         MaterialProperty property;
 
-                        property.type        = PROPERTY_METALNESS;
+                        property.type        = PROPERTY_METALNESS_SPECULAR;
                         property.float_value = metalness;
 
                         mat.properties.push_back(property);
@@ -213,7 +211,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                         Texture mat_desc;
 
                         mat_desc.srgb = false;
-                        mat_desc.type = TEXTURE_METALNESS;
+                        mat_desc.type = TEXTURE_METALNESS_SPECULAR;
                         mat_desc.path = metalness_path;
 
                         mat.textures.push_back(mat_desc);
@@ -265,7 +263,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                         {
                             MaterialProperty property;
 
-                            property.type          = PROPERTY_SPECULAR;
+                            property.type          = PROPERTY_METALNESS_SPECULAR;
                             property.vec4_value[0] = specular.r;
                             property.vec4_value[1] = specular.g;
                             property.vec4_value[2] = specular.b;
@@ -282,7 +280,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                         Texture mat_desc;
 
                         mat_desc.srgb = false;
-                        mat_desc.type = TEXTURE_SPECULAR;
+                        mat_desc.type = TEXTURE_METALNESS_SPECULAR;
                         mat_desc.path = specular_path;
 
                         mat.textures.push_back(mat_desc);
@@ -324,40 +322,6 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                             mat_desc.path = height_path;
 
                             mat.textures.push_back(mat_desc);
-
-                            mat.displacement_type = DISPLACEMENT_PARALLAX_OCCLUSION;
-                        }
-                    }
-
-                    // Try to get Shininess Value
-                    {
-                        float shininess;
-
-                        // Try loading in a Emissive material property
-                        if (temp_material->Get(AI_MATKEY_SHININESS, shininess))
-                        {
-                            MaterialProperty property;
-
-                            property.type        = PROPERTY_SHININESS;
-                            property.float_value = shininess;
-
-                            mat.properties.push_back(property);
-                        }
-                    }
-
-                    // Try to get Reflectivity Value
-                    {
-                        float reflectivity;
-
-                        // Try loading in a Emissive material property
-                        if (temp_material->Get(AI_MATKEY_REFLECTIVITY, reflectivity))
-                        {
-                            MaterialProperty property;
-
-                            property.type        = PROPERTY_REFLECTIVITY;
-                            property.float_value = reflectivity;
-
-                            mat.properties.push_back(property);
                         }
                     }
 

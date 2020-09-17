@@ -26,8 +26,8 @@ static const std::string kPropertyType[] = {
 };
 
 static const std::string kMaterialType[] = {
-    "MATERIAL_TYPE_OPAQUE",
-    "MATERIAL_TYPE_TRANSPARENT"
+    "MATERIAL_OPAQUE",
+    "MATERIAL_TRANSPARENT"
 };
 
 static const std::string kShadingModel[] = {
@@ -62,8 +62,8 @@ enum MaterialPropertyType
 
 enum MaterialType
 {
-    MATERIAL_TYPE_OPAQUE,
-    MATERIAL_TYPE_TRANSPARENT
+    MATERIAL_OPAQUE,
+    MATERIAL_TRANSPARENT
 };
 
 enum ShadingModel

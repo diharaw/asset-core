@@ -13,7 +13,6 @@ namespace ast
         std::string texture_source_path = "";
         bool use_compression = true;
 		bool normal_map_flip_green = false;
-        bool        is_orca_mesh           = false;
         bool output_metadata = false;
     };
     
