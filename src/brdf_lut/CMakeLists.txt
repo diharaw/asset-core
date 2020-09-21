@@ -10,5 +10,6 @@ file(GLOB_RECURSE BRDF_LUT_SOURCE ${PROJECT_SOURCE_DIR}/src/brdf_lut/*.cpp
 
 add_executable(brdf_lut ${BRDF_LUT_SOURCE})
 
-target_link_libraries(brdf_lut AssetCoreOffline)
-target_link_libraries(brdf_lut AssetCoreRuntime)
+target_link_libraries(brdf_lut AssetCoreImporter)
+target_link_libraries(brdf_lut AssetCoreExporter)
+target_link_libraries(brdf_lut AssetCoreLoader)

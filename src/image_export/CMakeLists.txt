@@ -10,5 +10,6 @@ file(GLOB_RECURSE IMAGE_EXPORT_SOURCE ${PROJECT_SOURCE_DIR}/src/image_export/*.c
 
 add_executable(image_export ${IMAGE_EXPORT_SOURCE})
 
-target_link_libraries(image_export AssetCoreOffline)
-target_link_libraries(image_export AssetCoreRuntime)
+target_link_libraries(image_export AssetCoreImporter)
+target_link_libraries(image_export AssetCoreExporter)
+target_link_libraries(image_export AssetCoreLoader)

@@ -43,14 +43,12 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
 
     doc["name"]              = desc.name;
     doc["double_sided"]      = desc.double_sided;
-    doc["alpha_mask"]      = desc.alpha_mask;
-    doc["orca"]      = desc.orca;
+    doc["alpha_mask"]        = desc.alpha_mask;
+    doc["orca"]              = desc.orca;
     doc["metallic_workflow"] = desc.metallic_workflow;
     doc["material_type"]     = kMaterialType[desc.material_type];
     doc["shading_model"]     = kShadingModel[desc.shading_model];
-    doc["lighting_model"]    = kLightingModel[desc.lighting_model];
 
- 
     auto texture_array = doc.array();
 
     for (auto& texture_desc : desc.textures)

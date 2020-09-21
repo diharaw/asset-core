@@ -1,9 +1,9 @@
-#include <offline/image_exporter.h>
-#include <offline/mesh_importer.h>
-#include <offline/mesh_exporter.h>
-#include <offline/scene_exporter.h>
+#include <exporter/image_exporter.h>
+#include <importer/mesh_importer.h>
+#include <exporter/mesh_exporter.h>
+#include <exporter/scene_exporter.h>
 #include <common/filesystem.h>
-#include <runtime/loader.h>
+#include <loader/loader.h>
 #include <stdio.h>
 
 void print_usage()
@@ -89,36 +89,6 @@ int main(int argc, char* argv[])
                     else
                         export_options.relative_material_path = path;
                 }
-                else if (c == 'v')
-                {
-                    std::string str  = argv[i];
-                    std::string path = str.substr(2, str.size() - 2);
-
-                    if (path.size() == 0)
-                    {
-                        printf("ERROR: Invalid parameter: -V (%s)\n\n", argv[i]);
-                        print_usage();
-
-                        return 1;
-                    }
-                    else
-                        export_options.vertex_func_path = path;
-                }
-                else if (c == 'f')
-                {
-                    std::string str  = argv[i];
-                    std::string path = str.substr(2, str.size() - 2);
-
-                    if (path.size() == 0)
-                    {
-                        printf("ERROR: Invalid parameter: -V (%s)\n\n", argv[i]);
-                        print_usage();
-
-                        return 1;
-                    }
-                    else
-                        export_options.fragment_func_path = path;
-                }
                 else if (c == 'g')
                     export_options.normal_map_flip_green = true;
                 else if (c == 'c')
@@ -127,6 +97,8 @@ int main(int argc, char* argv[])
                     export_options.output_metadata = true;
                 else if (c == 'd')
                     import_options.displacement_as_normal = true;
+                else if (c == 'o')
+                    import_options.is_orca_mesh = true;
             }
             else if (i > 0)
             {
@@ -149,7 +121,7 @@ int main(int argc, char* argv[])
 
                     if (export_options.path.size() == 0)
                     {
-                        printf("ERROR: Invalid input path: %s\n\n", argv[i]);
+                        printf("ERROR: Invalid export path: %s\n\n", argv[i]);
                         print_usage();
 
                         return 1;

@@ -36,11 +36,6 @@ static const std::string kShadingModel[] = {
     "SHADING_MODEL_SUBSURFACE"
 };
 
-static const std::string kLightingModel[] = {
-    "LIGHTING_MODEL_LIT",
-    "LIGHTING_MODEL_UNLIT"
-};
-
 enum TextureType
 {
     TEXTURE_ALBEDO = 0,
@@ -73,12 +68,6 @@ enum ShadingModel
     SHADING_MODEL_SUBSURFACE
 };
 
-enum LightingModel
-{
-    LIGHTING_MODEL_LIT,
-    LIGHTING_MODEL_UNLIT
-};
-
 struct Texture
 {
     TextureType type;
@@ -108,7 +97,6 @@ struct Material
     bool                          metallic_workflow;
     MaterialType                  material_type;
     ShadingModel                  shading_model;
-    LightingModel                 lighting_model;
     std::vector<Texture>          textures;
     std::vector<MaterialProperty> properties;
 };

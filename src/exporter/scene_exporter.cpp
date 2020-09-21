@@ -8,11 +8,13 @@
 namespace ast
 {
 nlohmann::json serialize_scene_node(std::shared_ptr<SceneNode> node);
-void serialize_transform_node(std::shared_ptr<SceneNode> node, nlohmann::json& json);
-void serialize_mesh_node(std::shared_ptr<SceneNode> node, nlohmann::json& json);
-void serialize_directional_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& json);
-void serialize_spot_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& json);
-void serialize_point_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& json);
+void           serialize_transform_node(std::shared_ptr<SceneNode> node, nlohmann::json& json);
+void           serialize_mesh_node(std::shared_ptr<SceneNode> node, nlohmann::json& json);
+void           serialize_directional_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& json);
+void           serialize_spot_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& json);
+void           serialize_point_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& json);
+void           serialize_camera_node(std::shared_ptr<SceneNode> node, nlohmann::json& json);
+void           serialize_ibl_node(std::shared_ptr<SceneNode> node, nlohmann::json& json);
 
 nlohmann::json serialize_scene_node(std::shared_ptr<SceneNode> node)
 {
@@ -24,13 +26,19 @@ nlohmann::json serialize_scene_node(std::shared_ptr<SceneNode> node)
 
     if (node->type == SCENE_NODE_MESH)
         serialize_mesh_node(node, json);
+    else if (node->type == SCENE_NODE_CAMERA)
+        serialize_camera_node(node, json);
     else if (node->type == SCENE_NODE_DIRECTIONAL_LIGHT)
         serialize_directional_light_node(node, json);
     else if (node->type == SCENE_NODE_SPOT_LIGHT)
         serialize_spot_light_node(node, json);
     else if (node->type == SCENE_NODE_POINT_LIGHT)
         serialize_point_light_node(node, json);
-  
+    else if (node->type == SCENE_NODE_POINT_LIGHT)
+        serialize_point_light_node(node, json);
+    else if (node->type == SCENE_NODE_IBL)
+        serialize_ibl_node(node, json);
+
     auto children = json.array();
 
     for (auto child : node->children)
@@ -43,7 +51,7 @@ nlohmann::json serialize_scene_node(std::shared_ptr<SceneNode> node)
 
 void serialize_transform_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
 {
-    std::shared_ptr<TransformNode> transform_node = std::dynamic_pointer_cast<TransformNode>(node);
+    std::shared_ptr<TransformNode> transform_node = std::static_pointer_cast<TransformNode>(node);
 
     auto position = json.array();
     position.push_back(transform_node->position[0]);
@@ -69,7 +77,9 @@ void serialize_transform_node(std::shared_ptr<SceneNode> node, nlohmann::json& j
 
 void serialize_mesh_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
 {
-    std::shared_ptr<MeshNode> mesh_node = std::dynamic_pointer_cast<MeshNode>(node);
+    std::shared_ptr<MeshNode> mesh_node = std::static_pointer_cast<MeshNode>(node);
+
+    serialize_transform_node(node, json);
 
     json["mesh"] = mesh_node->mesh;
 
@@ -81,7 +91,9 @@ void serialize_mesh_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
 
 void serialize_directional_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
 {
-    std::shared_ptr<DirectionalLightNode> light_node = std::dynamic_pointer_cast<DirectionalLightNode>(node);
+    std::shared_ptr<DirectionalLightNode> light_node = std::static_pointer_cast<DirectionalLightNode>(node);
+
+    serialize_transform_node(node, json);
 
     auto color = json.array();
     color.push_back(light_node->color[0]);
@@ -95,13 +107,15 @@ void serialize_directional_light_node(std::shared_ptr<SceneNode> node, nlohmann:
     rotation.push_back(light_node->rotation[1]);
     rotation.push_back(light_node->rotation[2]);
 
-    json["rotation"] = rotation;
+    json["rotation"]  = rotation;
     json["intensity"] = light_node->intensity;
 }
 
 void serialize_spot_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
 {
-    std::shared_ptr<SpotLightNode> light_node = std::dynamic_pointer_cast<SpotLightNode>(node);
+    std::shared_ptr<SpotLightNode> light_node = std::static_pointer_cast<SpotLightNode>(node);
+
+    serialize_transform_node(node, json);
 
     auto color = json.array();
     color.push_back(light_node->color[0]);
@@ -122,15 +136,17 @@ void serialize_spot_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& 
     rotation.push_back(light_node->rotation[1]);
     rotation.push_back(light_node->rotation[2]);
 
-    json["rotation"] = rotation;
-    json["cone_angle"]            = light_node->cone_angle;
+    json["rotation"]   = rotation;
+    json["cone_angle"] = light_node->cone_angle;
     json["range"]      = light_node->range;
-    json["intensity"]             = light_node->intensity;
+    json["intensity"]  = light_node->intensity;
 }
 
 void serialize_point_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
 {
-    std::shared_ptr<PointLightNode> light_node = std::dynamic_pointer_cast<PointLightNode>(node);
+    std::shared_ptr<PointLightNode> light_node = std::static_pointer_cast<PointLightNode>(node);
+
+    serialize_transform_node(node, json);
 
     auto color = json.array();
     color.push_back(light_node->color[0]);
@@ -148,6 +164,24 @@ void serialize_point_light_node(std::shared_ptr<SceneNode> node, nlohmann::json&
 
     json["range"]     = light_node->range;
     json["intensity"] = light_node->intensity;
+}
+
+void serialize_camera_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
+{
+    std::shared_ptr<CameraNode> camera_node = std::static_pointer_cast<CameraNode>(node);
+
+    serialize_transform_node(node, json);
+
+    json["near_plane"] = camera_node->near_plane;
+    json["far_plane"]  = camera_node->far_plane;
+    json["fov"]        = camera_node->fov;
+}
+
+void serialize_ibl_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
+{
+    std::shared_ptr<IBLNode> ibl_node = std::static_pointer_cast<IBLNode>(node);
+
+    json["image"] = ibl_node->image;
 }
 
 bool export_scene(const Scene& scene, const std::string& path)

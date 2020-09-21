@@ -122,13 +122,12 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 
                     int two_sided = 0;
                     temp_material->Get(AI_MATKEY_TWOSIDED, two_sided);
-                    mat.double_sided = (bool)two_sided;
-                    mat.alpha_mask                = false;
-                    mat.orca                      = options.is_orca_mesh;
-                    mat.metallic_workflow         = true;
-                    mat.material_type             = MATERIAL_OPAQUE;
-                    mat.shading_model             = SHADING_MODEL_STANDARD;
-                    mat.lighting_model            = LIGHTING_MODEL_LIT;
+                    mat.double_sided      = (bool)two_sided;
+                    mat.alpha_mask        = false;
+                    mat.orca              = options.is_orca_mesh;
+                    mat.metallic_workflow = true;
+                    mat.material_type     = MATERIAL_OPAQUE;
+                    mat.shading_model     = SHADING_MODEL_STANDARD;
 
                     // Try to find Diffuse texture
                     std::string albedo_path = get_texture_path(temp_material, aiTextureType_DIFFUSE);

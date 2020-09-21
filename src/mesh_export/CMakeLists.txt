@@ -10,5 +10,6 @@ file(GLOB_RECURSE MESH_EXPORT_SOURCE ${PROJECT_SOURCE_DIR}/src/mesh_export/*.cpp
 
 add_executable(mesh_export ${MESH_EXPORT_SOURCE})
 
-target_link_libraries(mesh_export AssetCoreOffline)
-target_link_libraries(mesh_export AssetCoreRuntime)
+target_link_libraries(mesh_export AssetCoreImporter)
+target_link_libraries(mesh_export AssetCoreExporter)
+target_link_libraries(mesh_export AssetCoreLoader)

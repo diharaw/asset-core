@@ -10,19 +10,24 @@ namespace ast
 {
 static const std::string kSceneNodeType[] = {
     "SCENE_NODE_MESH",
+    "SCENE_NODE_CAMERA",
     "SCENE_NODE_DIRECTIONAL_LIGHT",
     "SCENE_NODE_SPOT_LIGHT",
     "SCENE_NODE_POINT_LIGHT",
+    "SCENE_NODE_IBL",
     "SCENE_NODE_CUSTOM"
 };
 
 enum SceneNodeType
 {
     SCENE_NODE_MESH,
+    SCENE_NODE_CAMERA,
     SCENE_NODE_DIRECTIONAL_LIGHT,
     SCENE_NODE_SPOT_LIGHT,
     SCENE_NODE_POINT_LIGHT,
-    SCENE_NODE_CUSTOM
+    SCENE_NODE_IBL,
+    SCENE_NODE_CUSTOM,
+    SCENE_NODE_COUNT
 };
 
 struct SceneNode
@@ -81,6 +86,11 @@ struct CameraNode : public TransformNode
     float near_plane;
     float far_plane;
     float fov;
+};
+
+struct IBLNode : public SceneNode
+{
+    std::string image;
 };
 
 struct Scene

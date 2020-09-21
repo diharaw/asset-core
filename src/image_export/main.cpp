@@ -1,6 +1,6 @@
-#include <offline/image_exporter.h>
+#include <exporter/image_exporter.h>
 #include <common/filesystem.h>
-#include <runtime/loader.h>
+#include <loader/loader.h>
 #include <stdio.h>
 
 void print_usage()

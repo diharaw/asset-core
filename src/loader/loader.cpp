@@ -27,6 +27,15 @@
 
 namespace ast
 {
+void                       deserialize_transform_node(const nlohmann::json& json, std::shared_ptr<SceneNode> node);
+std::shared_ptr<SceneNode> deserialize_mesh_node(const nlohmann::json& json);
+std::shared_ptr<SceneNode> deserialize_directional_light_node(const nlohmann::json& json);
+std::shared_ptr<SceneNode> deserialize_spot_light_node(const nlohmann::json& json);
+std::shared_ptr<SceneNode> deserialize_point_light_node(const nlohmann::json& json);
+std::shared_ptr<SceneNode> deserialize_camera_node(const nlohmann::json& json);
+std::shared_ptr<SceneNode> deserialize_ibl_node(const nlohmann::json& json);
+std::shared_ptr<SceneNode> deserialize_scene_node(const nlohmann::json& json);
+
 bool load_image(const std::string& path, Image& image)
 {
     std::fstream f(path, std::ios::in | std::ios::binary);
@@ -164,9 +173,7 @@ bool load_material(const std::string& path, Material& material)
     nlohmann::json j;
     i >> j;
 
-    std::string blend_mode;
-    std::string displacement_type;
-    std::string lighting_model;
+    std::string material_type;
     std::string shading_model;
 
     if (j.find("name") != j.end())
@@ -174,53 +181,41 @@ bool load_material(const std::string& path, Material& material)
     else
         material.name = "untitled";
 
-    if (j.find("blend_mode") != j.end())
+    if (j.find("double_sided") != j.end())
+        material.double_sided = j["double_sided"];
+    else
+        material.double_sided = false;
+
+    if (j.find("alpha_mask") != j.end())
+        material.alpha_mask = j["alpha_mask"];
+    else
+        material.alpha_mask = false;
+
+    if (j.find("orca") != j.end())
+        material.orca = j["orca"];
+    else
+        material.orca = false;
+
+    if (j.find("metallic_workflow") != j.end())
+        material.metallic_workflow = j["metallic_workflow"];
+    else
+        material.metallic_workflow = true;
+
+    if (j.find("material_type") != j.end())
     {
-        blend_mode = j["blend_mode"];
+        material_type = j["material_type"];
 
         for (int i = 0; i < 4; i++)
         {
-            if (kBlendMode[i] == blend_mode)
+            if (kMaterialType[i] == material_type)
             {
-                material.blend_mode = (BlendMode)i;
+                material.material_type = (MaterialType)i;
                 break;
             }
         }
     }
     else
-        material.blend_mode = BLEND_MODE_OPAQUE;
-
-    if (j.find("displacement_type") != j.end())
-    {
-        displacement_type = j["displacement_type"];
-
-        for (int i = 0; i < 3; i++)
-        {
-            if (kDisplacementType[i] == displacement_type)
-            {
-                material.displacement_type = (DisplacementType)i;
-                break;
-            }
-        }
-    }
-    else
-        material.displacement_type = DISPLACEMENT_NONE;
-
-    if (j.find("lighting_model") != j.end())
-    {
-        lighting_model = j["lighting_model"];
-
-        for (int i = 0; i < 2; i++)
-        {
-            if (kLightingModel[i] == lighting_model)
-            {
-                material.lighting_model = (LightingModel)i;
-                break;
-            }
-        }
-    }
-    else
-        material.lighting_model = LIGHTING_MODEL_LIT;
+        material.material_type = MATERIAL_OPAQUE;
 
     if (j.find("shading_model") != j.end())
     {
@@ -237,44 +232,6 @@ bool load_material(const std::string& path, Material& material)
     }
     else
         material.shading_model = SHADING_MODEL_STANDARD;
-
-    if (j.find("double_sided") != j.end())
-        material.double_sided = j["double_sided"];
-    else
-        material.double_sided = false;
-
-    if (j.find("metallic_workflow") != j.end())
-        material.metallic_workflow = j["metallic_workflow"];
-    else
-        material.metallic_workflow = true;
-
-    if (j.find("fragment_shader_func") != j.end())
-    {
-        std::string relative_path = j["fragment_shader_func"];
-        std::string parent_path   = filesystem::get_file_path(path);
-        std::string shader_path   = "";
-
-        if (parent_path.length() == 0)
-            shader_path = relative_path;
-        else
-            shader_path = parent_path + relative_path;
-
-        material.fragment_shader_func_path = shader_path;
-    }
-
-    if (j.find("vertex_shader_func") != j.end())
-    {
-        std::string relative_path = j["vertex_shader_func"];
-        std::string parent_path   = filesystem::get_file_path(path);
-        std::string shader_path   = "";
-
-        if (parent_path.length() == 0)
-            shader_path = relative_path;
-        else
-            shader_path = parent_path + relative_path;
-
-        material.vertex_shader_func_path = shader_path;
-    }
 
     if (j.find("textures") != j.end())
     {
@@ -375,66 +332,38 @@ bool load_material(const std::string& path, Material& material)
                         found = true;
                     }
                 }
-                else if (type == kPropertyType[PROPERTY_METALNESS])
+                else if (type == kPropertyType[PROPERTY_METALNESS_SPECULAR])
                 {
-                    property.type = PROPERTY_METALNESS;
-
-                    if (json_property.find("value") != json_property.end())
-                        property.float_value = json_property["value"];
-
-                    found = true;
-                }
-                else if (type == kPropertyType[PROPERTY_ROUGHNESS])
-                {
-                    property.type = PROPERTY_ROUGHNESS;
-
-                    if (json_property.find("value") != json_property.end())
-                        property.float_value = json_property["value"];
-
-                    found = true;
-                }
-                else if (type == kPropertyType[PROPERTY_SPECULAR])
-                {
-                    property.type = PROPERTY_EMISSIVE;
+                    property.type = PROPERTY_METALNESS_SPECULAR;
 
                     if (json_property.find("value") != json_property.end())
                     {
-                        auto vec = json_property["value"];
-                        int  i   = 0;
-
-                        if (vec.size() != 3)
-                            continue;
-
-                        for (auto& value : vec)
+                        if (material.metallic_workflow)
                         {
-                            property.vec3_value[i] = value;
-                            i++;
+                            property.float_value = json_property["value"];
+                            found                = true;
                         }
+                        else
+                        {
+                            auto vec = json_property["value"];
+                            int  i   = 0;
 
-                        found = true;
+                            if (vec.size() != 3)
+                                continue;
+
+                            for (auto& value : vec)
+                            {
+                                property.vec3_value[i] = value;
+                                i++;
+                            }
+
+                            found = true;
+                        }
                     }
                 }
-                else if (type == kPropertyType[PROPERTY_GLOSSINESS])
+                else if (type == kPropertyType[PROPERTY_ROUGHNESS_GLOSSINESS])
                 {
-                    property.type = PROPERTY_GLOSSINESS;
-
-                    if (json_property.find("value") != json_property.end())
-                        property.float_value = json_property["value"];
-
-                    found = true;
-                }
-                else if (type == kPropertyType[PROPERTY_SHININESS])
-                {
-                    property.type = PROPERTY_SHININESS;
-
-                    if (json_property.find("value") != json_property.end())
-                        property.float_value = json_property["value"];
-
-                    found = true;
-                }
-                else if (type == kPropertyType[PROPERTY_REFLECTIVITY])
-                {
-                    property.type = PROPERTY_REFLECTIVITY;
+                    property.type = PROPERTY_ROUGHNESS_GLOSSINESS;
 
                     if (json_property.find("value") != json_property.end())
                         property.float_value = json_property["value"];
@@ -451,6 +380,169 @@ bool load_material(const std::string& path, Material& material)
     return true;
 }
 
+void deserialize_transform_node(const nlohmann::json& json, std::shared_ptr<SceneNode> node)
+{
+    std::shared_ptr<TransformNode> transform_node = std::static_pointer_cast<TransformNode>(node);
+
+    JSON_PARSE_VECTOR(json, transform_node->position, position, 3);
+    JSON_PARSE_VECTOR(json, transform_node->rotation, rotation, 3);
+    JSON_PARSE_VECTOR(json, transform_node->scale, scale, 3);
+}
+
+std::shared_ptr<SceneNode> deserialize_mesh_node(const nlohmann::json& json)
+{
+    std::shared_ptr<MeshNode> node = std::make_shared<MeshNode>();
+
+    deserialize_transform_node(json, node);
+
+    if (json.find("mesh") != json.end())
+        node->mesh = json["mesh"];
+
+    if (json.find("material_override") != json.end())
+        node->material_override = json["material_override"];
+
+    return std::static_pointer_cast<SceneNode>(node);
+}
+
+std::shared_ptr<SceneNode> deserialize_directional_light_node(const nlohmann::json& json)
+{
+    std::shared_ptr<DirectionalLightNode> node = std::make_shared<DirectionalLightNode>();
+
+    deserialize_transform_node(json, node);
+
+    if (json.find("intensity") != json.end())
+        node->intensity = json["intensity"];
+
+    JSON_PARSE_VECTOR(json, node->color, color, 3);
+    JSON_PARSE_VECTOR(json, node->rotation, rotation, 3);
+
+    return std::static_pointer_cast<SceneNode>(node);
+}
+
+std::shared_ptr<SceneNode> deserialize_spot_light_node(const nlohmann::json& json)
+{
+    std::shared_ptr<SpotLightNode> node = std::make_shared<SpotLightNode>();
+
+    deserialize_transform_node(json, node);
+
+    if (json.find("cone_angle") != json.end())
+        node->cone_angle = json["cone_angle"];
+
+    if (json.find("range") != json.end())
+        node->range = json["range"];
+
+    if (json.find("intensity") != json.end())
+        node->intensity = json["intensity"];
+
+    JSON_PARSE_VECTOR(json, node->color, color, 3);
+    JSON_PARSE_VECTOR(json, node->position, position, 3);
+    JSON_PARSE_VECTOR(json, node->rotation, rotation, 3);
+
+    return std::static_pointer_cast<SceneNode>(node);
+}
+
+std::shared_ptr<SceneNode> deserialize_point_light_node(const nlohmann::json& json)
+{
+    std::shared_ptr<PointLightNode> node = std::make_shared<PointLightNode>();
+
+    deserialize_transform_node(json, node);
+
+    if (json.find("range") != json.end())
+        node->range = json["range"];
+
+    if (json.find("intensity") != json.end())
+        node->intensity = json["intensity"];
+
+    JSON_PARSE_VECTOR(json, node->color, color, 3);
+    JSON_PARSE_VECTOR(json, node->position, position, 3);
+
+    return std::static_pointer_cast<SceneNode>(node);
+}
+
+std::shared_ptr<SceneNode> deserialize_camera_node(const nlohmann::json& json)
+{
+    std::shared_ptr<CameraNode> node = std::make_shared<CameraNode>();
+
+    deserialize_transform_node(json, node);
+
+    if (json.find("near_plane") != json.end())
+        node->near_plane = json["near_plane"];
+
+    if (json.find("far_plane") != json.end())
+        node->far_plane = json["far_plane"];
+
+    if (json.find("fov") != json.end())
+        node->fov = json["fov"];
+
+    return std::static_pointer_cast<SceneNode>(node);
+}
+
+std::shared_ptr<SceneNode> deserialize_ibl_node(const nlohmann::json& json)
+{
+    std::shared_ptr<IBLNode> node = std::make_shared<IBLNode>();
+
+    if (json.find("image") != json.end())
+        node->image = json["image"];
+
+    return std::static_pointer_cast<SceneNode>(node);
+}
+
+std::shared_ptr<SceneNode> deserialize_scene_node(const nlohmann::json& json)
+{
+    std::shared_ptr<SceneNode> node;
+
+    SceneNodeType type;
+
+    if (json.find("type") != json.end())
+    {
+        std::string node_type = json["type"];
+
+        for (int i = 0; i < SCENE_NODE_COUNT; i++)
+        {
+            if (kSceneNodeType[i] == node_type)
+            {
+                type = (SceneNodeType)i;
+                break;
+            }
+        }
+    }
+    else
+        return nullptr;
+
+    if (node->type == SCENE_NODE_MESH)
+        node = deserialize_mesh_node(json);
+    else if (node->type == SCENE_NODE_CAMERA)
+        node = deserialize_camera_node(json);
+    else if (node->type == SCENE_NODE_DIRECTIONAL_LIGHT)
+        node = deserialize_directional_light_node(json);
+    else if (node->type == SCENE_NODE_SPOT_LIGHT)
+        node = deserialize_spot_light_node(json);
+    else if (node->type == SCENE_NODE_POINT_LIGHT)
+        node = deserialize_point_light_node(json);
+    else if (node->type == SCENE_NODE_IBL)
+        node = deserialize_ibl_node(json);
+    else if (node->type == SCENE_NODE_CUSTOM)
+        node = std::make_shared<SceneNode>();
+
+    node->type = type;
+
+    if (json.find("name") != json.end())
+        node->name = json["name"];
+
+    if (json.find("custom_data") != json.end())
+        node->custom_data = json["custom_data"];
+
+    if (json.find("children") != json.end())
+    {
+        auto children = json["children"];
+
+        for (auto child : children)
+            node->children.push_back(deserialize_scene_node(child));
+    }
+
+    return node;
+}
+
 bool load_scene(const std::string& path, Scene& scene)
 {
     std::ifstream i(path);
@@ -464,209 +556,8 @@ bool load_scene(const std::string& path, Scene& scene)
     if (j.find("name") != j.end())
         scene.name = j["name"];
 
-    if (j.find("camera") != j.end())
-    {
-        auto camera = j["camera"];
-
-        if (camera.find("type") != camera.end())
-        {
-            std::string type = camera["type"];
-
-            for (int i = 0; i < 2; i++)
-            {
-                if (kCameraTypes[i] == type)
-                {
-                    scene.camera.type = (CameraType)i;
-                    break;
-                }
-            }
-        }
-
-        if (camera.find("rotation_speed") != camera.end())
-            scene.camera.rotation_speed = camera["rotation_speed"];
-
-        if (scene.camera.type == CAMERA_ORBIT)
-        {
-            JSON_PARSE_VECTOR(camera, scene.camera.orbit_center, orbit_center, 3);
-
-            if (camera.find("orbit_boom_length") != camera.end())
-                scene.camera.orbit_boom_length = camera["orbit_boom_length"];
-        }
-        else if (scene.camera.type == CAMERA_FLYTHROUGH)
-        {
-            JSON_PARSE_VECTOR(camera, scene.camera.position, position, 3);
-            JSON_PARSE_VECTOR(camera, scene.camera.rotation, rotation, 3);
-
-            if (camera.find("movement_speed") != camera.end())
-                scene.camera.movement_speed = camera["movement_speed"];
-        }
-
-        if (camera.find("near_plane") != camera.end())
-            scene.camera.near_plane = camera["near_plane"];
-
-        if (camera.find("far_plane") != camera.end())
-            scene.camera.far_plane = camera["far_plane"];
-    }
-
-    if (j.find("skybox") != j.end())
-    {
-        auto skybox = j["skybox"];
-
-        if (skybox.find("type") != skybox.end())
-        {
-            std::string type = skybox["type"];
-
-            for (int i = 0; i < 2; i++)
-            {
-                if (kSkyboxType[i] == type)
-                {
-                    scene.skybox.type = (SkyboxType)i;
-                    break;
-                }
-            }
-        }
-
-        if (scene.skybox.type == SKYBOX_STATIC)
-        {
-            if (skybox.find("environment_map") != skybox.end())
-                scene.skybox.environment_map = skybox["environment_map"];
-
-            if (skybox.find("diffuse_irradiance") != skybox.end())
-                scene.skybox.diffuse_irradiance = skybox["diffuse_irradiance"];
-
-            if (skybox.find("specular_irradiance") != skybox.end())
-                scene.skybox.specular_irradiance = skybox["specular_irradiance"];
-        }
-    }
-
-    if (j.find("reflection_probes") != j.end())
-    {
-        auto reflection_probes = j["reflection_probes"];
-
-        for (auto probe : reflection_probes)
-        {
-            ReflectionProbe new_probe;
-
-            if (probe.find("path") != probe.end())
-                new_probe.path = probe["path"];
-
-            JSON_PARSE_VECTOR(probe, new_probe.position, position, 3);
-            JSON_PARSE_VECTOR(probe, new_probe.extents, extents, 3);
-
-            scene.reflection_probes.push_back(new_probe);
-        }
-    }
-
-    if (j.find("gi_probes") != j.end())
-    {
-        auto gi_probes = j["gi_probes"];
-
-        for (auto probe : gi_probes)
-        {
-            GIProbe new_probe;
-
-            if (probe.find("path") != probe.end())
-                new_probe.path = probe["path"];
-
-            JSON_PARSE_VECTOR(probe, new_probe.position, position, 3);
-
-            scene.gi_probes.push_back(new_probe);
-        }
-    }
-
-    if (j.find("directional_lights") != j.end())
-    {
-        auto directional_lights = j["directional_lights"];
-
-        for (auto json_light : directional_lights)
-        {
-            DirectionalLight light;
-
-            if (json_light.find("intensity") != json_light.end())
-                light.intensity = json_light["intensity"];
-
-            if (json_light.find("casts_shadows") != json_light.end())
-                light.casts_shadows = json_light["casts_shadows"];
-
-            JSON_PARSE_VECTOR(json_light, light.color, color, 3);
-            JSON_PARSE_VECTOR(json_light, light.rotation, rotation, 3);
-
-            scene.directional_lights.push_back(light);
-        }
-    }
-
-    if (j.find("point_lights") != j.end())
-    {
-        auto point_lights = j["point_lights"];
-
-        for (auto json_light : point_lights)
-        {
-            PointLight light;
-
-            if (json_light.find("intensity") != json_light.end())
-                light.intensity = json_light["intensity"];
-
-            if (json_light.find("casts_shadows") != json_light.end())
-                light.casts_shadows = json_light["casts_shadows"];
-
-            JSON_PARSE_VECTOR(json_light, light.color, color, 3);
-            JSON_PARSE_VECTOR(json_light, light.position, position, 3);
-
-            scene.point_lights.push_back(light);
-        }
-    }
-
-    if (j.find("spot_lights") != j.end())
-    {
-        auto spot_lights = j["spot_lights"];
-
-        for (auto json_light : spot_lights)
-        {
-            SpotLight light;
-
-            if (json_light.find("intensity") != json_light.end())
-                light.intensity = json_light["intensity"];
-
-            if (json_light.find("casts_shadows") != json_light.end())
-                light.casts_shadows = json_light["casts_shadows"];
-
-            JSON_PARSE_VECTOR(json_light, light.color, color, 3);
-            JSON_PARSE_VECTOR(json_light, light.position, position, 3);
-            JSON_PARSE_VECTOR(json_light, light.rotation, rotation, 3);
-
-            scene.spot_lights.push_back(light);
-        }
-    }
-
-    if (j.find("entities") != j.end())
-    {
-        auto entities = j["entities"];
-
-        for (auto entity : entities)
-        {
-            Entity new_entity;
-
-            if (entity.find("name") != entity.end())
-                new_entity.name = entity["name"];
-
-            if (entity.find("mesh") != entity.end())
-                new_entity.mesh = entity["mesh"];
-
-            if (entity.find("material_override") != entity.end())
-            {
-                auto material_override = entity["material_override"];
-
-                if (!material_override.is_null())
-                    new_entity.material_override = material_override;
-            }
-
-            JSON_PARSE_VECTOR(entity, new_entity.position, position, 3);
-            JSON_PARSE_VECTOR(entity, new_entity.rotation, rotation, 3);
-            JSON_PARSE_VECTOR(entity, new_entity.scale, scale, 3);
-
-            scene.entities.push_back(new_entity);
-        }
-    }
+    if (j.find("scene_graph") != j.end())
+        scene.scene_graph = deserialize_scene_node(j["scene_graph"]);
 
     return true;
 }
