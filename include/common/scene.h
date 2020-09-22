@@ -59,15 +59,12 @@ struct MeshNode : public TransformNode
 struct DirectionalLightNode : public TransformNode
 {
     glm::vec3 color;
-    glm::vec3 rotation;
     float     intensity;
 };
 
 struct SpotLightNode : public TransformNode
 {
     glm::vec3 color;
-    glm::vec3 position;
-    glm::vec3 rotation;
     float     cone_angle;
     float     range;
     float     intensity;
@@ -76,7 +73,6 @@ struct SpotLightNode : public TransformNode
 struct PointLightNode : public TransformNode
 {
     glm::vec3 color;
-    glm::vec3 position;
     float     range;
     float     intensity;
 };

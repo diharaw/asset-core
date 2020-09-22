@@ -1,7 +1,6 @@
 #include <exporter/image_exporter.h>
 #include <importer/mesh_importer.h>
 #include <exporter/mesh_exporter.h>
-#include <exporter/scene_exporter.h>
 #include <common/filesystem.h>
 #include <loader/loader.h>
 #include <stdio.h>
