@@ -46,6 +46,10 @@ if (BUILD_ASSET_CORE_IMPORTER_LIBRARY)
 	add_subdirectory("${PROJECT_SOURCE_DIR}/external/nvidia-texture-tools")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/external/assimp")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/importer")
+	
+	# Libraries
+	set_target_properties (AssetCoreCommon PROPERTIES FOLDER libs)
+	set_target_properties (AssetCoreImporter PROPERTIES FOLDER libs)
 endif()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -85,10 +89,12 @@ set_target_properties (zlibstatic PROPERTIES FOLDER external)
 
 if (BUILD_ASSET_CORE_EXPORTER_LIBRARY)
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/exporter")
+	set_target_properties (AssetCoreExporter PROPERTIES FOLDER libs)
 endif()
 
 if (BUILD_ASSET_CORE_LOADER_LIBRARY)
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/loader")
+	set_target_properties (AssetCoreLoader PROPERTIES FOLDER libs)
 endif()
 
 if (BUILD_ASSET_CORE_TOOLS AND BUILD_ASSET_CORE_IMPORTER_LIBRARY AND BUILD_ASSET_CORE_EXPORTER_LIBRARY)
@@ -96,19 +102,13 @@ if (BUILD_ASSET_CORE_TOOLS AND BUILD_ASSET_CORE_IMPORTER_LIBRARY AND BUILD_ASSET
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/image_export")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/brdf_lut")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/src/sh_project")
+
+	# Tools
+	set_target_properties (brdf_lut PROPERTIES FOLDER tools)
+	set_target_properties (image_export PROPERTIES FOLDER tools)
+	set_target_properties (mesh_export PROPERTIES FOLDER tools)
+	set_target_properties (sh_project PROPERTIES FOLDER tools)
 endif()
-
-# Libraries
-set_target_properties (AssetCoreCommon PROPERTIES FOLDER libs)
-set_target_properties (AssetCoreExporter PROPERTIES FOLDER libs)
-set_target_properties (AssetCoreImporter PROPERTIES FOLDER libs)
-set_target_properties (AssetCoreLoader PROPERTIES FOLDER libs)
-
-# Tools
-set_target_properties (brdf_lut PROPERTIES FOLDER tools)
-set_target_properties (image_export PROPERTIES FOLDER tools)
-set_target_properties (mesh_export PROPERTIES FOLDER tools)
-set_target_properties (sh_project PROPERTIES FOLDER tools)
 
 find_program(CLANG_FORMAT_EXE NAMES "clang-format" DOC "Path to clang-format executable")
 
