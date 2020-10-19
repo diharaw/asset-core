@@ -72,6 +72,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
         uint32_t                               index_count  = 0;
         aiMaterial*                            temp_material;
         std::vector<uint32_t>                  processed_mat_ids;
+        std::vector<uint32_t>                  temp_indices;
         std::unordered_map<uint32_t, uint32_t> mat_id_mapping;
         uint32_t                               unnamed_mats = 1;
 
@@ -336,6 +337,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 
         mesh.vertices.resize(vertex_count);
         mesh.indices.resize(index_count);
+        temp_indices.resize(index_count);
 
         aiMesh* temp_mesh;
         int     idx          = 0;
@@ -390,13 +392,25 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 
             for (int j = 0; j < temp_mesh->mNumFaces; j++)
             {
-                mesh.indices[idx] = temp_mesh->mFaces[j].mIndices[0];
+                temp_indices[idx] = temp_mesh->mFaces[j].mIndices[0];
                 idx++;
-                mesh.indices[idx] = temp_mesh->mFaces[j].mIndices[1];
+                temp_indices[idx] = temp_mesh->mFaces[j].mIndices[1];
                 idx++;
-                mesh.indices[idx] = temp_mesh->mFaces[j].mIndices[2];
+                temp_indices[idx] = temp_mesh->mFaces[j].mIndices[2];
                 idx++;
             }
+        }
+
+        int count = 0;
+
+        for (int i = 0; i < mesh.submeshes.size(); i++)
+        {
+            SubMesh& submesh = mesh.submeshes[i];
+
+            for (int idx = submesh.base_index; idx < (submesh.base_index + submesh.index_count); idx++)
+                mesh.indices[count++] = submesh.base_vertex + temp_indices[idx];
+
+            submesh.base_vertex = 0;
         }
 
         mesh.max_extents = mesh.submeshes[0].max_extents;
