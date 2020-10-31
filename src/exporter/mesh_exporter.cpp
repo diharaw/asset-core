@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <filesystem>
 
 #define WRITE_AND_OFFSET(stream, dest, size, offset) \
     stream.write((char*)dest, size);                 \
@@ -18,18 +19,20 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
 {
     auto start = std::chrono::high_resolution_clock::now();
 
-    if (!filesystem::does_directory_exist(options.path))
-        filesystem::create_directory(options.path);
+    std::filesystem::path output_root_folder_path_absolute = std::filesystem::path(options.output_root_folder_path);
 
-    std::string material_path = options.path;
-
-    if (options.relative_material_path != "")
+    // Check if output root folder path is absolute
+    if (!output_root_folder_path_absolute.is_absolute())
     {
-        material_path += "/";
-        material_path += options.relative_material_path;
+        // Create absolute path
+        std::string absolute_output_path = std::filesystem::current_path().string() + "/" + options.output_root_folder_path;
+        output_root_folder_path_absolute = std::filesystem::path(absolute_output_path);
     }
-    else
-        material_path += "/materials";
+
+    if (!filesystem::does_directory_exist(output_root_folder_path_absolute.string()))
+        filesystem::create_directory(output_root_folder_path_absolute.string());
+
+    std::string material_path = output_root_folder_path_absolute.string() + "/materials";
 
     if (!filesystem::create_directory(material_path))
     {
@@ -37,15 +40,7 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
         return false;
     }
 
-    std::string texture_path = options.path;
-
-    if (options.relative_texture_path != "")
-    {
-        texture_path += "/";
-        texture_path += options.relative_texture_path;
-    }
-    else
-        texture_path += "/textures";
+    std::string texture_path = output_root_folder_path_absolute.string() + "/textures";
 
     if (!filesystem::create_directory(texture_path))
     {
@@ -53,7 +48,7 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
         return false;
     }
 
-    std::string output_path = options.path;
+    std::string output_path = output_root_folder_path_absolute.string();
     output_path += "/";
     output_path += desc.name;
     output_path += ".ast";
@@ -125,25 +120,13 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
         {
             MaterialExportOptions mat_exp_options;
 
-            mat_exp_options.path                  = material_path;
-            mat_exp_options.relative_texture_path = options.relative_texture_path;
-            mat_exp_options.texture_source_path   = options.texture_source_path;
-            mat_exp_options.dst_texture_path      = texture_path;
-            mat_exp_options.use_compression       = options.use_compression;
-            mat_exp_options.normal_map_flip_green = options.normal_map_flip_green;
+            mat_exp_options.output_root_folder_path_absolute = output_root_folder_path_absolute.string();
+            mat_exp_options.use_compression                  = options.use_compression;
+            mat_exp_options.normal_map_flip_green            = options.normal_map_flip_green;
 
             if (export_material(material, mat_exp_options))
             {
-                std::string mat_out_path = "materials/";
-
-                if (options.relative_material_path != "")
-                {
-                    mat_out_path = options.relative_material_path;
-                    mat_out_path += "/";
-                }
-
-                mat_out_path += material.name;
-                mat_out_path += ".json";
+                std::string mat_out_path = "materials/" + material.name + ".json";
 
                 BINMeshMaterialJson mat;
 
@@ -210,17 +193,14 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
                 nlohmann::json material;
 
                 material["index"] = mat_id;
-                material["path"]  = options.relative_material_path + "/" + desc.materials[mat_id].name + ".json";
+                material["path"]  = "materials/" + desc.materials[mat_id].name + ".json";
 
                 material_array.push_back(material);
             }
 
             doc["materials"] = material_array;
 
-            std::string output_path = options.path;
-            output_path += "/";
-            output_path += desc.name;
-            output_path += "_metadata.json";
+            std::string output_path = output_root_folder_path_absolute.string() + "/" + desc.name + "_metadata.json";
 
             std::string output_str = doc.dump(4);
 

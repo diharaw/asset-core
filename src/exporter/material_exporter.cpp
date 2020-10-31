@@ -4,6 +4,7 @@
 #include <json.hpp>
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 
 namespace ast
 {
@@ -41,55 +42,42 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
 {
     nlohmann::json doc;
 
-    doc["name"]              = desc.name;
-    doc["double_sided"]      = desc.double_sided;
-    doc["alpha_mask"]        = desc.alpha_mask;
-    doc["orca"]              = desc.orca;
-    doc["metallic_workflow"] = desc.metallic_workflow;
-    doc["material_type"]     = kMaterialType[desc.material_type];
-    doc["shading_model"]     = kShadingModel[desc.shading_model];
+    doc["name"]          = desc.name;
+    doc["double_sided"]  = desc.double_sided;
+    doc["alpha_mask"]    = desc.alpha_mask;
+    doc["orca"]          = desc.orca;
+    doc["material_type"] = kMaterialType[desc.material_type];
+    doc["shading_model"] = kShadingModel[desc.shading_model];
 
     auto texture_array = doc.array();
+
+    std::string           path_to_textures_folder_absolute_string      = options.output_root_folder_path_absolute + "/textures";
+    std::string           path_to_materials_folder_absolute_string     = options.output_root_folder_path_absolute + "/materials";
+    std::filesystem::path path_to_textures_folder_absolute             = path_to_textures_folder_absolute_string;
+    std::filesystem::path path_to_textures_folder_relative_to_material = std::filesystem::relative(path_to_textures_folder_absolute, path_to_materials_folder_absolute_string);
+    std::string           absolute_path_to_textures_folder             = path_to_textures_folder_absolute.string();
+    std::string           relative_path_to_textures_folder             = path_to_textures_folder_relative_to_material.string();
 
     for (auto& texture_desc : desc.textures)
     {
         nlohmann::json texture;
 
-        std::string path;
+        std::string source_texture_path = texture_desc.path;
 
-        if (options.relative_texture_path != "")
-            path = options.relative_texture_path;
-        else
-        {
-            path += filesystem::get_file_path(texture_desc.path);
+        std::string absolute_path_to_output_texture = path_to_textures_folder_absolute_string;
+        absolute_path_to_output_texture += "/";
+        absolute_path_to_output_texture += filesystem::get_filename(texture_desc.path);
+        absolute_path_to_output_texture += ".ast";
 
-            if (path.size() > 0)
-                path += "/";
+        std::filesystem::path output_texture_path_relative_to_material = std::filesystem::relative(absolute_path_to_output_texture, path_to_materials_folder_absolute_string);
 
-            path += "textures";
-        }
+        // Check if asset exists
+        bool exists = filesystem::does_file_exist(absolute_path_to_output_texture);
 
-        path += "/";
-        path += filesystem::get_filename(texture_desc.path);
-        path += ".ast";
+        if (!exists)
+            export_texture(source_texture_path, absolute_path_to_textures_folder, texture_desc.type == TEXTURE_NORMAL ? true : false, options.use_compression, texture_desc.type == TEXTURE_NORMAL ? options.normal_map_flip_green : false);
 
-        std::string src_path = options.texture_source_path;
-        src_path += "/";
-        src_path += texture_desc.path;
-
-        std::string dst_path = options.dst_texture_path;
-
-        std::string full_dst_path = dst_path;
-        full_dst_path += "/";
-        full_dst_path += filesystem::get_filename(texture_desc.path);
-        full_dst_path += ".ast";
-
-        bool exists = filesystem::does_file_exist(full_dst_path);
-
-        if (options.texture_source_path != "" && options.dst_texture_path != "" && !exists)
-            export_texture(src_path, dst_path, texture_desc.type == TEXTURE_NORMAL ? true : false, options.use_compression, texture_desc.type == TEXTURE_NORMAL ? options.normal_map_flip_green : false);
-
-        texture["path"] = path;
+        texture["path"] = output_texture_path_relative_to_material.string();
         texture["srgb"] = texture_desc.srgb;
         texture["type"] = kTextureType[texture_desc.type];
 
@@ -116,7 +104,7 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
 
             property["value"] = float_array;
         }
-        else if (property_desc.type == PROPERTY_EMISSIVE || (desc.metallic_workflow && property_desc.type == PROPERTY_METALNESS_SPECULAR))
+        else if (property_desc.type == PROPERTY_EMISSIVE)
         {
             auto float_array = doc.array();
             float_array.push_back(property_desc.vec3_value[0]);
@@ -125,7 +113,7 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
 
             property["value"] = float_array;
         }
-        else if ((!desc.metallic_workflow && property_desc.type == PROPERTY_METALNESS_SPECULAR) || property_desc.type == PROPERTY_ROUGHNESS_GLOSSINESS)
+        else if (property_desc.type == PROPERTY_METALLIC || property_desc.type == PROPERTY_ROUGHNESS)
             property["value"] = property_desc.float_value;
 
         property_array.push_back(property);
@@ -133,7 +121,7 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
 
     doc["properties"] = property_array;
 
-    std::string output_path = options.path;
+    std::string output_path = path_to_materials_folder_absolute_string;
     output_path += "/";
     output_path += desc.name;
     output_path += ".json";

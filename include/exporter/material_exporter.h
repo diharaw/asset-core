@@ -7,10 +7,7 @@ namespace ast
 {
     struct MaterialExportOptions
     {
-        std::string path;
-        std::string texture_source_path = "";
-        std::string relative_texture_path = "";
-        std::string dst_texture_path = "";
+        std::string output_root_folder_path_absolute;
         bool use_compression = true;
 		bool normal_map_flip_green = false;
     };

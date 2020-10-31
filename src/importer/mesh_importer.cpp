@@ -2,56 +2,54 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/pbrmaterial.h>
 #include <unordered_map>
 #include <common/filesystem.h>
 #include <chrono>
+#include <filesystem>
 
 namespace ast
 {
-#define FBX_BASE_COLOR_PROPERTY "$raw.BaseColor_Default"
-#define FBX_SMOOTHNESS_PROPERTY "$raw.Smoothness_Default"
-
-bool find_fbx_base_color(aiMaterial* material, aiColor3D& base_color_out)
-{
-    for (int prop = 0; prop < material->mNumProperties; prop++)
-    {
-        std::string key = material->mProperties[prop]->mKey.C_Str();
-
-        if (key == FBX_BASE_COLOR_PROPERTY)
-        {
-            float* base_color = (float*)material->mProperties[prop]->mData;
-            base_color_out.r  = base_color[0];
-            base_color_out.g  = base_color[1];
-            base_color_out.b  = base_color[2];
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool find_fbx_roughness(aiMaterial* material, float& roughness_out)
-{
-    for (int prop = 0; prop < material->mNumProperties; prop++)
-    {
-        std::string key = material->mProperties[prop]->mKey.C_Str();
-
-        if (key == FBX_SMOOTHNESS_PROPERTY)
-        {
-            float* roughness = (float*)material->mProperties[prop]->mData;
-            roughness_out    = 1.0f - glm::clamp(roughness[0], 0.0f, 1.0f);
-            
-            return true;
-        }
-    }
-
-    return false;
-}
-
 std::string get_texture_path(aiMaterial* material, aiTextureType texture_type)
 {
     aiString path;
     aiReturn result = material->GetTexture(texture_type, 0, &path);
+
+    if (result == aiReturn_FAILURE)
+        return "";
+    else
+    {
+        std::string cppStr = std::string(path.C_Str());
+
+        if (cppStr == "")
+            return "";
+
+        return cppStr;
+    }
+}
+
+std::string get_gltf_base_color_texture_path(aiMaterial* material)
+{
+    aiString path;
+    aiReturn result = material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE, &path);
+
+    if (result == aiReturn_FAILURE)
+        return "";
+    else
+    {
+        std::string cppStr = std::string(path.C_Str());
+
+        if (cppStr == "")
+            return "";
+
+        return cppStr;
+    }
+}
+
+std::string get_gltf_metallic_roughness_texture_path(aiMaterial* material)
+{
+    aiString path;
+    aiReturn result = material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &path);
 
     if (result == aiReturn_FAILURE)
         return "";
@@ -90,6 +88,11 @@ int32_t find_material_index(std::vector<Material>& materials, std::string& curre
 
 bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 {
+    std::filesystem::path absolute_file_path = std::filesystem::path(file);
+
+    if (!absolute_file_path.is_absolute())
+        absolute_file_path = std::filesystem::path(std::filesystem::current_path().string() + "/" + file);
+
     printf("Importing Mesh...\n\n");
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -97,7 +100,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
     const aiScene*   scene;
     Assimp::Importer importer;
 
-    scene = importer.ReadFile(file.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+    scene = importer.ReadFile(absolute_file_path.string().c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 
     if (scene)
     {
@@ -151,6 +154,10 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                 }
                 else
                 {
+#if defined(MATERIAL_LOG)
+                    printf("------Material Start: %s------\n", temp_material->GetName().C_Str());
+#endif
+
                     mat.name.erase(std::remove(mat.name.begin(), mat.name.end(), ':'), mat.name.end());
                     mat.name.erase(std::remove(mat.name.begin(), mat.name.end(), '.'), mat.name.end());
 
@@ -163,26 +170,29 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 
                     int two_sided = 0;
                     temp_material->Get(AI_MATKEY_TWOSIDED, two_sided);
-                    mat.double_sided      = (bool)two_sided;
-                    mat.alpha_mask        = false;
-                    mat.orca              = options.is_orca_mesh;
-                    mat.metallic_workflow = true;
-                    mat.material_type     = MATERIAL_OPAQUE;
-                    mat.shading_model     = SHADING_MODEL_STANDARD;
+                    mat.double_sided  = (bool)two_sided;
+                    mat.alpha_mask    = false;
+                    mat.orca          = options.is_orca_mesh;
+                    mat.material_type = MATERIAL_OPAQUE;
+                    mat.shading_model = SHADING_MODEL_STANDARD;
 
                     // Try to find Diffuse texture
                     std::string albedo_path = get_texture_path(temp_material, aiTextureType_BASE_COLOR);
 
                     if (albedo_path.empty())
-                        albedo_path = get_texture_path(temp_material, aiTextureType_BASE_COLOR);
+                        albedo_path = get_gltf_base_color_texture_path(temp_material);
 
                     if (albedo_path.empty())
                     {
                         aiColor3D diffuse = aiColor3D(1.0f, 1.0f, 1.0f);
 
                         // Try loading in a Diffuse material property
-                        if (!find_fbx_base_color(temp_material, diffuse))
-                            temp_material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
+                        if (temp_material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse) != AI_SUCCESS)
+                            temp_material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_FACTOR, diffuse);
+
+#if defined(MATERIAL_LOG)
+                        printf("Albedo Color: %f, %f, %f \n", diffuse.r, diffuse.g, diffuse.b);
+#endif
 
                         MaterialProperty property;
 
@@ -196,6 +206,9 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                     }
                     else
                     {
+#if defined(MATERIAL_LOG)
+                        printf("Albedo Path: %s \n", albedo_path.c_str());
+#endif
                         std::replace(albedo_path.begin(), albedo_path.end(), '\\', '/');
 
                         Texture mat_desc;
@@ -211,31 +224,35 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                     std::string roughness_path = get_texture_path(temp_material, aiTextureType_SHININESS);
 
                     if (roughness_path.empty())
+                        roughness_path = get_gltf_metallic_roughness_texture_path(temp_material);
+
+                    if (roughness_path.empty())
                     {
                         float roughness = 0.0f;
 
                         // Try loading in a Diffuse material property
-                        if (!find_fbx_roughness(temp_material, roughness))
-                        {
-                            if (temp_material->Get(AI_MATKEY_COLOR_REFLECTIVE, roughness) != AI_SUCCESS)
-                                roughness = 1.0f - glm::clamp(roughness, 0.0f, 1.0f);
-                        }
-
+                        temp_material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, roughness);
+#if defined(MATERIAL_LOG)
+                        printf("Roughness Color: %f \n", roughness);
+#endif
                         MaterialProperty property;
 
-                        property.type        = PROPERTY_ROUGHNESS_GLOSSINESS;
+                        property.type        = PROPERTY_ROUGHNESS;
                         property.float_value = roughness;
 
                         mat.properties.push_back(property);
                     }
                     else
                     {
+#if defined(MATERIAL_LOG)
+                        printf("Roughness Path: %s \n", roughness_path.c_str());
+#endif
                         std::replace(roughness_path.begin(), roughness_path.end(), '\\', '/');
 
                         Texture mat_desc;
 
                         mat_desc.srgb = false;
-                        mat_desc.type = TEXTURE_ROUGHNESS_GLOSSINESS;
+                        mat_desc.type = TEXTURE_ROUGHNESS;
                         mat_desc.path = roughness_path;
 
                         mat.textures.push_back(mat_desc);
@@ -245,24 +262,35 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                     std::string metalness_path = get_texture_path(temp_material, aiTextureType_AMBIENT);
 
                     if (metalness_path.empty())
+                        metalness_path = get_gltf_metallic_roughness_texture_path(temp_material);
+
+                    if (metalness_path.empty())
                     {
                         float metalness = 0.0f;
 
+                        // Try loading in a Diffuse material property
+                        temp_material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, metalness);
+#if defined(MATERIAL_LOG)
+                        printf("Metalness Color: %f \n", metalness);
+#endif
                         MaterialProperty property;
 
-                        property.type        = PROPERTY_METALNESS_SPECULAR;
+                        property.type        = PROPERTY_METALLIC;
                         property.float_value = metalness;
 
                         mat.properties.push_back(property);
                     }
                     else
                     {
+#if defined(MATERIAL_LOG)
+                        printf("Metalness Path: %s \n", metalness_path.c_str());
+#endif
                         std::replace(metalness_path.begin(), metalness_path.end(), '\\', '/');
 
                         Texture mat_desc;
 
                         mat_desc.srgb = false;
-                        mat_desc.type = TEXTURE_METALNESS_SPECULAR;
+                        mat_desc.type = TEXTURE_METALLIC;
                         mat_desc.path = metalness_path;
 
                         mat.textures.push_back(mat_desc);
@@ -278,6 +306,9 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                         // Try loading in a Emissive material property
                         if (temp_material->Get(AI_MATKEY_COLOR_EMISSIVE, emissive))
                         {
+#if defined(MATERIAL_LOG)
+                            printf("Emissive Color: %f, %f, %f \n", emissive.r, emissive.g, emissive.b);
+#endif
                             MaterialProperty property;
 
                             property.type          = PROPERTY_EMISSIVE;
@@ -291,6 +322,9 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                     }
                     else
                     {
+#if defined(MATERIAL_LOG)
+                        printf("Emissive Path: %s \n", emissive_path.c_str());
+#endif
                         std::replace(emissive_path.begin(), emissive_path.end(), '\\', '/');
 
                         Texture mat_desc;
@@ -298,40 +332,6 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                         mat_desc.srgb = false;
                         mat_desc.type = TEXTURE_EMISSIVE;
                         mat_desc.path = emissive_path;
-
-                        mat.textures.push_back(mat_desc);
-                    }
-
-                    // Try to find Specular texture
-                    std::string specular_path = get_texture_path(temp_material, aiTextureType_SPECULAR);
-
-                    if (specular_path.empty())
-                    {
-                        aiColor3D specular;
-
-                        // Try loading in a Specular material property
-                        if (temp_material->Get(AI_MATKEY_COLOR_SPECULAR, specular))
-                        {
-                            MaterialProperty property;
-
-                            property.type          = PROPERTY_METALNESS_SPECULAR;
-                            property.vec4_value[0] = specular.r;
-                            property.vec4_value[1] = specular.g;
-                            property.vec4_value[2] = specular.b;
-                            property.vec4_value[3] = 1.0f;
-
-                            mat.properties.push_back(property);
-                        }
-                    }
-                    else
-                    {
-                        std::replace(specular_path.begin(), specular_path.end(), '\\', '/');
-
-                        Texture mat_desc;
-
-                        mat_desc.srgb = false;
-                        mat_desc.type = TEXTURE_METALNESS_SPECULAR;
-                        mat_desc.path = specular_path;
 
                         mat.textures.push_back(mat_desc);
                     }
@@ -344,6 +344,9 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 
                     if (!normal_path.empty())
                     {
+#if defined(MATERIAL_LOG)
+                        printf("Normal Path: %s \n", normal_path.c_str());
+#endif
                         std::replace(normal_path.begin(), normal_path.end(), '\\', '/');
 
                         Texture mat_desc;
@@ -379,6 +382,10 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 
                     mesh.materials.push_back(mat);
                 }
+
+#if defined(MATERIAL_LOG)
+                printf("------Material End------\n\n");
+#endif
             }
 
             mesh.submeshes[i].material_index = mat_id_mapping[scene->mMeshes[i]->mMaterialIndex];

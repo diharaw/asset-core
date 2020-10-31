@@ -10,9 +10,6 @@ void print_usage()
     printf("usage: mesh_export [options] infile [outpath]\n\n");
 
     printf("Input options:\n");
-    printf("  -S<path>      Source path for textures.\n");
-    printf("  -T<path>      Relative path for textures.\n");
-    printf("  -M<path>      Relative path for Materials.\n");
     printf("  -C            Disable texture compression for output textures.\n");
     printf("  -G            Flip normal map green channel.\n");
     printf("  -J            Output metadata JSON.\n");
@@ -43,52 +40,7 @@ int main(int argc, char* argv[])
             {
                 char c = tolower(argv[i][1]);
 
-                if (c == 's')
-                {
-                    std::string str  = argv[i];
-                    std::string path = str.substr(2, str.size() - 2);
-
-                    if (path.size() == 0)
-                    {
-                        printf("ERROR: Invalid parameter: -S (%s)\n\n", argv[i]);
-                        print_usage();
-
-                        return 1;
-                    }
-                    else
-                        export_options.texture_source_path = path;
-                }
-                else if (c == 't')
-                {
-                    std::string str  = argv[i];
-                    std::string path = str.substr(2, str.size() - 2);
-
-                    if (path.size() == 0)
-                    {
-                        printf("ERROR: Invalid parameter: -T (%s)\n\n", argv[i]);
-                        print_usage();
-
-                        return 1;
-                    }
-                    else
-                        export_options.relative_texture_path = path;
-                }
-                else if (c == 'm')
-                {
-                    std::string str  = argv[i];
-                    std::string path = str.substr(2, str.size() - 2);
-
-                    if (path.size() == 0)
-                    {
-                        printf("ERROR: Invalid parameter: -M (%s)\n\n", argv[i]);
-                        print_usage();
-
-                        return 1;
-                    }
-                    else
-                        export_options.relative_material_path = path;
-                }
-                else if (c == 'g')
+                if (c == 'g')
                     export_options.normal_map_flip_green = true;
                 else if (c == 'c')
                     export_options.use_compression = false;
@@ -116,9 +68,9 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
-                    export_options.path = argv[i];
+                    export_options.output_root_folder_path = argv[i];
 
-                    if (export_options.path.size() == 0)
+                    if (export_options.output_root_folder_path.size() == 0)
                     {
                         printf("ERROR: Invalid export path: %s\n\n", argv[i]);
                         print_usage();
@@ -126,25 +78,6 @@ int main(int argc, char* argv[])
                         return 1;
                     }
                 }
-            }
-        }
-
-        // If a relative Texture Sourc Path is not specified, it will be automatically set to the absolute path to the
-        // folder containing the input mesh
-        if (export_options.texture_source_path.length() == 0)
-        {
-            std::string mesh_path = filesystem::get_file_path(input);
-
-            if (filesystem::is_absolute_path(input))
-                export_options.texture_source_path = mesh_path;
-            else
-            {
-                std::string cwd_path = filesystem::get_current_working_directory();
-
-                export_options.texture_source_path = cwd_path;
-
-                if (mesh_path.length() != 0)
-                    export_options.texture_source_path = export_options.texture_source_path + "/" + mesh_path;
             }
         }
 

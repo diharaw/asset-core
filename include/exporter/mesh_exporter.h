@@ -7,10 +7,7 @@ namespace ast
 {
     struct MeshExportOption
     {
-        std::string path;
-        std::string relative_texture_path = "";
-        std::string relative_material_path = "";
-        std::string texture_source_path = "";
+        std::string output_root_folder_path;
         bool use_compression = true;
 		bool normal_map_flip_green = false;
         bool output_metadata = false;

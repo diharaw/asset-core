@@ -196,11 +196,6 @@ bool load_material(const std::string& path, Material& material)
     else
         material.orca = false;
 
-    if (j.find("metallic_workflow") != j.end())
-        material.metallic_workflow = j["metallic_workflow"];
-    else
-        material.metallic_workflow = true;
-
     if (j.find("material_type") != j.end())
     {
         material_type = j["material_type"];
@@ -332,38 +327,19 @@ bool load_material(const std::string& path, Material& material)
                         found = true;
                     }
                 }
-                else if (type == kPropertyType[PROPERTY_METALNESS_SPECULAR])
+                else if (type == kPropertyType[PROPERTY_METALLIC])
                 {
-                    property.type = PROPERTY_METALNESS_SPECULAR;
+                    property.type = PROPERTY_METALLIC;
 
                     if (json_property.find("value") != json_property.end())
                     {
-                        if (material.metallic_workflow)
-                        {
-                            property.float_value = json_property["value"];
-                            found                = true;
-                        }
-                        else
-                        {
-                            auto vec = json_property["value"];
-                            int  i   = 0;
-
-                            if (vec.size() != 3)
-                                continue;
-
-                            for (auto& value : vec)
-                            {
-                                property.vec3_value[i] = value;
-                                i++;
-                            }
-
-                            found = true;
-                        }
+                        property.float_value = json_property["value"];
+                        found                = true;
                     }
                 }
-                else if (type == kPropertyType[PROPERTY_ROUGHNESS_GLOSSINESS])
+                else if (type == kPropertyType[PROPERTY_ROUGHNESS])
                 {
-                    property.type = PROPERTY_ROUGHNESS_GLOSSINESS;
+                    property.type = PROPERTY_ROUGHNESS;
 
                     if (json_property.find("value") != json_property.end())
                         property.float_value = json_property["value"];

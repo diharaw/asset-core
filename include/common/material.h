@@ -13,16 +13,16 @@ static const std::string kTextureType[] = {
     "TEXTURE_EMISSIVE",
     "TEXTURE_DISPLACEMENT",
     "TEXTURE_NORMAL",
-    "TEXTURE_METALNESS_SPECULAR",
-    "TEXTURE_ROUGHNESS_GLOSSINESS",
+    "TEXTURE_METALLIC",
+    "TEXTURE_ROUGHNESS",
     "TEXTURE_CUSTOM"
 };
 
 static const std::string kPropertyType[] = {
     "PROPERTY_ALBEDO",
     "PROPERTY_EMISSIVE",
-    "PROPERTY_METALNESS_SPECULAR",
-    "PROPERTY_ROUGHNESS_GLOSSINESS"
+    "PROPERTY_METALLIC",
+    "PROPERTY_ROUGHNESS"
 };
 
 static const std::string kMaterialType[] = {
@@ -42,8 +42,8 @@ enum TextureType
     TEXTURE_EMISSIVE,
     TEXTURE_DISPLACEMENT,
     TEXTURE_NORMAL,
-    TEXTURE_METALNESS_SPECULAR,
-    TEXTURE_ROUGHNESS_GLOSSINESS,
+    TEXTURE_METALLIC,
+    TEXTURE_ROUGHNESS,
     TEXTURE_CUSTOM
 };
 
@@ -51,8 +51,8 @@ enum MaterialPropertyType
 {
     PROPERTY_ALBEDO = 0,
     PROPERTY_EMISSIVE,
-    PROPERTY_METALNESS_SPECULAR,
-    PROPERTY_ROUGHNESS_GLOSSINESS
+    PROPERTY_METALLIC,
+    PROPERTY_ROUGHNESS
 };
 
 enum MaterialType
@@ -94,7 +94,6 @@ struct Material
     bool                          double_sided;
     bool                          alpha_mask;
     bool                          orca;
-    bool                          metallic_workflow;
     MaterialType                  material_type;
     ShadingModel                  shading_model;
     std::vector<Texture>          textures;
