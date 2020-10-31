@@ -10,6 +10,8 @@ file(GLOB_RECURSE SH_PROJECT_SOURCE ${PROJECT_SOURCE_DIR}/src/sh_project/*.cpp
 
 add_executable(sh_project ${SH_PROJECT_SOURCE})
 
+set_property(TARGET sh_project PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/$(Configuration)")
+
 target_link_libraries(sh_project AssetCoreImporter)
 target_link_libraries(sh_project AssetCoreExporter)
 target_link_libraries(sh_project AssetCoreLoader)

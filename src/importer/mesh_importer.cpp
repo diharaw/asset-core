@@ -8,6 +8,46 @@
 
 namespace ast
 {
+#define FBX_BASE_COLOR_PROPERTY "$raw.BaseColor_Default"
+#define FBX_SMOOTHNESS_PROPERTY "$raw.Smoothness_Default"
+
+bool find_fbx_base_color(aiMaterial* material, aiColor3D& base_color_out)
+{
+    for (int prop = 0; prop < material->mNumProperties; prop++)
+    {
+        std::string key = material->mProperties[prop]->mKey.C_Str();
+
+        if (key == FBX_BASE_COLOR_PROPERTY)
+        {
+            float* base_color = (float*)material->mProperties[prop]->mData;
+            base_color_out.r  = base_color[0];
+            base_color_out.g  = base_color[1];
+            base_color_out.b  = base_color[2];
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool find_fbx_roughness(aiMaterial* material, float& roughness_out)
+{
+    for (int prop = 0; prop < material->mNumProperties; prop++)
+    {
+        std::string key = material->mProperties[prop]->mKey.C_Str();
+
+        if (key == FBX_SMOOTHNESS_PROPERTY)
+        {
+            float* roughness = (float*)material->mProperties[prop]->mData;
+            roughness_out    = 1.0f - glm::clamp(roughness[0], 0.0f, 1.0f);
+            
+            return true;
+        }
+    }
+
+    return false;
+}
+
 std::string get_texture_path(aiMaterial* material, aiTextureType texture_type)
 {
     aiString path;
@@ -131,14 +171,18 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                     mat.shading_model     = SHADING_MODEL_STANDARD;
 
                     // Try to find Diffuse texture
-                    std::string albedo_path = get_texture_path(temp_material, aiTextureType_DIFFUSE);
+                    std::string albedo_path = get_texture_path(temp_material, aiTextureType_BASE_COLOR);
+
+                    if (albedo_path.empty())
+                        albedo_path = get_texture_path(temp_material, aiTextureType_BASE_COLOR);
 
                     if (albedo_path.empty())
                     {
                         aiColor3D diffuse = aiColor3D(1.0f, 1.0f, 1.0f);
 
                         // Try loading in a Diffuse material property
-                        temp_material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
+                        if (!find_fbx_base_color(temp_material, diffuse))
+                            temp_material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
 
                         MaterialProperty property;
 
@@ -169,6 +213,13 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                     if (roughness_path.empty())
                     {
                         float roughness = 0.0f;
+
+                        // Try loading in a Diffuse material property
+                        if (!find_fbx_roughness(temp_material, roughness))
+                        {
+                            if (temp_material->Get(AI_MATKEY_COLOR_REFLECTIVE, roughness) != AI_SUCCESS)
+                                roughness = 1.0f - glm::clamp(roughness, 0.0f, 1.0f);
+                        }
 
                         MaterialProperty property;
 
@@ -270,7 +321,6 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                             property.vec4_value[3] = 1.0f;
 
                             mat.properties.push_back(property);
-                            mat.metallic_workflow = false;
                         }
                     }
                     else
@@ -284,7 +334,6 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                         mat_desc.path = specular_path;
 
                         mat.textures.push_back(mat_desc);
-                        mat.metallic_workflow = false;
                     }
 
                     // Try to find Normal texture

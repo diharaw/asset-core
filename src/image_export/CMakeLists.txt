@@ -10,6 +10,8 @@ file(GLOB_RECURSE IMAGE_EXPORT_SOURCE ${PROJECT_SOURCE_DIR}/src/image_export/*.c
 
 add_executable(image_export ${IMAGE_EXPORT_SOURCE})
 
+set_property(TARGET image_export PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/$(Configuration)")
+
 target_link_libraries(image_export AssetCoreImporter)
 target_link_libraries(image_export AssetCoreExporter)
 target_link_libraries(image_export AssetCoreLoader)
