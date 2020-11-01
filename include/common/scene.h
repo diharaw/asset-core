@@ -36,6 +36,8 @@ struct SceneNode
     std::string                             name;
     nlohmann::json                          custom_data;
     std::vector<std::shared_ptr<SceneNode>> children;
+
+    virtual ~SceneNode() {}
 };
 
 struct EnvironmentMapNode : public SceneNode
