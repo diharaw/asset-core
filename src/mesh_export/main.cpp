@@ -7,7 +7,7 @@
 
 void print_usage()
 {
-    printf("usage: mesh_export [options] infile [outpath]\n\n");
+    printf("usage: mesh_export [options] infile [ouput_root_folder]\n\n");
 
     printf("Input options:\n");
     printf("  -C            Disable texture compression for output textures.\n");

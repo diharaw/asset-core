@@ -32,7 +32,15 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
     if (!filesystem::does_directory_exist(output_root_folder_path_absolute.string()))
         filesystem::create_directory(output_root_folder_path_absolute.string());
 
-    std::string material_path = output_root_folder_path_absolute.string() + "/materials";
+    std::string mesh_path = output_root_folder_path_absolute.string() + "/mesh";
+
+    if (!filesystem::create_directory(mesh_path))
+    {
+        std::cout << "Invalid Mesh path!" << std::endl;
+        return false;
+    }
+
+    std::string material_path = output_root_folder_path_absolute.string() + "/material";
 
     if (!filesystem::create_directory(material_path))
     {
@@ -40,7 +48,7 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
         return false;
     }
 
-    std::string texture_path = output_root_folder_path_absolute.string() + "/textures";
+    std::string texture_path = output_root_folder_path_absolute.string() + "/texture";
 
     if (!filesystem::create_directory(texture_path))
     {
@@ -49,7 +57,7 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
     }
 
     std::string output_path = output_root_folder_path_absolute.string();
-    output_path += "/";
+    output_path += "/mesh/";
     output_path += desc.name;
     output_path += ".ast";
 
@@ -126,7 +134,7 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
 
             if (export_material(material, mat_exp_options))
             {
-                std::string mat_out_path = "materials/" + material.name + ".json";
+                std::string mat_out_path = "../material/" + material.name + ".json";
 
                 BINMeshMaterialJson mat;
 
@@ -193,7 +201,7 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
                 nlohmann::json material;
 
                 material["index"] = mat_id;
-                material["path"]  = "materials/" + desc.materials[mat_id].name + ".json";
+                material["path"]  = "../material/" + desc.materials[mat_id].name + ".json";
 
                 material_array.push_back(material);
             }

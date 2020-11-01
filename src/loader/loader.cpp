@@ -191,11 +191,6 @@ bool load_material(const std::string& path, Material& material)
     else
         material.alpha_mask = false;
 
-    if (j.find("orca") != j.end())
-        material.orca = j["orca"];
-    else
-        material.orca = false;
-
     if (j.find("material_type") != j.end())
     {
         material_type = j["material_type"];
@@ -266,6 +261,11 @@ bool load_material(const std::string& path, Material& material)
                     }
                 }
             }
+
+            if (json_texture.find("channel_index") != json_texture.end())
+                texture.channel_index = json_texture["channel_index"];
+            else
+                texture.channel_index = 0;
 
             material.textures.push_back(texture);
         }

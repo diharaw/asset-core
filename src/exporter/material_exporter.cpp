@@ -45,14 +45,13 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
     doc["name"]          = desc.name;
     doc["double_sided"]  = desc.double_sided;
     doc["alpha_mask"]    = desc.alpha_mask;
-    doc["orca"]          = desc.orca;
     doc["material_type"] = kMaterialType[desc.material_type];
     doc["shading_model"] = kShadingModel[desc.shading_model];
 
     auto texture_array = doc.array();
 
-    std::string           path_to_textures_folder_absolute_string      = options.output_root_folder_path_absolute + "/textures";
-    std::string           path_to_materials_folder_absolute_string     = options.output_root_folder_path_absolute + "/materials";
+    std::string           path_to_textures_folder_absolute_string      = options.output_root_folder_path_absolute + "/texture";
+    std::string           path_to_materials_folder_absolute_string     = options.output_root_folder_path_absolute + "/material";
     std::filesystem::path path_to_textures_folder_absolute             = path_to_textures_folder_absolute_string;
     std::filesystem::path path_to_textures_folder_relative_to_material = std::filesystem::relative(path_to_textures_folder_absolute, path_to_materials_folder_absolute_string);
     std::string           absolute_path_to_textures_folder             = path_to_textures_folder_absolute.string();
@@ -77,9 +76,10 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
         if (!exists)
             export_texture(source_texture_path, absolute_path_to_textures_folder, texture_desc.type == TEXTURE_NORMAL ? true : false, options.use_compression, texture_desc.type == TEXTURE_NORMAL ? options.normal_map_flip_green : false);
 
-        texture["path"] = output_texture_path_relative_to_material.string();
-        texture["srgb"] = texture_desc.srgb;
-        texture["type"] = kTextureType[texture_desc.type];
+        texture["path"]          = output_texture_path_relative_to_material.string();
+        texture["srgb"]          = texture_desc.srgb;
+        texture["type"]          = kTextureType[texture_desc.type];
+        texture["channel_index"] = texture_desc.channel_index;
 
         texture_array.push_back(texture);
     }

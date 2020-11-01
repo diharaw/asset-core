@@ -72,7 +72,8 @@ struct Texture
 {
     TextureType type;
     std::string path;
-    bool        srgb;
+    bool        srgb = false;
+    int32_t     channel_index = 0;
 };
 
 struct MaterialProperty
@@ -93,7 +94,6 @@ struct Material
     std::string                   name;
     bool                          double_sided;
     bool                          alpha_mask;
-    bool                          orca;
     MaterialType                  material_type;
     ShadingModel                  shading_model;
     std::vector<Texture>          textures;
