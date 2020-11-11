@@ -56,12 +56,14 @@ struct MeshNode : public TransformNode
 {
     std::string mesh;
     std::string material_override;
+    bool        casts_shadow;
 };
 
 struct DirectionalLightNode : public TransformNode
 {
     glm::vec3 color;
     float     intensity;
+    bool      casts_shadows;
 };
 
 struct SpotLightNode : public TransformNode
@@ -70,6 +72,7 @@ struct SpotLightNode : public TransformNode
     float     cone_angle;
     float     range;
     float     intensity;
+    bool      casts_shadows;
 };
 
 struct PointLightNode : public TransformNode
@@ -77,6 +80,7 @@ struct PointLightNode : public TransformNode
     glm::vec3 color;
     float     range;
     float     intensity;
+    bool      casts_shadows;
 };
 
 struct CameraNode : public TransformNode

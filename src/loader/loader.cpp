@@ -377,6 +377,9 @@ std::shared_ptr<SceneNode> deserialize_mesh_node(const nlohmann::json& json)
     if (json.find("material_override") != json.end())
         node->material_override = json["material_override"];
 
+    if (json.find("casts_shadow") != json.end())
+        node->casts_shadow = json["casts_shadow"];
+
     return std::static_pointer_cast<SceneNode>(node);
 }
 
@@ -388,6 +391,9 @@ std::shared_ptr<SceneNode> deserialize_directional_light_node(const nlohmann::js
 
     if (json.find("intensity") != json.end())
         node->intensity = json["intensity"];
+
+    if (json.find("casts_shadows") != json.end())
+        node->casts_shadows = json["casts_shadows"];
 
     JSON_PARSE_VECTOR(json, node->color, color, 3);
     JSON_PARSE_VECTOR(json, node->rotation, rotation, 3);
@@ -410,6 +416,9 @@ std::shared_ptr<SceneNode> deserialize_spot_light_node(const nlohmann::json& jso
     if (json.find("intensity") != json.end())
         node->intensity = json["intensity"];
 
+    if (json.find("casts_shadows") != json.end())
+        node->casts_shadows = json["casts_shadows"];
+
     JSON_PARSE_VECTOR(json, node->color, color, 3);
     JSON_PARSE_VECTOR(json, node->position, position, 3);
     JSON_PARSE_VECTOR(json, node->rotation, rotation, 3);
@@ -428,6 +437,9 @@ std::shared_ptr<SceneNode> deserialize_point_light_node(const nlohmann::json& js
 
     if (json.find("intensity") != json.end())
         node->intensity = json["intensity"];
+
+    if (json.find("casts_shadows") != json.end())
+        node->casts_shadows = json["casts_shadows"];
 
     JSON_PARSE_VECTOR(json, node->color, color, 3);
     JSON_PARSE_VECTOR(json, node->position, position, 3);

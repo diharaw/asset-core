@@ -87,6 +87,8 @@ void serialize_mesh_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
         json["material_override"] = mesh_node->material_override;
     else
         json["material_override"] = nullptr;
+
+    json["casts_shadow"] = mesh_node->casts_shadow;
 }
 
 void serialize_directional_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
@@ -109,6 +111,7 @@ void serialize_directional_light_node(std::shared_ptr<SceneNode> node, nlohmann:
 
     json["rotation"]  = rotation;
     json["intensity"] = light_node->intensity;
+    json["casts_shadows"] = light_node->casts_shadows;
 }
 
 void serialize_spot_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
@@ -140,6 +143,7 @@ void serialize_spot_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& 
     json["cone_angle"] = light_node->cone_angle;
     json["range"]      = light_node->range;
     json["intensity"]  = light_node->intensity;
+    json["casts_shadows"] = light_node->casts_shadows;
 }
 
 void serialize_point_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
@@ -164,6 +168,7 @@ void serialize_point_light_node(std::shared_ptr<SceneNode> node, nlohmann::json&
 
     json["range"]     = light_node->range;
     json["intensity"] = light_node->intensity;
+    json["casts_shadows"] = light_node->casts_shadows;
 }
 
 void serialize_camera_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
