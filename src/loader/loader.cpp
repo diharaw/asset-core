@@ -497,19 +497,19 @@ std::shared_ptr<SceneNode> deserialize_scene_node(const nlohmann::json& json)
     else
         return nullptr;
 
-    if (node->type == SCENE_NODE_MESH)
+    if (type == SCENE_NODE_MESH)
         node = deserialize_mesh_node(json);
-    else if (node->type == SCENE_NODE_CAMERA)
+    else if (type == SCENE_NODE_CAMERA)
         node = deserialize_camera_node(json);
-    else if (node->type == SCENE_NODE_DIRECTIONAL_LIGHT)
+    else if (type == SCENE_NODE_DIRECTIONAL_LIGHT)
         node = deserialize_directional_light_node(json);
-    else if (node->type == SCENE_NODE_SPOT_LIGHT)
+    else if (type == SCENE_NODE_SPOT_LIGHT)
         node = deserialize_spot_light_node(json);
-    else if (node->type == SCENE_NODE_POINT_LIGHT)
+    else if (type == SCENE_NODE_POINT_LIGHT)
         node = deserialize_point_light_node(json);
-    else if (node->type == SCENE_NODE_IBL)
+    else if (type == SCENE_NODE_IBL)
         node = deserialize_ibl_node(json);
-    else if (node->type == SCENE_NODE_CUSTOM)
+    else if (type == SCENE_NODE_CUSTOM)
         node = std::make_shared<SceneNode>();
 
     node->type = type;
