@@ -86,7 +86,7 @@ void serialize_mesh_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
     if (mesh_node->material_override.size() > 0)
         json["material_override"] = mesh_node->material_override;
     else
-        json["material_override"] = nullptr;
+        json["material_override"] = "";
 
     json["casts_shadow"] = mesh_node->casts_shadow;
 }
