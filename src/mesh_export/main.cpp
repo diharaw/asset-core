@@ -16,6 +16,7 @@ void print_usage()
     printf("  -V            Vertex function path.\n");
     printf("  -F            Fragment function path.\n");
     printf("  -D            Displacement as normal.\n");
+    printf("  -O            Input mesh is from the ORCA library.\n");
 }
 
 int main(int argc, char* argv[])
