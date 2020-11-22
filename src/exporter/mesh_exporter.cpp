@@ -172,6 +172,7 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
                 submesh["name"]           = submesh_desc.name;
                 submesh["material_index"] = submesh_desc.material_index;
                 submesh["index_count"]    = submesh_desc.index_count;
+                submesh["vertex_count"]     = submesh_desc.vertex_count;
                 submesh["base_vertex"]    = submesh_desc.base_vertex;
                 submesh["base_index"]     = submesh_desc.base_index;
 
