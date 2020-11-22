@@ -134,6 +134,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 
             strcpy(mesh.submeshes[i].name, submesh_name.c_str());
             mesh.submeshes[i].index_count = scene->mMeshes[i]->mNumFaces * 3;
+            mesh.submeshes[i].vertex_count = scene->mMeshes[i]->mNumVertices;
             mesh.submeshes[i].base_index  = index_count;
             mesh.submeshes[i].base_vertex = vertex_count;
 

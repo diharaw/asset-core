@@ -28,6 +28,7 @@ namespace ast
     {
         uint32_t    material_index;
         uint32_t    index_count;
+        uint32_t    vertex_count;
         uint32_t    base_vertex;
         uint32_t    base_index;
         glm::vec3   max_extents;
