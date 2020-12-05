@@ -81,6 +81,9 @@ bool import_image(Image& img, const std::string& file, const PixelType& type, in
         img.type            = PIXEL_TYPE_FLOAT32;
         img.data[0][0].data = stbi_loadf(file.c_str(), &img.data[0][0].width, &img.data[0][0].height, &img.components, force_cmp);
 
+        if (force_cmp != 0)
+            img.components = force_cmp;
+
         if (img.data[0][0].data != nullptr)
         {
             img.array_slices = 1;

@@ -680,7 +680,7 @@ bool cubemap_from_latlong(const std::string& input, const CubemapImageExportOpti
 {
     Image src;
 
-    if (!import_image(src, input))
+    if (!import_image(src, input, PIXEL_TYPE_UNORM8, options.force_cmp))
     {
         std::cout << "ERROR::Failed to open Cubemap" << std::endl;
         return false;

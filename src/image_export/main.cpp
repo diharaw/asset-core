@@ -16,6 +16,7 @@ void print_usage()
     printf("  -M			Generate mipmaps.\n");
     printf("  -N			Normal map.\n");
     printf("  -F			Flip green channel.\n");
+    printf("  -V			Force 4-components.\n");
 }
 
 int main(int argc, char* argv[])
@@ -32,6 +33,7 @@ int main(int argc, char* argv[])
         ast::ImageExportOptions        image_export_options;
         bool                           cubemap     = false;
         bool                           compression = false;
+        int                            force_cmp   = 0;
 
         int32_t input_idx = 99999;
 
@@ -60,6 +62,8 @@ int main(int argc, char* argv[])
                     image_export_options.output_mips = -1;
                 else if (c == 'f')
                     image_export_options.flip_green = true;
+                else if (c == 'v')
+                    force_cmp = 4;
             }
             else if (i > 0)
             {
@@ -94,6 +98,8 @@ int main(int argc, char* argv[])
 
         if (cubemap)
         {
+            cubemap_export_options.force_cmp = force_cmp;
+
             if (!ast::cubemap_from_latlong(input, cubemap_export_options))
             {
                 printf("ERROR: Failed to export cubemap!\n\n");
@@ -104,7 +110,7 @@ int main(int argc, char* argv[])
         {
             ast::Image img;
 
-            if (ast::import_image(img, input))
+            if (ast::import_image(img, input, ast::PIXEL_TYPE_UNORM8, force_cmp))
             {
                 if (compression)
                 {

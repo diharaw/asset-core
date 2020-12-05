@@ -22,6 +22,7 @@ namespace ast
         std::string path;
         CompressionType compression = COMPRESSION_NONE;
         int output_mips = 0;
+        int             force_cmp    = 0;
         bool irradiance = false;
         bool radiance = false;
 		bool debug_output = false;
