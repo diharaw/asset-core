@@ -4,6 +4,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/pbrmaterial.h>
 #include <unordered_map>
+#include <unordered_set>
 #include <common/filesystem.h>
 #include <chrono>
 #include <filesystem>
@@ -91,7 +92,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
     bool        is_gltf   = false;
     std::string extension = filesystem::get_file_extention(file);
 
-    if (extension == "gltf")
+    if (extension == "gltf" || extension == "glb")
         is_gltf = true;
 
     std::filesystem::path absolute_file_path = std::filesystem::path(file);
@@ -121,6 +122,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
         uint32_t                               index_count  = 0;
         aiMaterial*                            temp_material;
         std::vector<uint32_t>                  processed_mat_ids;
+        std::unordered_set<std::string>        processed_mat_names;
         std::vector<uint32_t>                  temp_indices;
         std::unordered_map<uint32_t, uint32_t> mat_id_mapping;
         uint32_t                               unnamed_mats = 1;
@@ -145,21 +147,23 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
             {
                 temp_material = scene->mMaterials[scene->mMeshes[i]->mMaterialIndex];
 
+                std::string mat_name = temp_material->GetName().C_Str();
+
                 Material mat;
 
-                mat.name = mesh.name;
-                mat.name += "_";
-                mat.name += temp_material->GetName().C_Str();
+                //mat.name = mesh.name;
+                //mat.name += "_";
+                //mat.name += mat_name;
 
-                // Does a material with the same name exist?
-                int32_t name_index = find_material_index(mesh.materials, mat.name);
+                //// Does a material with the same name exist?
+                //int32_t name_index = find_material_index(mesh.materials, mat.name);
 
-                if (name_index != -1)
-                {
-                    mat_id_mapping[scene->mMeshes[i]->mMaterialIndex] = name_index;
-                    processed_mat_ids.push_back(scene->mMeshes[i]->mMaterialIndex);
-                }
-                else
+                //if (name_index != -1)
+                //{
+                //    mat_id_mapping[scene->mMeshes[i]->mMaterialIndex] = name_index;
+                //    processed_mat_ids.push_back(scene->mMeshes[i]->mMaterialIndex);
+                //}
+                //else
                 {
 #if defined(MATERIAL_LOG)
                     printf("------Material Start: %s------\n", temp_material->GetName().C_Str());
@@ -168,7 +172,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                     mat.name.erase(std::remove(mat.name.begin(), mat.name.end(), ':'), mat.name.end());
                     mat.name.erase(std::remove(mat.name.begin(), mat.name.end(), '.'), mat.name.end());
 
-                    if (mat.name.empty())
+                    if (mat_name.empty())
                     {
                         mat.name = mesh.name;
                         mat.name += "_unnamed_material_";
