@@ -15,6 +15,7 @@ static const std::string kSceneNodeType[] = {
     "SCENE_NODE_SPOT_LIGHT",
     "SCENE_NODE_POINT_LIGHT",
     "SCENE_NODE_IBL",
+    "SCENE_NODE_ROOT",
     "SCENE_NODE_CUSTOM"
 };
 
@@ -26,6 +27,7 @@ enum SceneNodeType
     SCENE_NODE_SPOT_LIGHT,
     SCENE_NODE_POINT_LIGHT,
     SCENE_NODE_IBL,
+    SCENE_NODE_ROOT,
     SCENE_NODE_CUSTOM,
     SCENE_NODE_COUNT
 };
@@ -63,14 +65,16 @@ struct DirectionalLightNode : public TransformNode
 {
     glm::vec3 color;
     float     intensity;
+    float     radius;
     bool      casts_shadows;
 };
 
 struct SpotLightNode : public TransformNode
 {
     glm::vec3 color;
-    float     cone_angle;
-    float     range;
+    float     inner_cone_angle;
+    float     outer_cone_angle;
+    float     radius;
     float     intensity;
     bool      casts_shadows;
 };
@@ -78,7 +82,7 @@ struct SpotLightNode : public TransformNode
 struct PointLightNode : public TransformNode
 {
     glm::vec3 color;
-    float     range;
+    float     radius;
     float     intensity;
     bool      casts_shadows;
 };

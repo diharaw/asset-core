@@ -38,6 +38,8 @@ nlohmann::json serialize_scene_node(std::shared_ptr<SceneNode> node)
         serialize_point_light_node(node, json);
     else if (node->type == SCENE_NODE_IBL)
         serialize_ibl_node(node, json);
+    else if (node->type == SCENE_NODE_ROOT)
+        serialize_transform_node(node, json);
 
     auto children = json.array();
 
@@ -109,8 +111,9 @@ void serialize_directional_light_node(std::shared_ptr<SceneNode> node, nlohmann:
     rotation.push_back(light_node->rotation[1]);
     rotation.push_back(light_node->rotation[2]);
 
-    json["rotation"]  = rotation;
-    json["intensity"] = light_node->intensity;
+    json["rotation"]      = rotation;
+    json["radius"]        = light_node->radius;
+    json["intensity"]     = light_node->intensity;
     json["casts_shadows"] = light_node->casts_shadows;
 }
 
@@ -139,11 +142,13 @@ void serialize_spot_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& 
     rotation.push_back(light_node->rotation[1]);
     rotation.push_back(light_node->rotation[2]);
 
-    json["rotation"]   = rotation;
-    json["cone_angle"] = light_node->cone_angle;
-    json["range"]      = light_node->range;
-    json["intensity"]  = light_node->intensity;
-    json["casts_shadows"] = light_node->casts_shadows;
+    json["rotation"] = rotation;
+
+    json["inner_cone_angle"] = light_node->inner_cone_angle;
+    json["outer_cone_angle"] = light_node->outer_cone_angle;
+    json["radius"]           = light_node->radius;
+    json["intensity"]        = light_node->intensity;
+    json["casts_shadows"]    = light_node->casts_shadows;
 }
 
 void serialize_point_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& json)
@@ -166,8 +171,8 @@ void serialize_point_light_node(std::shared_ptr<SceneNode> node, nlohmann::json&
 
     json["position"] = position;
 
-    json["range"]     = light_node->range;
-    json["intensity"] = light_node->intensity;
+    json["radius"]        = light_node->radius;
+    json["intensity"]     = light_node->intensity;
     json["casts_shadows"] = light_node->casts_shadows;
 }
 

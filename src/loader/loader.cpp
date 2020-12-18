@@ -365,6 +365,15 @@ void deserialize_transform_node(const nlohmann::json& json, std::shared_ptr<Scen
     JSON_PARSE_VECTOR(json, transform_node->scale, scale, 3);
 }
 
+std::shared_ptr<TransformNode> deserialize_root_node(const nlohmann::json& json)
+{
+    std::shared_ptr<TransformNode> node = std::make_shared<TransformNode>();
+
+    deserialize_transform_node(json, node);
+
+    return node;
+}
+
 std::shared_ptr<SceneNode> deserialize_mesh_node(const nlohmann::json& json)
 {
     std::shared_ptr<MeshNode> node = std::make_shared<MeshNode>();
@@ -392,6 +401,9 @@ std::shared_ptr<SceneNode> deserialize_directional_light_node(const nlohmann::js
     if (json.find("intensity") != json.end())
         node->intensity = json["intensity"];
 
+    if (json.find("radius") != json.end())
+        node->radius = json["radius"];
+
     if (json.find("casts_shadows") != json.end())
         node->casts_shadows = json["casts_shadows"];
 
@@ -407,11 +419,14 @@ std::shared_ptr<SceneNode> deserialize_spot_light_node(const nlohmann::json& jso
 
     deserialize_transform_node(json, node);
 
-    if (json.find("cone_angle") != json.end())
-        node->cone_angle = json["cone_angle"];
+    if (json.find("inner_cone_angle") != json.end())
+        node->inner_cone_angle = json["inner_cone_angle"];
 
-    if (json.find("range") != json.end())
-        node->range = json["range"];
+    if (json.find("outer_cone_angle") != json.end())
+        node->outer_cone_angle = json["outer_cone_angle"];
+
+    if (json.find("radius") != json.end())
+        node->radius = json["radius"];
 
     if (json.find("intensity") != json.end())
         node->intensity = json["intensity"];
@@ -432,8 +447,8 @@ std::shared_ptr<SceneNode> deserialize_point_light_node(const nlohmann::json& js
 
     deserialize_transform_node(json, node);
 
-    if (json.find("range") != json.end())
-        node->range = json["range"];
+    if (json.find("radius") != json.end())
+        node->radius = json["radius"];
 
     if (json.find("intensity") != json.end())
         node->intensity = json["intensity"];
@@ -509,6 +524,8 @@ std::shared_ptr<SceneNode> deserialize_scene_node(const nlohmann::json& json)
         node = deserialize_point_light_node(json);
     else if (type == SCENE_NODE_IBL)
         node = deserialize_ibl_node(json);
+    else if (type == SCENE_NODE_ROOT)
+        node = deserialize_root_node(json);
     else if (type == SCENE_NODE_CUSTOM)
         node = std::make_shared<SceneNode>();
 
