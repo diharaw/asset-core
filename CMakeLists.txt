@@ -43,7 +43,7 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/src/common")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-if (BUILD_ASSET_CORE_IMPORTER_LIBRARY)
+if (BUILD_ASSET_CORE_IMPORTER_LIBRARY OR BUILD_ASSET_CORE_EXPORTER_LIBRARY)
 	add_subdirectory("${PROJECT_SOURCE_DIR}/external/cmft")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/external/nvidia-texture-tools")
 	add_subdirectory("${PROJECT_SOURCE_DIR}/external/assimp")

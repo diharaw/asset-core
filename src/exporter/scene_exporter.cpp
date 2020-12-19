@@ -212,9 +212,15 @@ bool export_scene(const Scene& scene, const std::string& path)
         scene_name = "untitled_scene";
 
     std::string output_path = path;
-    output_path += "/";
-    output_path += scene_name;
-    output_path += ".json";
+
+    auto fp = filesystem::get_file_path(path);
+
+    if (fp == path)
+    {
+        output_path += "/";
+        output_path += scene_name;
+        output_path += ".json";
+    }
 
     std::string output_str = doc.dump(4);
 
