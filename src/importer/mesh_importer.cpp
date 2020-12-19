@@ -151,6 +151,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 
                 Material mat;
 
+                mat.name = mat_name;
                 //mat.name = mesh.name;
                 //mat.name += "_";
                 //mat.name += mat_name;
@@ -172,7 +173,7 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                     mat.name.erase(std::remove(mat.name.begin(), mat.name.end(), ':'), mat.name.end());
                     mat.name.erase(std::remove(mat.name.begin(), mat.name.end(), '.'), mat.name.end());
 
-                    if (mat_name.empty())
+                    if (mat.name.size() == 0 || mat.name == " ")
                     {
                         mat.name = mesh.name;
                         mat.name += "_unnamed_material_";
