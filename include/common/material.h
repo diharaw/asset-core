@@ -36,67 +36,60 @@ static const std::string kShadingModel[] = {
     "SHADING_MODEL_SUBSURFACE"
 };
 
-enum TextureType
+enum SurfaceType
 {
-    TEXTURE_ALBEDO = 0,
-    TEXTURE_EMISSIVE,
-    TEXTURE_DISPLACEMENT,
-    TEXTURE_NORMAL,
-    TEXTURE_METALLIC,
-    TEXTURE_ROUGHNESS,
-    TEXTURE_CUSTOM
-};
-
-enum MaterialPropertyType
-{
-    PROPERTY_ALBEDO = 0,
-    PROPERTY_EMISSIVE,
-    PROPERTY_METALLIC,
-    PROPERTY_ROUGHNESS
+    SURFACE_OPAQUE,
+    SURFACE_TRANSPARENT
 };
 
 enum MaterialType
 {
-    MATERIAL_OPAQUE,
-    MATERIAL_TRANSPARENT
+    MATERIAL_LAMBERT,
+    MATERIAL_GLASS,
+    MATERIAL_DISNEY,
+    MATERIAL_GLTF
+};
+enum MaterialQueue
+{
+    MATERIAL_QUEUE_STANDARD,
+    MATERIAL_QUEUE_CLOTH,
+    MATERIAL_QUEUE_CLEAR_COAT,
+    MATERIAL_QUEUE_TRANSLUCENT,
+    MATERIAL_QUEUE_SUBSURFACE
 };
 
-enum ShadingModel
+enum MaterialFlags
 {
-    SHADING_MODEL_STANDARD = 0,
-    SHADING_MODEL_CLOTH,
-    SHADING_MODEL_SUBSURFACE
-};
-
-struct Texture
-{
-    TextureType type;
-    std::string path;
-    bool        srgb = false;
-    int32_t     channel_index = 0;
-};
-
-struct MaterialProperty
-{
-    MaterialPropertyType type;
-    union {
-        bool  bool_value;
-        int   int_value;
-        float float_value;
-        float vec2_value[2];
-        float vec3_value[3];
-        float vec4_value[4];
-    };
+    MATERIAL_FLAG_THIN,
+    MATERIAL_FLAG_DOUBLE_SIDED,
+    MATERIAL_FLAG_ALPHA_TESTED,
+    MATERIAL_FLAG_ANISOTROPIC
 };
 
 struct Material
 {
-    std::string                   name;
-    bool                          double_sided;
-    bool                          alpha_mask;
-    MaterialType                  material_type;
-    ShadingModel                  shading_model;
-    std::vector<Texture>          textures;
-    std::vector<MaterialProperty> properties;
+    std::string              name;
+    MaterialType             type;
+    MaterialQueue            queue;
+    MaterialFlags            flags;
+    std::vector<std::string> images;
+};
+
+struct LambertMaterial : Material
+{
+
+};
+
+struct GlassMaterial : Material
+{
+};
+
+struct DisneyMaterial : Material
+{
+
+};
+
+struct GLTFMaterial : Material
+{
 };
 } // namespace ast
