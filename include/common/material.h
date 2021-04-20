@@ -36,11 +36,14 @@ enum SurfaceType
 
 enum MaterialType
 {
-    MATERIAL_LAMBERT,
+    MATERIAL_MATTE,
+    MATERIAL_MIRROR,
+    MATERIAL_METAL,
     MATERIAL_GLASS,
     MATERIAL_DISNEY,
     MATERIAL_GLTF
 };
+
 enum ShadingModel
 {
     SHADING_MODEL_DEFAULT,
@@ -53,7 +56,8 @@ enum ShadingModel
 struct Material
 {
     std::string              name;
-    MaterialType             type;
+    SurfaceType              surface_type;
+    MaterialType             material_type;
     ShadingModel             shading_model;
     bool                     alpha_tested;
     bool                     double_sided;
@@ -61,19 +65,41 @@ struct Material
     std::vector<std::string> images;
 };
 
-struct LambertMaterial : Material
+struct MatteMaterial : Material
 {
+    glm::vec3 base_color;
+};
 
+struct MirrorMaterial : Material
+{
+    
+};
+
+struct MetalMaterial : Material
+{
 };
 
 struct GlassMaterial : Material
 {
-
+    float R;
+    float T;
+    float eta_a;
+    float eta_b;
 };
 
 struct DisneyMaterial : Material
 {
-
+    glm::vec3 base_color;
+    float     subsurface;
+    float     metallic;
+    float     specular;
+    float     specular_tint;
+    float     roughness;
+    float     anisotropic;
+    float     sheen;
+    float     sheen_tint;
+    float     clear_coat;
+    float     clear_coat_gloss;
 };
 
 struct GLTFMaterial : Material
