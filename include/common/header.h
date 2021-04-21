@@ -6,16 +6,16 @@
 
 namespace ast
 {
-    enum AssetType
-    {
-        ASSET_IMAGE = 0,
-        ASSET_MESH = 1
-    };
-    
-    struct BINFileHeader
-    {
-        uint32_t magic;
-        uint8_t  version;
-        uint8_t  type;
-    };
-}
+enum AssetType
+{
+    ASSET_IMAGE = 0,
+    ASSET_MESH  = 1
+};
+
+struct BINFileHeader
+{
+    uint32_t magic;
+    uint8_t  version;
+    uint8_t  type;
+};
+} // namespace ast

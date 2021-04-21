@@ -17,6 +17,7 @@ void print_usage()
     printf("  -F            Fragment function path.\n");
     printf("  -D            Displacement as normal.\n");
     printf("  -O            Input mesh is from the ORCA library.\n");
+    printf("  -M            Import as Disney Materials instead of GLTF Materials.\n");
 }
 
 int main(int argc, char* argv[])
@@ -49,8 +50,8 @@ int main(int argc, char* argv[])
                     export_options.output_metadata = true;
                 else if (c == 'd')
                     import_options.displacement_as_normal = true;
-                else if (c == 'o')
-                    import_options.is_orca_mesh = true;
+                else if (c == 'm')
+                    import_options.force_disney_materials = true;
             }
             else if (i > 0)
             {

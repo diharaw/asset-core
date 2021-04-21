@@ -4,5 +4,5 @@
 
 namespace ast
 {
-    extern bool import_image(Image& img, const std::string& file, const PixelType& type = PIXEL_TYPE_UNORM8, int force_cmp = 0);
+extern bool import_image(Image& img, const std::string& file, const PixelType& type = PIXEL_TYPE_UNORM8, int force_cmp = 0);
 }

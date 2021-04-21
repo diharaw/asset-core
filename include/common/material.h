@@ -53,6 +53,12 @@ enum ShadingModel
     SHADING_MODEL_SUBSURFACE
 };
 
+struct TextureInfo
+{
+    int32_t  texture_idx = -1;
+    uint32_t channel_idx = 0;
+};
+
 struct Material
 {
     std::string              name;
@@ -68,11 +74,14 @@ struct Material
 struct MatteMaterial : Material
 {
     glm::vec3 base_color;
+
+    int32_t base_color_texture   = -1;
+    int32_t normal_texture       = -1;
+    int32_t displacement_texture = -1;
 };
 
 struct MirrorMaterial : Material
 {
-    
 };
 
 struct MetalMaterial : Material
@@ -95,15 +104,54 @@ struct DisneyMaterial : Material
     float     specular;
     float     specular_tint;
     float     roughness;
-    float     anisotropic;
     float     sheen;
     float     sheen_tint;
     float     clear_coat;
     float     clear_coat_gloss;
+    float     anisotropic;
+
+    TextureInfo base_color_texture;
+    TextureInfo subsurface_texture;
+    TextureInfo metallic_texture;
+    TextureInfo specular_texture;
+    TextureInfo specular_tint_texture;
+    TextureInfo roughness_texture;
+    TextureInfo sheen_texture;
+    TextureInfo sheen_tint_texture;
+    TextureInfo clear_coat_texture;
+    TextureInfo clear_coat_gloss_texture;
+    TextureInfo anisotropic_texture;
+    TextureInfo anisotropy_directions_texture;
+    TextureInfo normal_texture;
+    TextureInfo displacement_texture;
 };
 
 struct GLTFMaterial : Material
 {
+    glm::vec3 base_color;
+    float     metallic;
+    float     roughness;
+    float     refraction_thickness;
+    float     transmission;
+    float     ior;
+    glm::vec3 sheen_color;
+    float     sheen_roughness;
+    float     clear_coat;
+    float     clear_coat_roughness;
+    float     anisotropy;
 
+    TextureInfo base_color_texture;
+    TextureInfo metallic_texture;
+    TextureInfo roughness_texture;
+    TextureInfo transmission_texture;
+    TextureInfo clear_coat_texture;
+    TextureInfo clear_coat_roughness_texture;
+    TextureInfo clear_coat_normal_texture;
+    TextureInfo sheen_color_texture;
+    TextureInfo sheen_roughness_texture;
+    TextureInfo anisotropy_texture;
+    TextureInfo anisotropy_directions_texture;
+    TextureInfo normal_texture;
+    TextureInfo displacement_texture;
 };
 } // namespace ast

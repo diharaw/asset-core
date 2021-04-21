@@ -4,5 +4,5 @@
 
 namespace ast
 {
-    extern bool export_scene(const Scene& scene, const std::string& path);
+extern bool export_scene(const Scene& scene, const std::string& path);
 }

@@ -34,7 +34,7 @@ enum SceneNodeType
 
 struct SceneNode
 {
-    SceneNodeType type;
+    SceneNodeType                           type;
     std::string                             name;
     nlohmann::json                          custom_data;
     std::vector<std::shared_ptr<SceneNode>> children;
