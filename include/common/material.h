@@ -14,7 +14,9 @@ static const std::string kSurfaceType[] = {
 };
 
 static const std::string kMaterialType[] = {
-    "MATERIAL_LAMBERT",
+    "MATERIAL_MATTE",
+    "MATERIAL_MIRROR",
+    "MATERIAL_METAL",
     "MATERIAL_GLASS",
     "MATERIAL_DISNEY",
     "MATERIAL_GLTF"
@@ -64,10 +66,8 @@ struct Material
     std::string              name;
     SurfaceType              surface_type;
     MaterialType             material_type;
-    ShadingModel             shading_model;
-    bool                     alpha_tested;
-    bool                     double_sided;
-    bool                     thin;
+    bool                     is_alpha_tested;
+    bool                     is_double_sided;
     std::vector<std::string> images;
 };
 
@@ -75,9 +75,9 @@ struct MatteMaterial : Material
 {
     glm::vec3 base_color;
 
-    int32_t base_color_texture   = -1;
-    int32_t normal_texture       = -1;
-    int32_t displacement_texture = -1;
+    TextureInfo base_color_texture;
+    TextureInfo normal_texture;
+    TextureInfo displacement_texture;
 };
 
 struct MirrorMaterial : Material
@@ -120,6 +120,7 @@ struct DisneyMaterial : Material
     TextureInfo sheen_tint_texture;
     TextureInfo clear_coat_texture;
     TextureInfo clear_coat_gloss_texture;
+    TextureInfo clear_coat_normal_texture;
     TextureInfo anisotropic_texture;
     TextureInfo anisotropy_directions_texture;
     TextureInfo normal_texture;
@@ -128,6 +129,10 @@ struct DisneyMaterial : Material
 
 struct GLTFMaterial : Material
 {
+    ShadingModel shading_model;
+    bool is_thin;
+    bool is_anisotropic;
+
     glm::vec3 base_color;
     float     metallic;
     float     roughness;
