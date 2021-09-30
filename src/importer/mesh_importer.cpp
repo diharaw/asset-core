@@ -11,28 +11,16 @@
 
 namespace ast
 {
+void set_texture_path(aiString in_string, std::string& out_string)
+{
+    out_string = in_string.C_Str();
+    std::replace(out_string.begin(), out_string.end(), '\\', '/');
+}
+
 std::string get_texture_path(aiMaterial* material, aiTextureType texture_type)
 {
     aiString path;
     aiReturn result = material->GetTexture(texture_type, 0, &path);
-
-    if (result == aiReturn_FAILURE)
-        return "";
-    else
-    {
-        std::string cppStr = std::string(path.C_Str());
-
-        if (cppStr == "")
-            return "";
-
-        return cppStr;
-    }
-}
-
-std::string get_gltf_base_color_texture_path(aiMaterial* material)
-{
-    aiString path;
-    aiReturn result = material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE, &path);
 
     if (result == aiReturn_FAILURE)
         return "";
@@ -185,186 +173,141 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                     mat.material_type = MATERIAL_OPAQUE;
                     mat.shading_model = SHADING_MODEL_STANDARD;
 
-                    std::string albedo_path = "";
-
-                    // If this is a GLTF, try to find the base color texture path
-                    if (is_gltf)
-                        albedo_path = get_gltf_base_color_texture_path(temp_material);
-                    else
+                    // Base Color 
                     {
-                        // If not, try to find the Diffuse texture path
-                        albedo_path = get_texture_path(temp_material, aiTextureType_DIFFUSE);
+                        aiString base_color_path("");
+                        aiReturn base_color_texture_found = temp_material->GetTexture(aiTextureType_BASE_COLOR, 0, &base_color_path);
 
-                        // If that doesn't exist, try to find Diffuse texture
-                        if (albedo_path.empty())
-                            albedo_path = get_texture_path(temp_material, aiTextureType_BASE_COLOR);
-                    }
+                        if (base_color_texture_found == aiReturn_FAILURE)
+                            base_color_texture_found = temp_material->GetTexture(aiTextureType_DIFFUSE, 0, &base_color_path);
 
-                    if (albedo_path.empty())
-                    {
-                        aiColor3D diffuse = aiColor3D(1.0f, 1.0f, 1.0f);
-                        float     alpha   = 1.0f;
-
-                        // Try loading in a Diffuse material property
-                        if (temp_material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse) != AI_SUCCESS)
-                            temp_material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_FACTOR, diffuse);
-
-                        temp_material->Get(AI_MATKEY_OPACITY, alpha);
-#if defined(MATERIAL_LOG)
-                        printf("Albedo Color: %f, %f, %f \n", diffuse.r, diffuse.g, diffuse.b);
-#endif
-
-                        MaterialProperty property;
-
-                        property.type          = PROPERTY_ALBEDO;
-                        property.vec4_value[0] = diffuse.r;
-                        property.vec4_value[1] = diffuse.g;
-                        property.vec4_value[2] = diffuse.b;
-                        property.vec4_value[3] = alpha;
-
-                        mat.properties.push_back(property);
-                    }
-                    else
-                    {
-#if defined(MATERIAL_LOG)
-                        printf("Albedo Path: %s \n", albedo_path.c_str());
-#endif
-                        std::replace(albedo_path.begin(), albedo_path.end(), '\\', '/');
-
-                        Texture tex_desc;
-
-                        tex_desc.srgb = true;
-                        tex_desc.type = TEXTURE_ALBEDO;
-                        tex_desc.path = albedo_path;
-
-                        mat.textures.push_back(tex_desc);
-                    }
-
-                    if (options.is_orca_mesh)
-                    {
-                        std::string roughness_metallic_path = get_texture_path(temp_material, aiTextureType_SPECULAR);
-
-                        if (roughness_metallic_path.empty())
+                        if (base_color_texture_found == aiReturn_SUCCESS)
                         {
-                            MaterialProperty roughness_property;
+                            set_texture_path(base_color_path, mat.base_color_texture.path);
+#if defined(MATERIAL_LOG)
+                            printf("Base Color Path: %s \n", mat.base_color_texture.path.c_str());
+#endif
+                            mat.base_color_texture.srgb = true;
 
-                            roughness_property.type        = PROPERTY_ROUGHNESS;
-                            roughness_property.float_value = 1.0f;
+                            aiUVTransform transform;
 
-                            mat.properties.push_back(roughness_property);
-
-                            MaterialProperty metallic_property;
-
-                            metallic_property.type        = PROPERTY_METALLIC;
-                            metallic_property.float_value = 0.0f;
-
-                            mat.properties.push_back(metallic_property);
+                            if (temp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, aiTextureType_BASE_COLOR, 0, transform) == aiReturn_SUCCESS)
+                            {
+                                mat.base_color_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                                mat.base_color_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+                            }
                         }
                         else
                         {
+                            aiColor4D base_color = aiColor4D(1.0f, 1.0f, 1.0f, 1.0f);
+                            
+                            aiReturn base_color_factor_found = temp_material->Get(AI_MATKEY_BASE_COLOR, base_color);
+                            
+                            if (base_color_factor_found == aiReturn_FAILURE)
+                                base_color_factor_found = temp_material->Get(AI_MATKEY_COLOR_DIFFUSE, base_color);
+
+                            mat.base_color = glm::vec4(base_color.r, base_color.g, base_color.b, base_color.a);
 #if defined(MATERIAL_LOG)
-                            printf("Roughness Metallic Path: %s \n", roughness_metallic_path.c_str());
+                            printf("Base Color Color: %f, %f, %f, %f \n", base_color.r, base_color.g, base_color.b, base_color.a);
 #endif
-                            std::replace(roughness_metallic_path.begin(), roughness_metallic_path.end(), '\\', '/');
-
-                            Texture roughness_tex_desc;
-
-                            roughness_tex_desc.srgb          = false;
-                            roughness_tex_desc.type          = TEXTURE_ROUGHNESS;
-                            roughness_tex_desc.path          = roughness_metallic_path;
-                            roughness_tex_desc.channel_index = 1;
-
-                            mat.textures.push_back(roughness_tex_desc);
-
-                            Texture metallic_tex_desc;
-
-                            metallic_tex_desc.srgb          = false;
-                            metallic_tex_desc.type          = TEXTURE_METALLIC;
-                            metallic_tex_desc.path          = roughness_metallic_path;
-                            metallic_tex_desc.channel_index = 2;
-
-                            mat.textures.push_back(metallic_tex_desc);
                         }
                     }
-                    else
+
+                    // Roughness/Metallic
                     {
-                        // Try to find Roughness texture
-                        std::string roughness_path = get_texture_path(temp_material, aiTextureType_SHININESS);
-
-                        if (roughness_path.empty())
-                            roughness_path = get_gltf_metallic_roughness_texture_path(temp_material);
-
-                        if (roughness_path.empty())
+                        if (is_gltf || options.is_orca_mesh)
                         {
-                            float roughness = 0.0f;
+                            aiString roughness_metallic_path("");
+                            aiReturn roughness_metallic_texture_found = options.is_orca_mesh ? temp_material->GetTexture(aiTextureType_SPECULAR, 0, &roughness_metallic_path) : temp_material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &roughness_metallic_path);
 
-                            // Try loading in a Diffuse material property
-                            temp_material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, roughness);
+                            if (roughness_metallic_texture_found == aiReturn_SUCCESS)
+                            {
+                                set_texture_path(roughness_metallic_path, mat.roughness_texture.path);
+                                set_texture_path(roughness_metallic_path, mat.metallic_texture.path);
 #if defined(MATERIAL_LOG)
-                            printf("Roughness Color: %f \n", roughness);
+                                printf("Roughness Metallic Path: %s \n", mat.roughness_texture.path.c_str());
 #endif
-                            MaterialProperty property;
 
-                            property.type        = PROPERTY_ROUGHNESS;
-                            property.float_value = roughness;
+                                aiUVTransform transform;
 
-                            mat.properties.push_back(property);
+                                aiReturn transform_found = options.is_orca_mesh ? temp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, aiTextureType_SPECULAR, 0, transform) : temp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, transform);
+
+                                if (transform_found == aiReturn_SUCCESS)
+                                {
+                                    mat.roughness_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                                    mat.roughness_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+
+                                    mat.metallic_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                                    mat.metallic_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+                                }
+                            }
+                            else
+                            {
+
+                                aiReturn roughness_factor_found = temp_material->Get(AI_MATKEY_ROUGHNESS_FACTOR, mat.roughness);
+                                aiReturn metallic_factor_found = temp_material->Get(AI_MATKEY_METALLIC_FACTOR, mat.metallic);
+
+                                if (roughness_factor_found == aiReturn_FAILURE)
+                                    mat.roughness = 1.0f;
+
+                                if (metallic_factor_found == aiReturn_FAILURE)
+                                    mat.metallic = 0.0f;
+#if defined(MATERIAL_LOG)
+                                printf("Roughness: %f \n", mat.roughness);
+                                printf("Metallic: %f \n", mat.metallic);
+#endif
+                            }
                         }
                         else
                         {
+                            aiString roughness_path("");
+                            aiReturn roughness_texture_found = temp_material->GetTexture(aiTextureType_SHININESS, 0, &roughness_path);
+
+                            if (roughness_texture_found == aiReturn_SUCCESS)
+                            {
+                                set_texture_path(roughness_path, mat.roughness_texture.path);
 #if defined(MATERIAL_LOG)
-                            printf("Roughness Path: %s \n", roughness_path.c_str());
+                                printf("Roughness Path: %s \n", mat.roughness_texture.path.c_str());
 #endif
-                            std::replace(roughness_path.begin(), roughness_path.end(), '\\', '/');
+                                aiUVTransform transform;
 
-                            Texture tex_desc;
+                                if (temp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, aiTextureType_SHININESS, 0, transform) == aiReturn_SUCCESS)
+                                {
+                                    mat.roughness_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                                    mat.roughness_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+                                }
+                            }
+                            else
+                                mat.roughness = 1.0f;
 
-                            tex_desc.srgb          = false;
-                            tex_desc.type          = TEXTURE_ROUGHNESS;
-                            tex_desc.path          = roughness_path;
-                            tex_desc.channel_index = is_gltf ? 1 : 0;
+                            aiString metallic_path("");
+                            aiReturn metallic_texture_found = temp_material->GetTexture(aiTextureType_AMBIENT, 0, &metallic_path);
 
-                            mat.textures.push_back(tex_desc);
-                        }
-
-                        // Try to find Metallic texture
-                        std::string metallic_path = get_texture_path(temp_material, aiTextureType_AMBIENT);
-
-                        if (metallic_path.empty())
-                            metallic_path = get_gltf_metallic_roughness_texture_path(temp_material);
-
-                        if (metallic_path.empty())
-                        {
-                            float metallic = 0.0f;
-
-                            // Try loading in a Diffuse material property
-                            temp_material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, metallic);
+                            if (metallic_texture_found == aiReturn_SUCCESS)
+                            {
+                                set_texture_path(metallic_path, mat.metallic_texture.path);
 #if defined(MATERIAL_LOG)
-                            printf("Metallic Color: %f \n", metallic);
+                                printf("Metallic Path: %s \n", mat.metallic_texture.path.c_str());
 #endif
-                            MaterialProperty property;
+                                aiUVTransform transform;
 
-                            property.type        = PROPERTY_METALLIC;
-                            property.float_value = metallic;
-
-                            mat.properties.push_back(property);
+                                if (temp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, aiTextureType_AMBIENT, 0, transform) == aiReturn_SUCCESS)
+                                {
+                                    mat.metallic_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                                    mat.metallic_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+                                }
+                            }
+                            else
+                                mat.metallic = 0.0f;
                         }
-                        else
-                        {
-#if defined(MATERIAL_LOG)
-                            printf("Metallic Path: %s \n", metallic_path.c_str());
-#endif
-                            std::replace(metallic_path.begin(), metallic_path.end(), '\\', '/');
+                    }
 
-                            Texture tex_desc;
+                    // Emissive 
+                    {
+                    }
 
-                            tex_desc.srgb          = false;
-                            tex_desc.type          = TEXTURE_METALLIC;
-                            tex_desc.path          = metallic_path;
-                            tex_desc.channel_index = is_gltf ? 2 : 0;
-
-                            mat.textures.push_back(tex_desc);
-                        }
+                    // Normal
+                    {
                     }
 
                     // Try to find Emissive texture

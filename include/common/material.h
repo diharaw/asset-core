@@ -4,159 +4,95 @@
 #include <string>
 #include <stdint.h>
 #include <glm.hpp>
-#include <json.hpp>
-
 namespace ast
 {
 static const std::string kSurfaceType[] = {
     "SURFACE_OPAQUE",
-    "SURFACE_TRANSPARENT"
+    "SURFACE_TRANSPARENT",
+    "SURFACE_TRANSMISSIVE"
 };
 
 static const std::string kMaterialType[] = {
-    "MATERIAL_MATTE",
-    "MATERIAL_MIRROR",
-    "MATERIAL_METAL",
-    "MATERIAL_GLASS",
-    "MATERIAL_DISNEY",
-    "MATERIAL_GLTF"
-};
-
-static const std::string kShadingModel[] = {
-    "SHADING_MODEL_DEFAULT",
-    "SHADING_MODEL_CLOTH",
-    "SHADING_MODEL_CLEAR_COAT",
-    "SHADING_MODEL_TRANSLUCENT",
-    "SHADING_MODEL_SUBSURFACE"
+    "MATERIAL_UNLIT",
+    "MATERIAL_STANDARD",
+    "MATERIAL_CLOTH",
+    "MATERIAL_CLEAR_COAT",
+    "MATERIAL_TRANSLUCENT",
+    "MATERIAL_SUBSURFACE"
 };
 
 enum SurfaceType
 {
-    SURFACE_OPAQUE,
-    SURFACE_TRANSPARENT
+    SURFACE_OPAQUE,      // Surfaces with no alpha-blending.
+    SURFACE_TRANSPARENT, // Alpha-blended transparency.
+    SURFACE_TRANSMISSIVE // Transmissive surfaces with refraction and/or roughness.
 };
 
 enum MaterialType
 {
-    MATERIAL_MATTE,
-    MATERIAL_MIRROR,
-    MATERIAL_METAL,
-    MATERIAL_GLASS,
-    MATERIAL_DISNEY,
-    MATERIAL_GLTF
-};
-
-enum ShadingModel
-{
-    SHADING_MODEL_DEFAULT,
-    SHADING_MODEL_CLOTH,
-    SHADING_MODEL_CLEAR_COAT,
-    SHADING_MODEL_TRANSLUCENT,
-    SHADING_MODEL_SUBSURFACE
+    MATERIAL_UNLIT,
+    MATERIAL_STANDARD,
+    MATERIAL_CLOTH,
+    MATERIAL_CLEAR_COAT,
+    MATERIAL_TRANSLUCENT,
+    MATERIAL_SUBSURFACE
 };
 
 struct TextureInfo
 {
-    int32_t  texture_idx = -1;
+    std::string path;
+    bool     srgb        = false;
     uint32_t channel_idx = 0;
+    glm::vec2 offset = glm::vec2(0.0f);
+    glm::vec2 scale = glm::vec2(1.0f);
 };
 
 struct Material
 {
-    std::string              name;
-    SurfaceType              surface_type;
-    MaterialType             material_type;
-    bool                     is_alpha_tested;
-    bool                     is_double_sided;
-    std::vector<std::string> images;
-};
+    SurfaceType  surface_type;
+    MaterialType material_type;
+    bool         is_alpha_tested;
+    bool         is_double_sided;
 
-struct MatteMaterial : Material
-{
-    glm::vec3 base_color;
-
-    TextureInfo base_color_texture;
-    TextureInfo normal_texture;
-    TextureInfo displacement_texture;
-};
-
-struct MirrorMaterial : Material
-{
-};
-
-struct MetalMaterial : Material
-{
-};
-
-struct GlassMaterial : Material
-{
-    float R;
-    float T;
-    float eta_a;
-    float eta_b;
-};
-
-struct DisneyMaterial : Material
-{
-    glm::vec3 base_color;
-    float     subsurface;
-    float     metallic;
-    float     specular;
-    float     specular_tint;
-    float     roughness;
-    float     sheen;
-    float     sheen_tint;
-    float     clear_coat;
-    float     clear_coat_gloss;
-    float     anisotropic;
-
-    TextureInfo base_color_texture;
-    TextureInfo subsurface_texture;
-    TextureInfo metallic_texture;
-    TextureInfo specular_texture;
-    TextureInfo specular_tint_texture;
-    TextureInfo roughness_texture;
-    TextureInfo sheen_texture;
-    TextureInfo sheen_tint_texture;
-    TextureInfo clear_coat_texture;
-    TextureInfo clear_coat_gloss_texture;
-    TextureInfo clear_coat_normal_texture;
-    TextureInfo anisotropic_texture;
-    TextureInfo anisotropy_directions_texture;
-    TextureInfo normal_texture;
-    TextureInfo displacement_texture;
-};
-
-struct GLTFMaterial : Material
-{
-    ShadingModel shading_model;
-    bool is_thin;
-    bool is_anisotropic;
-
-    glm::vec3 base_color;
-    float     metallic;
-    float     roughness;
-    float     refraction_thickness;
-    float     transmission;
-    float     ior;
-    glm::vec3 sheen_color;
-    float     sheen_roughness;
-    float     clear_coat;
-    float     clear_coat_roughness;
-    float     anisotropy;
-
+    // Standard
+    glm::vec3   base_color;
+    float       metallic;
+    float       roughness;
     TextureInfo base_color_texture;
     TextureInfo metallic_texture;
     TextureInfo roughness_texture;
-    TextureInfo transmission_texture;
+    TextureInfo normal_texture;
+    TextureInfo displacement_texture;
+
+    // Sheen
+    glm::vec3   sheen_color;
+    float       sheen_roughness;
+    TextureInfo sheen_color_texture;
+    TextureInfo sheen_roughness_texture;
+
+    // Clear Coat
+    float       clear_coat;
+    float       clear_coat_roughness;
     TextureInfo clear_coat_texture;
     TextureInfo clear_coat_roughness_texture;
     TextureInfo clear_coat_normal_texture;
-    TextureInfo sheen_color_texture;
-    TextureInfo sheen_roughness_texture;
+
+    // Anisotropy
+    float       anisotropy;
     TextureInfo anisotropy_texture;
     TextureInfo anisotropy_directions_texture;
-    TextureInfo normal_texture;
-    TextureInfo displacement_texture;
+
+    // Transmission
+    float       transmission;
+    TextureInfo transmission_texture;
+
+    // IOR
+    float ior;
+
+    // Volume
+    float       thickness_factor;
+    TextureInfo thickness_texture;
+    float       attenuation_distance;
+    glm::vec3   attenuation_color;
 };
 } // namespace ast
