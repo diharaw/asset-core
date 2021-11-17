@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <common/material.h>
 
 namespace ast
@@ -44,7 +45,6 @@ struct Mesh
     std::vector<uint32_t>                  indices;
     std::vector<SubMesh>                   submeshes;
     std::vector<std::unique_ptr<Material>> materials;
-    std::vector<std::string>               material_paths;
     glm::vec3                              max_extents;
     glm::vec3                              min_extents;
 };

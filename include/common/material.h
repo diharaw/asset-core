@@ -4,6 +4,7 @@
 #include <string>
 #include <stdint.h>
 #include <glm.hpp>
+
 namespace ast
 {
 static const std::string kSurfaceType[] = {
@@ -41,10 +42,10 @@ enum MaterialType
 struct TextureInfo
 {
     std::string path;
-    bool     srgb        = false;
-    uint32_t channel_idx = 0;
-    glm::vec2 offset = glm::vec2(0.0f);
-    glm::vec2 scale = glm::vec2(1.0f);
+    bool        srgb        = false;
+    uint32_t    channel_idx = 0;
+    glm::vec2   offset      = glm::vec2(0.0f);
+    glm::vec2   scale       = glm::vec2(1.0f);
 };
 
 struct Material
@@ -59,10 +60,14 @@ struct Material
     float       metallic;
     float       roughness;
     TextureInfo base_color_texture;
-    TextureInfo metallic_texture;
     TextureInfo roughness_texture;
+    TextureInfo metallic_texture;
     TextureInfo normal_texture;
     TextureInfo displacement_texture;
+
+    // Emissive
+    glm::vec3   emissive_factor;
+    TextureInfo emissive_texture;
 
     // Sheen
     glm::vec3   sheen_color;
