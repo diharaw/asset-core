@@ -51,9 +51,8 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 
         uint32_t                               vertex_count = 0;
         uint32_t                               index_count  = 0;
-        std::vector<uint32_t>                  temp_indices;
-        std::unordered_map<uint32_t, uint32_t> mat_id_mapping;
         uint32_t                               unnamed_mats = 1;
+        std::vector<uint32_t>                  temp_indices;
 
         // Read materials.
         for (int i = 0; i < scene->mNumMaterials; i++)
