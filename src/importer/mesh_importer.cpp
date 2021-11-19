@@ -17,6 +17,482 @@ void set_texture_path(aiString in_string, std::string& out_string)
     std::replace(out_string.begin(), out_string.end(), '\\', '/');
 }
 
+void read_standard_material(aiMaterial* assimp_material, Material* material, bool is_gltf, MeshImportOptions& options)
+{
+    // Base Color
+    {
+        aiString base_color_path("");
+        aiReturn base_color_texture_found = assimp_material->GetTexture(aiTextureType_BASE_COLOR, 0, &base_color_path);
+
+        if (base_color_texture_found == aiReturn_FAILURE)
+            base_color_texture_found = assimp_material->GetTexture(aiTextureType_DIFFUSE, 0, &base_color_path);
+
+        if (base_color_texture_found == aiReturn_SUCCESS)
+        {
+            set_texture_path(base_color_path, material->base_color_texture.path);
+#if defined(MATERIAL_LOG)
+            printf("Base Color Path: %s \n", material->base_color_texture.path.c_str());
+#endif
+            material->base_color_texture.srgb = true;
+
+            aiUVTransform transform;
+
+            if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, aiTextureType_BASE_COLOR, 0, transform) == aiReturn_SUCCESS)
+            {
+                material->base_color_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                material->base_color_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+            }
+        }
+        else
+        {
+            aiColor4D base_color = aiColor4D(1.0f, 1.0f, 1.0f, 1.0f);
+
+            aiReturn base_color_factor_found = assimp_material->Get(AI_MATKEY_BASE_COLOR, base_color);
+
+            if (base_color_factor_found == aiReturn_FAILURE)
+                base_color_factor_found = assimp_material->Get(AI_MATKEY_COLOR_DIFFUSE, base_color);
+
+            material->base_color = glm::vec4(base_color.r, base_color.g, base_color.b, base_color.a);
+#if defined(MATERIAL_LOG)
+            printf("Base Color Color: %f, %f, %f, %f \n", base_color.r, base_color.g, base_color.b, base_color.a);
+#endif
+        }
+    }
+
+    // Roughness/Metallic
+    {
+        if (is_gltf || options.is_orca_mesh)
+        {
+            aiTextureType target_texture_type = aiTextureType_DIFFUSE_ROUGHNESS;
+
+            if (options.is_orca_mesh)
+                target_texture_type = aiTextureType_SPECULAR;
+
+            aiString roughness_metallic_path("");
+            aiReturn roughness_metallic_texture_found = assimp_material->GetTexture(target_texture_type, 0, &roughness_metallic_path);
+
+            if (roughness_metallic_texture_found == aiReturn_SUCCESS)
+            {
+                set_texture_path(roughness_metallic_path, material->roughness_texture.path);
+                set_texture_path(roughness_metallic_path, material->metallic_texture.path);
+
+                material->roughness_texture.channel_idx = 1;
+                material->metallic_texture.channel_idx  = 2;
+#if defined(MATERIAL_LOG)
+                printf("Roughness Metallic Path: %s \n", material->roughness_texture.path.c_str());
+#endif
+
+                aiUVTransform transform;
+
+                aiReturn transform_found = assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, target_texture_type, 0, transform);
+
+                if (transform_found == aiReturn_SUCCESS)
+                {
+                    material->roughness_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                    material->roughness_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+
+                    material->metallic_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                    material->metallic_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+                }
+            }
+            else
+            {
+                aiReturn roughness_factor_found = assimp_material->Get(AI_MATKEY_ROUGHNESS_FACTOR, material->roughness);
+                aiReturn metallic_factor_found  = assimp_material->Get(AI_MATKEY_METALLIC_FACTOR, material->metallic);
+
+                if (roughness_factor_found == aiReturn_FAILURE)
+                    material->roughness = 1.0f;
+
+                if (metallic_factor_found == aiReturn_FAILURE)
+                    material->metallic = 0.0f;
+#if defined(MATERIAL_LOG)
+                printf("Roughness: %f \n", material->roughness);
+                printf("Metallic: %f \n", material->metallic);
+#endif
+            }
+        }
+        else
+        {
+            aiString roughness_path("");
+            aiReturn roughness_texture_found = assimp_material->GetTexture(aiTextureType_SHININESS, 0, &roughness_path);
+
+            if (roughness_texture_found == aiReturn_SUCCESS)
+            {
+                set_texture_path(roughness_path, material->roughness_texture.path);
+#if defined(MATERIAL_LOG)
+                printf("Roughness Path: %s \n", material->roughness_texture.path.c_str());
+#endif
+                aiUVTransform transform;
+
+                if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, aiTextureType_SHININESS, 0, transform) == aiReturn_SUCCESS)
+                {
+                    material->roughness_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                    material->roughness_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+                }
+            }
+            else
+                material->roughness = 1.0f;
+
+            aiString metallic_path("");
+            aiReturn metallic_texture_found = assimp_material->GetTexture(aiTextureType_AMBIENT, 0, &metallic_path);
+
+            if (metallic_texture_found == aiReturn_SUCCESS)
+            {
+                set_texture_path(metallic_path, material->metallic_texture.path);
+#if defined(MATERIAL_LOG)
+                printf("Metallic Path: %s \n", material->metallic_texture.path.c_str());
+#endif
+                aiUVTransform transform;
+
+                if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, aiTextureType_AMBIENT, 0, transform) == aiReturn_SUCCESS)
+                {
+                    material->metallic_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                    material->metallic_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+                }
+            }
+            else
+                material->metallic = 0.0f;
+        }
+    }
+
+    // Normal
+    {
+        // Try to find Normal texture
+        aiTextureType target_texture_type = aiTextureType_NORMALS;
+
+        if (options.displacement_as_normal)
+            target_texture_type = aiTextureType_HEIGHT;
+
+        aiString normal_path("");
+        aiReturn normal_texture_found = assimp_material->GetTexture(target_texture_type, 0, &normal_path);
+
+        if (normal_texture_found == aiReturn_SUCCESS)
+        {
+            set_texture_path(normal_path, material->normal_texture.path);
+#if defined(MATERIAL_LOG)
+            printf("Normal Path: %s \n", material->normal_texture.path.c_str());
+#endif
+
+            aiUVTransform transform;
+
+            if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, target_texture_type, 0, transform) == aiReturn_SUCCESS)
+            {
+                material->normal_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                material->normal_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+            }
+        }
+    }
+
+    // Displacement
+    {
+        // Try to find Displacement texture
+        if (!options.displacement_as_normal)
+        {
+            aiTextureType target_texture_type = aiTextureType_DISPLACEMENT;
+
+            aiString displacement_path("");
+            aiReturn displacement_texture_found = assimp_material->GetTexture(target_texture_type, 0, &displacement_path);
+
+            if (options.displacement_as_normal)
+            {
+                target_texture_type        = aiTextureType_HEIGHT;
+                displacement_texture_found = assimp_material->GetTexture(target_texture_type, 0, &displacement_path);
+            }
+
+            if (displacement_texture_found == aiReturn_SUCCESS)
+            {
+                set_texture_path(displacement_path, material->displacement_texture.path);
+#if defined(MATERIAL_LOG)
+                printf("Normal Path: %s \n", material->displacement_texture.path.c_str());
+#endif
+
+                aiUVTransform transform;
+
+                if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, target_texture_type, 0, transform) == aiReturn_SUCCESS)
+                {
+                    material->displacement_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                    material->displacement_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+                }
+            }
+        }
+    }
+
+    // Emissive
+    {
+        // Try to find Emissive texture
+        aiTextureType target_texture_type = aiTextureType_EMISSION_COLOR;
+        aiString      emissive_path("");
+        aiReturn      emissive_texture_found = assimp_material->GetTexture(target_texture_type, 0, &emissive_path);
+
+        if (emissive_texture_found != aiReturn_SUCCESS)
+        {
+            target_texture_type    = aiTextureType_EMISSIVE;
+            emissive_texture_found = assimp_material->GetTexture(target_texture_type, 0, &emissive_path);
+        }
+
+        if (emissive_texture_found == aiReturn_SUCCESS)
+        {
+            set_texture_path(emissive_path, material->emissive_texture.path);
+#if defined(MATERIAL_LOG)
+            printf("Emissive Path: %s \n", material->emissive_texture.path.c_str());
+#endif
+            aiUVTransform transform;
+
+            if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, emissive_texture_found, 0, transform) == aiReturn_SUCCESS)
+            {
+                material->emissive_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                material->emissive_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+            }
+        }
+
+        aiColor3D emissive;
+
+        // Try loading in the Emissive Factor property
+        if (assimp_material->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissive) == aiReturn_SUCCESS)
+        {
+#if defined(MATERIAL_LOG)
+            printf("Emissive Factor: %f, %f, %f \n", emissive.r, emissive.g, emissive.b);
+#endif
+            material->emissive_factor = glm::vec3(emissive.r, emissive.g, emissive.b);
+        }
+    }
+}
+
+void read_sheen_material(aiMaterial* assimp_material, Material* material)
+{
+    // Sheen Color Texture
+    {
+        aiString path("");
+        aiReturn texture_found = assimp_material->GetTexture(AI_MATKEY_SHEEN_COLOR_TEXTURE, &path);
+
+        if (texture_found == aiReturn_SUCCESS)
+        {
+            set_texture_path(path, material->sheen_color_texture.path);
+#if defined(MATERIAL_LOG)
+            printf("Sheen Color Path: %s \n", material->sheen_color_texture.path.c_str());
+#endif
+
+            aiUVTransform transform;
+
+            if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, AI_MATKEY_SHEEN_COLOR_TEXTURE, transform) == aiReturn_SUCCESS)
+            {
+                material->sheen_color_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                material->sheen_color_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+            }
+
+            material->material_type = MATERIAL_CLOTH;
+        }
+    }
+
+    // Sheen Roughness Texture
+    {
+        aiString path("");
+        aiReturn texture_found = assimp_material->GetTexture(AI_MATKEY_SHEEN_ROUGHNESS_TEXTURE, &path);
+
+        if (texture_found == aiReturn_SUCCESS)
+        {
+            set_texture_path(path, material->sheen_roughness_texture.path);
+#if defined(MATERIAL_LOG)
+            printf("Sheen Roughness Path: %s \n", material->sheen_roughness_texture.path.c_str());
+#endif
+
+            aiUVTransform transform;
+
+            if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, AI_MATKEY_SHEEN_ROUGHNESS_TEXTURE, transform) == aiReturn_SUCCESS)
+            {
+                material->sheen_roughness_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                material->sheen_roughness_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+            }
+        }
+    }
+
+    // Sheen Color Factor
+    {
+        aiColor3D sheen_color;
+        aiReturn  property_found = assimp_material->Get(AI_MATKEY_SHEEN_COLOR_FACTOR, sheen_color);
+
+        if (property_found == aiReturn_SUCCESS)
+        {
+            material->sheen_color   = glm::vec3(sheen_color.r, sheen_color.g, sheen_color.b);
+            material->material_type = MATERIAL_CLOTH;
+        }
+    }
+
+    // Sheen Roughness Factor
+    {
+        assimp_material->Get(AI_MATKEY_SHEEN_ROUGHNESS_FACTOR, material->sheen_roughness);
+    }
+}
+
+void read_clear_coat_material(aiMaterial* assimp_material, Material* material)
+{
+    // Clear Coat Texture
+    {
+        aiString path("");
+        aiReturn texture_found = assimp_material->GetTexture(AI_MATKEY_CLEARCOAT_TEXTURE, &path);
+
+        if (texture_found == aiReturn_SUCCESS)
+        {
+            set_texture_path(path, material->clear_coat_texture.path);
+#if defined(MATERIAL_LOG)
+            printf("Clear Coat Path: %s \n", material->clear_coat_texture.path.c_str());
+#endif
+
+            aiUVTransform transform;
+
+            if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, AI_MATKEY_CLEARCOAT_TEXTURE, transform) == aiReturn_SUCCESS)
+            {
+                material->clear_coat_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                material->clear_coat_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+            }
+
+            material->material_type = MATERIAL_CLEAR_COAT;
+        }
+    }
+
+    // Clear Coat Roughness
+    {
+        aiString path("");
+        aiReturn texture_found = assimp_material->GetTexture(AI_MATKEY_CLEARCOAT_ROUGHNESS_TEXTURE, &path);
+
+        if (texture_found == aiReturn_SUCCESS)
+        {
+            set_texture_path(path, material->clear_coat_roughness_texture.path);
+#if defined(MATERIAL_LOG)
+            printf("Clear Coat Roughness Path: %s \n", material->clear_coat_roughness_texture.path.c_str());
+#endif
+
+            aiUVTransform transform;
+
+            if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, AI_MATKEY_CLEARCOAT_ROUGHNESS_TEXTURE, transform) == aiReturn_SUCCESS)
+            {
+                material->clear_coat_roughness_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                material->clear_coat_roughness_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+            }
+        }
+    }
+
+    // Clear Coat Normal
+    {
+        aiString path("");
+        aiReturn texture_found = assimp_material->GetTexture(AI_MATKEY_CLEARCOAT_NORMAL_TEXTURE, &path);
+
+        if (texture_found == aiReturn_SUCCESS)
+        {
+            set_texture_path(path, material->clear_coat_normal_texture.path);
+#if defined(MATERIAL_LOG)
+            printf("Clear Coat Normal Path: %s \n", material->clear_coat_normal_texture.path.c_str());
+#endif
+
+            aiUVTransform transform;
+
+            if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, AI_MATKEY_CLEARCOAT_NORMAL_TEXTURE, transform) == aiReturn_SUCCESS)
+            {
+                material->clear_coat_normal_texture.offset   = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                material->clear_coat_normal_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+            }
+        }
+    }
+
+    // Clear Coat Factor
+    {
+        assimp_material->Get(AI_MATKEY_CLEARCOAT_FACTOR, material->clear_coat);
+    }
+
+    // Clear Coat Roughness Factor
+    {
+        assimp_material->Get(AI_MATKEY_CLEARCOAT_ROUGHNESS_FACTOR, material->clear_coat_roughness);
+    }
+}
+
+void read_anisotropy_material(aiMaterial* assimp_material, Material* material)
+{
+    // TODO
+}
+
+void read_transmission_material(aiMaterial* assimp_material, Material* material)
+{
+    // Transmission Texture
+    {
+        aiString path("");
+        aiReturn texture_found = assimp_material->GetTexture(AI_MATKEY_TRANSMISSION_TEXTURE, &path);
+
+        if (texture_found == aiReturn_SUCCESS)
+        {
+            set_texture_path(path, material->transmission_texture.path);
+#if defined(MATERIAL_LOG)
+            printf("Transmission Path: %s \n", material->transmission_texture.path.c_str());
+#endif
+
+            aiUVTransform transform;
+
+            if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, AI_MATKEY_TRANSMISSION_TEXTURE, transform) == aiReturn_SUCCESS)
+            {
+                material->transmission_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                material->transmission_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+            }
+
+            material->surface_type = SURFACE_TRANSMISSIVE;
+        }
+    }
+
+    // Transmission Factor
+    {
+        assimp_material->Get(AI_MATKEY_TRANSMISSION_FACTOR, material->transmission);
+    }
+}
+
+void read_volume_material(aiMaterial* assimp_material, Material* material)
+{
+    // Thickness Texture
+    {
+        aiString path("");
+        aiReturn texture_found = assimp_material->GetTexture(AI_MATKEY_VOLUME_THICKNESS_TEXTURE, &path);
+
+        if (texture_found == aiReturn_SUCCESS)
+        {
+            set_texture_path(path, material->thickness_texture.path);
+#if defined(MATERIAL_LOG)
+            printf("Thickness Path: %s \n", material->thickness_texture.path.c_str());
+#endif
+
+            aiUVTransform transform;
+
+            if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, AI_MATKEY_VOLUME_THICKNESS_TEXTURE, transform) == aiReturn_SUCCESS)
+            {
+                material->thickness_texture.offset   = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                material->thickness_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+            }
+
+            material->surface_type = SURFACE_TRANSMISSIVE;
+        }
+    }
+
+    // Thickness Factor
+    {
+        assimp_material->Get(AI_MATKEY_VOLUME_THICKNESS_FACTOR, material->thickness_factor);
+    }
+
+    // Attenuation Distance
+    {
+        assimp_material->Get(AI_MATKEY_VOLUME_ATTENUATION_DISTANCE, material->attenuation_distance);
+    }
+
+    // Attenuation Color
+    {
+        aiColor3D attenuation_color;
+        aiReturn  property_found = assimp_material->Get(AI_MATKEY_VOLUME_ATTENUATION_COLOR, attenuation_color);
+
+        if (property_found == aiReturn_SUCCESS)
+            material->attenuation_color   = glm::vec3(attenuation_color.r, attenuation_color.g, attenuation_color.b);
+    }
+}
+
+void read_ior_material(aiMaterial* assimp_material, Material* material)
+{
+    assimp_material->Get(AI_MATKEY_REFRACTI, material->ior);
+}
+
 bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
 {
     bool        is_gltf   = false;
@@ -49,10 +525,10 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
         mesh.submeshes.resize(scene->mNumMeshes);
         mesh.materials.resize(scene->mNumMaterials);
 
-        uint32_t                               vertex_count = 0;
-        uint32_t                               index_count  = 0;
-        uint32_t                               unnamed_mats = 1;
-        std::vector<uint32_t>                  temp_indices;
+        uint32_t              vertex_count = 0;
+        uint32_t              index_count  = 0;
+        uint32_t              unnamed_mats = 1;
+        std::vector<uint32_t> temp_indices;
 
         // Read materials.
         for (int i = 0; i < scene->mNumMaterials; i++)
@@ -60,6 +536,9 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
             mesh.materials[i] = std::unique_ptr<Material>(new Material());
 
             auto& material = mesh.materials[i];
+
+            material->surface_type  = SURFACE_OPAQUE;
+            material->material_type = MATERIAL_STANDARD;
 
             aiMaterial* assimp_material = scene->mMaterials[i];
 
@@ -76,272 +555,19 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                 mat_name += std::to_string(unnamed_mats++);
             }
 
-            // Base Color
-            {
-                aiString base_color_path("");
-                aiReturn base_color_texture_found = assimp_material->GetTexture(aiTextureType_BASE_COLOR, 0, &base_color_path);
+            read_standard_material(assimp_material, material.get(), is_gltf, options);
 
-                if (base_color_texture_found == aiReturn_FAILURE)
-                    base_color_texture_found = assimp_material->GetTexture(aiTextureType_DIFFUSE, 0, &base_color_path);
+            read_sheen_material(assimp_material, material.get());
 
-                if (base_color_texture_found == aiReturn_SUCCESS)
-                {
-                    set_texture_path(base_color_path, material->base_color_texture.path);
-#if defined(MATERIAL_LOG)
-                    printf("Base Color Path: %s \n", material->base_color_texture.path.c_str());
-#endif
-                    material->base_color_texture.srgb = true;
+            read_clear_coat_material(assimp_material, material.get());
 
-                    aiUVTransform transform;
+            read_anisotropy_material(assimp_material, material.get());
 
-                    if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, aiTextureType_BASE_COLOR, 0, transform) == aiReturn_SUCCESS)
-                    {
-                        material->base_color_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
-                        material->base_color_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
-                    }
-                }
-                else
-                {
-                    aiColor4D base_color = aiColor4D(1.0f, 1.0f, 1.0f, 1.0f);
+            read_transmission_material(assimp_material, material.get());
 
-                    aiReturn base_color_factor_found = assimp_material->Get(AI_MATKEY_BASE_COLOR, base_color);
+            read_ior_material(assimp_material, material.get());
 
-                    if (base_color_factor_found == aiReturn_FAILURE)
-                        base_color_factor_found = assimp_material->Get(AI_MATKEY_COLOR_DIFFUSE, base_color);
-
-                    material->base_color = glm::vec4(base_color.r, base_color.g, base_color.b, base_color.a);
-#if defined(MATERIAL_LOG)
-                    printf("Base Color Color: %f, %f, %f, %f \n", base_color.r, base_color.g, base_color.b, base_color.a);
-#endif
-                }
-            }
-
-            // Roughness/Metallic
-            {
-                if (is_gltf || options.is_orca_mesh)
-                {
-                    aiTextureType target_texture_type = aiTextureType_DIFFUSE_ROUGHNESS;
-
-                    if (options.is_orca_mesh)
-                        target_texture_type = aiTextureType_SPECULAR;
-
-                    aiString roughness_metallic_path("");
-                    aiReturn roughness_metallic_texture_found = assimp_material->GetTexture(target_texture_type, 0, &roughness_metallic_path);
-
-                    if (roughness_metallic_texture_found == aiReturn_SUCCESS)
-                    {
-                        set_texture_path(roughness_metallic_path, material->roughness_texture.path);
-                        set_texture_path(roughness_metallic_path, material->metallic_texture.path);
-
-                        material->roughness_texture.channel_idx = 1;
-                        material->metallic_texture.channel_idx  = 2;
-#if defined(MATERIAL_LOG)
-                        printf("Roughness Metallic Path: %s \n", material->roughness_texture.path.c_str());
-#endif
-
-                        aiUVTransform transform;
-
-                        aiReturn transform_found = assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, target_texture_type, 0, transform);
-
-                        if (transform_found == aiReturn_SUCCESS)
-                        {
-                            material->roughness_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
-                            material->roughness_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
-
-                            material->metallic_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
-                            material->metallic_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
-                        }
-                    }
-                    else
-                    {
-                        aiReturn roughness_factor_found = assimp_material->Get(AI_MATKEY_ROUGHNESS_FACTOR, material->roughness);
-                        aiReturn metallic_factor_found  = assimp_material->Get(AI_MATKEY_METALLIC_FACTOR, material->metallic);
-
-                        if (roughness_factor_found == aiReturn_FAILURE)
-                            material->roughness = 1.0f;
-
-                        if (metallic_factor_found == aiReturn_FAILURE)
-                            material->metallic = 0.0f;
-#if defined(MATERIAL_LOG)
-                        printf("Roughness: %f \n", material->roughness);
-                        printf("Metallic: %f \n", material->metallic);
-#endif
-                    }
-                }
-                else
-                {
-                    aiString roughness_path("");
-                    aiReturn roughness_texture_found = assimp_material->GetTexture(aiTextureType_SHININESS, 0, &roughness_path);
-
-                    if (roughness_texture_found == aiReturn_SUCCESS)
-                    {
-                        set_texture_path(roughness_path, material->roughness_texture.path);
-#if defined(MATERIAL_LOG)
-                        printf("Roughness Path: %s \n", material->roughness_texture.path.c_str());
-#endif
-                        aiUVTransform transform;
-
-                        if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, aiTextureType_SHININESS, 0, transform) == aiReturn_SUCCESS)
-                        {
-                            material->roughness_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
-                            material->roughness_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
-                        }
-                    }
-                    else
-                        material->roughness = 1.0f;
-
-                    aiString metallic_path("");
-                    aiReturn metallic_texture_found = assimp_material->GetTexture(aiTextureType_AMBIENT, 0, &metallic_path);
-
-                    if (metallic_texture_found == aiReturn_SUCCESS)
-                    {
-                        set_texture_path(metallic_path, material->metallic_texture.path);
-#if defined(MATERIAL_LOG)
-                        printf("Metallic Path: %s \n", material->metallic_texture.path.c_str());
-#endif
-                        aiUVTransform transform;
-
-                        if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, aiTextureType_AMBIENT, 0, transform) == aiReturn_SUCCESS)
-                        {
-                            material->metallic_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
-                            material->metallic_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
-                        }
-                    }
-                    else
-                        material->metallic = 0.0f;
-                }
-            }
-
-            // Normal
-            {
-                // Try to find Normal texture
-                aiTextureType target_texture_type = aiTextureType_NORMALS;
-
-                if (options.displacement_as_normal)
-                    target_texture_type = aiTextureType_HEIGHT;
-
-                aiString normal_path("");
-                aiReturn normal_texture_found = assimp_material->GetTexture(target_texture_type, 0, &normal_path);
-
-                if (normal_texture_found == aiReturn_SUCCESS)
-                {
-                    set_texture_path(normal_path, material->normal_texture.path);
-#if defined(MATERIAL_LOG)
-                    printf("Normal Path: %s \n", material->normal_texture.path.c_str());
-#endif
-
-                    aiUVTransform transform;
-
-                    if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, target_texture_type, 0, transform) == aiReturn_SUCCESS)
-                    {
-                        material->normal_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
-                        material->normal_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
-                    }
-                }
-            }
-
-            // Displacement
-            {
-                // Try to find Displacement texture
-                if (!options.displacement_as_normal)
-                {
-                    aiTextureType target_texture_type = aiTextureType_DISPLACEMENT;
-
-                    aiString displacement_path("");
-                    aiReturn displacement_texture_found = assimp_material->GetTexture(target_texture_type, 0, &displacement_path);
-
-                    if (options.displacement_as_normal)
-                    {
-                        target_texture_type        = aiTextureType_HEIGHT;
-                        displacement_texture_found = assimp_material->GetTexture(target_texture_type, 0, &displacement_path);
-                    }
-
-                    if (displacement_texture_found == aiReturn_SUCCESS)
-                    {
-                        set_texture_path(displacement_path, material->displacement_texture.path);
-#if defined(MATERIAL_LOG)
-                        printf("Normal Path: %s \n", material->displacement_texture.path.c_str());
-#endif
-
-                        aiUVTransform transform;
-
-                        if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, target_texture_type, 0, transform) == aiReturn_SUCCESS)
-                        {
-                            material->displacement_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
-                            material->displacement_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
-                        }
-                    }
-                }
-            }
-
-            // Emissive
-            {
-                // Try to find Emissive texture
-                aiTextureType target_texture_type = aiTextureType_EMISSION_COLOR;
-                aiString      emissive_path("");
-                aiReturn      emissive_texture_found = assimp_material->GetTexture(target_texture_type, 0, &emissive_path);
-
-                if (emissive_texture_found != aiReturn_SUCCESS)
-                {
-                    target_texture_type    = aiTextureType_EMISSIVE;
-                    emissive_texture_found = assimp_material->GetTexture(target_texture_type, 0, &emissive_path);
-                }
-
-                if (emissive_texture_found == aiReturn_SUCCESS)
-                {
-                    set_texture_path(emissive_path, material->emissive_texture.path);
-#if defined(MATERIAL_LOG)
-                    printf("Emissive Path: %s \n", material->emissive_texture.path.c_str());
-#endif
-                    aiUVTransform transform;
-
-                    if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, emissive_texture_found, 0, transform) == aiReturn_SUCCESS)
-                    {
-                        material->emissive_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
-                        material->emissive_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
-                    }
-                }
-
-                aiColor3D emissive;
-
-                // Try loading in the Emissive Factor property
-                if (assimp_material->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissive) == aiReturn_SUCCESS)
-                {
-#if defined(MATERIAL_LOG)
-                    printf("Emissive Factor: %f, %f, %f \n", emissive.r, emissive.g, emissive.b);
-#endif
-                    material->emissive_factor = glm::vec3(emissive.r, emissive.g, emissive.b);
-                }
-            }
-
-            // Sheen
-            {
-
-            }
-
-            // Clear Coat
-            {
-
-            }
-
-            // Anisotropy
-            {
-
-            }
-
-            // Transmission
-            {
-
-            }
-
-            // IOR
-            {
-
-            }
-
-            // Volume
-            {
-            }
+            read_volume_material(assimp_material, material.get());
         }
 
         // Read submesh data.
