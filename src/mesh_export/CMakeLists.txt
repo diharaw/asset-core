@@ -13,4 +13,3 @@ set_property(TARGET mesh_export PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_
 
 target_link_libraries(mesh_export AssetCoreImporter)
 target_link_libraries(mesh_export AssetCoreExporter)
-target_link_libraries(mesh_export AssetCoreLoader)

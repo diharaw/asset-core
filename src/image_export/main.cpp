@@ -10,7 +10,9 @@ void print_usage()
     printf("Input options:\n");
     printf("  -E			Cubemap.\n");
     printf("  -C			Compressed.\n");
+#if defined(ENABLE_DEBUG_OUTPUT)
     printf("  -D			Debug Output.\n");
+#endif
     printf("  -R			Generate radiance.\n");
     printf("  -I			Generate irradiance.\n");
     printf("  -M			Generate mipmaps.\n");
@@ -45,8 +47,10 @@ int main(int argc, char* argv[])
 
                 if (c == 'd')
                 {
+#if defined(ENABLE_DEBUG_OUTPUT)
                     cubemap_export_options.debug_output = true;
                     image_export_options.debug_output   = true;
+#endif
                 }
                 else if (c == 'r')
                     cubemap_export_options.radiance = true;

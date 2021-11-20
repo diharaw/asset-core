@@ -1,5 +1,7 @@
 #include <exporter/image_exporter.h>
-#include <loader/loader.h>
+#if defined(ENABLE_DEBUG_OUTPUT)
+#    include <loader/loader.h>
+#endif
 #include <common/filesystem.h>
 #include <common/header.h>
 #include <cmft/image.h>
@@ -92,6 +94,7 @@ struct NVTTOutputHandler : public nvtt::OutputHandler
         }                                                                                         \
     }
 
+#if defined(ENABLE_DEBUG_OUTPUT)
 void debug_export_image(const std::string& output, const std::string& name, ast::Image& image)
 {
     for (int i = 0; i < image.array_slices; i++)
@@ -143,6 +146,7 @@ void debug_read_and_export_image(const std::string& input, const std::string& na
     else
         printf("Failed to Load Image!\n");
 }
+#endif
 
 bool export_image(Image& img, const ImageExportOptions& options)
 {
@@ -156,8 +160,10 @@ bool export_image(Image& img, const ImageExportOptions& options)
     if (!filesystem::does_directory_exist(options.path))
         filesystem::create_directory(options.path);
 
+#if defined(ENABLE_DEBUG_OUTPUT)
     if (options.debug_output)
         debug_export_image(options.path, img.name + "_post_import", img);
+#endif
 
     if (options.flip_green)
     {
@@ -426,6 +432,7 @@ bool export_image(Image& img, const ImageExportOptions& options)
             temp_img.deallocate();
         }
 
+#if defined(ENABLE_DEBUG_OUTPUT)
         if (options.debug_output)
         {
             if (options.compression == COMPRESSION_NONE)
@@ -440,6 +447,7 @@ bool export_image(Image& img, const ImageExportOptions& options)
                 compressor.process(input_options, compression_options, output_options);
             }
         }
+#endif
     }
 
     f.close();
@@ -542,12 +550,14 @@ bool cubemap_from_latlong(Image& src, const CubemapImageExportOptions& options)
 
         ImageExportOptions irradiance_exp_options;
 
-        irradiance_exp_options.compression  = options.compression;
-        irradiance_exp_options.normal_map   = false;
-        irradiance_exp_options.output_mips  = 0;
-        irradiance_exp_options.path         = options.path;
-        irradiance_exp_options.pixel_type   = src.type;
+        irradiance_exp_options.compression = options.compression;
+        irradiance_exp_options.normal_map  = false;
+        irradiance_exp_options.output_mips = 0;
+        irradiance_exp_options.path        = options.path;
+        irradiance_exp_options.pixel_type  = src.type;
+#if defined(ENABLE_DEBUG_OUTPUT)
         irradiance_exp_options.debug_output = options.debug_output;
+#endif
 
         if (!export_image(irradiance_cube, irradiance_exp_options))
         {
@@ -610,12 +620,14 @@ bool cubemap_from_latlong(Image& src, const CubemapImageExportOptions& options)
 
         ImageExportOptions radiance_exp_options;
 
-        radiance_exp_options.compression  = options.compression;
-        radiance_exp_options.normal_map   = false;
-        radiance_exp_options.output_mips  = 0;
-        radiance_exp_options.path         = options.path;
-        radiance_exp_options.pixel_type   = src.type;
+        radiance_exp_options.compression = options.compression;
+        radiance_exp_options.normal_map  = false;
+        radiance_exp_options.output_mips = 0;
+        radiance_exp_options.path        = options.path;
+        radiance_exp_options.pixel_type  = src.type;
+#if defined(ENABLE_DEBUG_OUTPUT)
         radiance_exp_options.debug_output = options.debug_output;
+#endif
 
         if (!export_image(radiance_cube, radiance_exp_options))
         {
@@ -654,12 +666,14 @@ bool cubemap_from_latlong(Image& src, const CubemapImageExportOptions& options)
 
     ImageExportOptions exp_options;
 
-    exp_options.compression  = options.compression;
-    exp_options.normal_map   = false;
-    exp_options.output_mips  = options.output_mips;
-    exp_options.pixel_type   = src.type;
-    exp_options.path         = options.path;
+    exp_options.compression = options.compression;
+    exp_options.normal_map  = false;
+    exp_options.output_mips = options.output_mips;
+    exp_options.pixel_type  = src.type;
+    exp_options.path        = options.path;
+#if defined(ENABLE_DEBUG_OUTPUT)
     exp_options.debug_output = options.debug_output;
+#endif
 
     if (!export_image(cubemap, exp_options))
     {

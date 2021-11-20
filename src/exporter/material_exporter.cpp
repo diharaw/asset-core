@@ -8,6 +8,40 @@
 
 namespace ast
 {
+nlohmann::json to_json(glm::vec2 v)
+{
+    nlohmann::json json;
+
+    json["x"] = v.x;
+    json["y"] = v.y;
+
+    return json;
+}
+
+nlohmann::json to_json(glm::vec3 v)
+{
+    nlohmann::json json;
+
+    json["x"] = v.x;
+    json["y"] = v.y;
+    json["z"] = v.z;
+
+    return json;
+}
+
+nlohmann::json to_json(TextureInfo texture_info)
+{
+    nlohmann::json json;
+
+    json["srgb"]        = texture_info.srgb;
+    json["texture_idx"] = texture_info.texture_idx;
+    json["channel_idx"] = texture_info.channel_idx;
+    json["offset"]      = to_json(texture_info.offset);
+    json["scale"]       = to_json(texture_info.scale);
+
+    return json;
+}
+
 void export_texture(const std::string& src_path, const std::string& dst_path, bool normal_map, bool use_compression, bool normal_map_flip_green)
 {
     Image img;
@@ -42,14 +76,6 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
 {
     nlohmann::json doc;
 
-    doc["name"]          = desc.name;
-    doc["double_sided"]  = desc.double_sided;
-    doc["alpha_mask"]    = desc.alpha_mask;
-    doc["material_type"] = kMaterialType[desc.material_type];
-    doc["shading_model"] = kShadingModel[desc.shading_model];
-
-    auto texture_array = doc.array();
-
     std::string           path_to_textures_folder_absolute_string      = options.output_root_folder_path_absolute + "/texture";
     std::string           path_to_materials_folder_absolute_string     = options.output_root_folder_path_absolute + "/material";
     std::filesystem::path path_to_textures_folder_absolute             = path_to_textures_folder_absolute_string;
@@ -57,69 +83,102 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
     std::string           absolute_path_to_textures_folder             = path_to_textures_folder_absolute.string();
     std::string           relative_path_to_textures_folder             = path_to_textures_folder_relative_to_material.string();
 
-    for (auto& texture_desc : desc.textures)
+    // Common
     {
-        nlohmann::json texture;
+        doc["name"]            = desc.name;
+        doc["surface_type"]    = kSurfaceType[desc.surface_type];
+        doc["material_type"]   = kMaterialType[desc.material_type];
+        doc["is_alpha_tested"] = desc.is_alpha_tested;
+        doc["is_double_sided"] = desc.is_double_sided;
 
-        std::string source_texture_path = texture_desc.path;
+        auto texture_array = doc.array();
 
-        std::string absolute_path_to_output_texture = path_to_textures_folder_absolute_string;
-        absolute_path_to_output_texture += "/";
-        absolute_path_to_output_texture += filesystem::get_filename(texture_desc.path);
-        absolute_path_to_output_texture += ".ast";
+        for (int i = 0; i < desc.textures.size(); i++)
+        {
+            std::string source_texture_path = desc.textures[i];
 
-        std::filesystem::path output_texture_path_relative_to_material = std::filesystem::relative(absolute_path_to_output_texture, path_to_materials_folder_absolute_string);
+            std::string absolute_path_to_output_texture = path_to_textures_folder_absolute_string;
+            absolute_path_to_output_texture += "/";
+            absolute_path_to_output_texture += filesystem::get_filename(desc.textures[i]);
+            absolute_path_to_output_texture += ".ast";
 
-        // Check if asset exists
-        bool exists = filesystem::does_file_exist(absolute_path_to_output_texture);
+            std::filesystem::path output_texture_path_relative_to_material = std::filesystem::relative(absolute_path_to_output_texture, path_to_materials_folder_absolute_string);
 
-        if (!exists)
-            export_texture(source_texture_path, absolute_path_to_textures_folder, texture_desc.type == TEXTURE_NORMAL ? true : false, options.use_compression, texture_desc.type == TEXTURE_NORMAL ? options.normal_map_flip_green : false);
+            // Check if asset exists
+            bool exists = filesystem::does_file_exist(absolute_path_to_output_texture);
 
-        texture["path"]          = output_texture_path_relative_to_material.string();
-        texture["srgb"]          = texture_desc.srgb;
-        texture["type"]          = kTextureType[texture_desc.type];
-        texture["channel_index"] = texture_desc.channel_index;
+            if (!exists)
+            {
+                bool is_normal_map = false;
 
-        texture_array.push_back(texture);
+                if (desc.normal_texture.texture_idx == i || desc.clear_coat_normal_texture.texture_idx == i)
+                    is_normal_map = true;
+
+                export_texture(source_texture_path, absolute_path_to_textures_folder, is_normal_map ? true : false, options.use_compression, is_normal_map ? options.normal_map_flip_green : false);
+            }
+
+            texture_array.push_back(output_texture_path_relative_to_material.string());
+        }
+
+        doc["textures"] = texture_array;
     }
 
-    doc["textures"] = texture_array;
-
-    auto property_array = doc.array();
-
-    for (auto& property_desc : desc.properties)
+    // Standard
     {
-        nlohmann::json property;
-
-        property["type"] = kPropertyType[property_desc.type];
-
-        if (property_desc.type == PROPERTY_ALBEDO)
-        {
-            auto float_array = doc.array();
-            float_array.push_back(property_desc.vec4_value[0]);
-            float_array.push_back(property_desc.vec4_value[1]);
-            float_array.push_back(property_desc.vec4_value[2]);
-            float_array.push_back(property_desc.vec4_value[3]);
-
-            property["value"] = float_array;
-        }
-        else if (property_desc.type == PROPERTY_EMISSIVE)
-        {
-            auto float_array = doc.array();
-            float_array.push_back(property_desc.vec3_value[0]);
-            float_array.push_back(property_desc.vec3_value[1]);
-            float_array.push_back(property_desc.vec3_value[2]);
-
-            property["value"] = float_array;
-        }
-        else if (property_desc.type == PROPERTY_METALLIC || property_desc.type == PROPERTY_ROUGHNESS)
-            property["value"] = property_desc.float_value;
-
-        property_array.push_back(property);
+        doc["base_color"]           = to_json(desc.base_color);
+        doc["metallic"]             = desc.metallic;
+        doc["roughness"]            = desc.roughness;
+        doc["emissive_factor"]      = to_json(desc.emissive_factor);
+        doc["base_color_texture"]   = to_json(desc.base_color_texture);
+        doc["roughness_texture"]    = to_json(desc.roughness_texture);
+        doc["metallic_texture"]     = to_json(desc.metallic_texture);
+        doc["normal_texture"]       = to_json(desc.normal_texture);
+        doc["displacement_texture"] = to_json(desc.displacement_texture);
+        doc["emissive_texture"]     = to_json(desc.emissive_texture);
     }
 
-    doc["properties"] = property_array;
+    // Sheen
+    {
+        doc["sheen_color"]             = to_json(desc.sheen_color);
+        doc["sheen_roughness"]         = desc.sheen_roughness;
+        doc["sheen_color_texture"]     = to_json(desc.sheen_color_texture);
+        doc["sheen_roughness_texture"] = to_json(desc.sheen_roughness_texture);
+    }
+
+    // Clear Coat
+    {
+        doc["clear_coat"]                   = desc.clear_coat;
+        doc["clear_coat_roughness"]         = desc.clear_coat_roughness;
+        doc["clear_coat_texture"]           = to_json(desc.clear_coat_texture);
+        doc["clear_coat_roughness_texture"] = to_json(desc.clear_coat_roughness_texture);
+        doc["clear_coat_normal_texture"]    = to_json(desc.clear_coat_normal_texture);
+    }
+
+    // Anisotropy
+    {
+        doc["anisotropy"]                    = desc.anisotropy;
+        doc["anisotropy_texture"]            = to_json(desc.anisotropy_texture);
+        doc["anisotropy_directions_texture"] = to_json(desc.anisotropy_directions_texture);
+    }
+
+    // Transmission
+    {
+        doc["transmission"]         = desc.transmission;
+        doc["transmission_texture"] = to_json(desc.transmission_texture);
+    }
+
+    // IOR
+    {
+        doc["ior"] = desc.ior;
+    }
+
+    // Volume
+    {
+        doc["thickness_factor"]     = desc.thickness_factor;
+        doc["attenuation_distance"] = desc.attenuation_distance;
+        doc["attenuation_color"]    = to_json(desc.attenuation_color);
+        doc["thickness_texture"]    = to_json(desc.thickness_texture);
+    }
 
     std::string output_path = path_to_materials_folder_absolute_string;
     output_path += "/";

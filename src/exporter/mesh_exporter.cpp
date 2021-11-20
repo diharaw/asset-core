@@ -124,17 +124,19 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
         // Export materials
         std::vector<BINMeshMaterialJson> mats;
 
-        for (Material material : desc.materials)
+        for (int i = 0; i < desc.materials.size(); i++)
         {
+            auto material = desc.materials[i].get();
+
             MaterialExportOptions mat_exp_options;
 
             mat_exp_options.output_root_folder_path_absolute = output_root_folder_path_absolute.string();
             mat_exp_options.use_compression                  = options.use_compression;
             mat_exp_options.normal_map_flip_green            = options.normal_map_flip_green;
 
-            if (export_material(material, mat_exp_options))
+            if (export_material(*material, mat_exp_options))
             {
-                std::string mat_out_path = "../material/" + material.name + ".json";
+                std::string mat_out_path = "../material/" + material->name + ".json";
 
                 BINMeshMaterialJson mat;
 
@@ -202,7 +204,7 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
                 nlohmann::json material;
 
                 material["index"] = mat_id;
-                material["path"]  = "../material/" + desc.materials[mat_id].name + ".json";
+                material["path"]  = "../material/" + desc.materials[mat_id]->name + ".json";
 
                 material_array.push_back(material);
             }

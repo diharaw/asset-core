@@ -11,13 +11,26 @@
 
 namespace ast
 {
-void set_texture_path(aiString in_string, std::string& out_string)
+void set_texture_path(std::string mesh_path, aiString in_string, Material* material, int32_t& out_texture_idx, std::unordered_map<std::string, int32_t>& texture_indices)
 {
-    out_string = in_string.C_Str();
+    std::string out_string = in_string.C_Str();
     std::replace(out_string.begin(), out_string.end(), '\\', '/');
+
+    if (out_string[0] == '.' && out_string[1] == '/')
+        out_string = out_string.substr(2, out_string.length() - 1);
+
+    out_string = mesh_path + out_string;
+
+    if (texture_indices.find(out_string) != texture_indices.end())
+        out_texture_idx = texture_indices[out_string];
+    else
+    {
+        out_texture_idx = material->textures.size();
+        material->textures.push_back(out_string);
+    }
 }
 
-void read_standard_material(aiMaterial* assimp_material, Material* material, bool is_gltf, MeshImportOptions& options)
+void read_standard_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, int32_t>& texture_indices, bool is_gltf, MeshImportOptions& options)
 {
     // Base Color
     {
@@ -29,9 +42,9 @@ void read_standard_material(aiMaterial* assimp_material, Material* material, boo
 
         if (base_color_texture_found == aiReturn_SUCCESS)
         {
-            set_texture_path(base_color_path, material->base_color_texture.path);
+            set_texture_path(mesh_path, base_color_path, material, material->base_color_texture.texture_idx, texture_indices);
 #if defined(MATERIAL_LOG)
-            printf("Base Color Path: %s \n", material->base_color_texture.path.c_str());
+            printf("Base Color Path: %s \n", material->textures[material, material->base_color_texture.texture_idx].c_str());
 #endif
             material->base_color_texture.srgb = true;
 
@@ -73,14 +86,13 @@ void read_standard_material(aiMaterial* assimp_material, Material* material, boo
 
             if (roughness_metallic_texture_found == aiReturn_SUCCESS)
             {
-                set_texture_path(roughness_metallic_path, material->roughness_texture.path);
-                set_texture_path(roughness_metallic_path, material->metallic_texture.path);
-
+                set_texture_path(mesh_path, roughness_metallic_path, material, material->roughness_texture.texture_idx, texture_indices);
+                set_texture_path(mesh_path, roughness_metallic_path, material, material->metallic_texture.texture_idx, texture_indices);
+#if defined(MATERIAL_LOG)
+                printf("Roughness Metallic Path: %s \n", material->textures[material, material->roughness_texture.texture_idx].c_str());
+#endif
                 material->roughness_texture.channel_idx = 1;
                 material->metallic_texture.channel_idx  = 2;
-#if defined(MATERIAL_LOG)
-                printf("Roughness Metallic Path: %s \n", material->roughness_texture.path.c_str());
-#endif
 
                 aiUVTransform transform;
 
@@ -118,10 +130,11 @@ void read_standard_material(aiMaterial* assimp_material, Material* material, boo
 
             if (roughness_texture_found == aiReturn_SUCCESS)
             {
-                set_texture_path(roughness_path, material->roughness_texture.path);
+                set_texture_path(mesh_path, roughness_path, material, material->roughness_texture.texture_idx, texture_indices);
 #if defined(MATERIAL_LOG)
-                printf("Roughness Path: %s \n", material->roughness_texture.path.c_str());
+                printf("Roughness Path: %s \n", material->textures[material, material->roughness_texture.texture_idx].c_str());
 #endif
+
                 aiUVTransform transform;
 
                 if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, aiTextureType_SHININESS, 0, transform) == aiReturn_SUCCESS)
@@ -138,10 +151,11 @@ void read_standard_material(aiMaterial* assimp_material, Material* material, boo
 
             if (metallic_texture_found == aiReturn_SUCCESS)
             {
-                set_texture_path(metallic_path, material->metallic_texture.path);
+                set_texture_path(mesh_path, roughness_path, material, material->metallic_texture.texture_idx, texture_indices);
 #if defined(MATERIAL_LOG)
-                printf("Metallic Path: %s \n", material->metallic_texture.path.c_str());
+                printf("Metallic Path: %s \n", material->textures[material, material->metallic_texture.texture_idx].c_str());
 #endif
+
                 aiUVTransform transform;
 
                 if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, aiTextureType_AMBIENT, 0, transform) == aiReturn_SUCCESS)
@@ -168,9 +182,9 @@ void read_standard_material(aiMaterial* assimp_material, Material* material, boo
 
         if (normal_texture_found == aiReturn_SUCCESS)
         {
-            set_texture_path(normal_path, material->normal_texture.path);
+            set_texture_path(mesh_path, normal_path, material, material->normal_texture.texture_idx, texture_indices);
 #if defined(MATERIAL_LOG)
-            printf("Normal Path: %s \n", material->normal_texture.path.c_str());
+            printf("Normal Path: %s \n", material->textures[material, material->normal_texture.texture_idx].c_str());
 #endif
 
             aiUVTransform transform;
@@ -201,9 +215,9 @@ void read_standard_material(aiMaterial* assimp_material, Material* material, boo
 
             if (displacement_texture_found == aiReturn_SUCCESS)
             {
-                set_texture_path(displacement_path, material->displacement_texture.path);
+                set_texture_path(mesh_path, displacement_path, material, material->displacement_texture.texture_idx, texture_indices);
 #if defined(MATERIAL_LOG)
-                printf("Normal Path: %s \n", material->displacement_texture.path.c_str());
+                printf("Displacement Path: %s \n", material->textures[material, material->displacement_texture.texture_idx].c_str());
 #endif
 
                 aiUVTransform transform;
@@ -232,10 +246,11 @@ void read_standard_material(aiMaterial* assimp_material, Material* material, boo
 
         if (emissive_texture_found == aiReturn_SUCCESS)
         {
-            set_texture_path(emissive_path, material->emissive_texture.path);
+            set_texture_path(mesh_path, emissive_path, material, material->emissive_texture.texture_idx, texture_indices);
 #if defined(MATERIAL_LOG)
-            printf("Emissive Path: %s \n", material->emissive_texture.path.c_str());
+            printf("Emissive Path: %s \n", material->textures[material, material->emissive_texture.texture_idx].c_str());
 #endif
+
             aiUVTransform transform;
 
             if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, emissive_texture_found, 0, transform) == aiReturn_SUCCESS)
@@ -258,7 +273,7 @@ void read_standard_material(aiMaterial* assimp_material, Material* material, boo
     }
 }
 
-void read_sheen_material(aiMaterial* assimp_material, Material* material)
+void read_sheen_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, int32_t>& texture_indices)
 {
     // Sheen Color Texture
     {
@@ -267,9 +282,9 @@ void read_sheen_material(aiMaterial* assimp_material, Material* material)
 
         if (texture_found == aiReturn_SUCCESS)
         {
-            set_texture_path(path, material->sheen_color_texture.path);
+            set_texture_path(mesh_path, path, material, material->sheen_color_texture.texture_idx, texture_indices);
 #if defined(MATERIAL_LOG)
-            printf("Sheen Color Path: %s \n", material->sheen_color_texture.path.c_str());
+            printf("Sheen Color Path: %s \n", material->textures[material, material->sheen_color_texture.texture_idx].c_str());
 #endif
 
             aiUVTransform transform;
@@ -291,9 +306,9 @@ void read_sheen_material(aiMaterial* assimp_material, Material* material)
 
         if (texture_found == aiReturn_SUCCESS)
         {
-            set_texture_path(path, material->sheen_roughness_texture.path);
+            set_texture_path(mesh_path, path, material, material->sheen_roughness_texture.texture_idx, texture_indices);
 #if defined(MATERIAL_LOG)
-            printf("Sheen Roughness Path: %s \n", material->sheen_roughness_texture.path.c_str());
+            printf("Sheen Roughness Path: %s \n", material->textures[material, material->sheen_roughness_texture.texture_idx].c_str());
 #endif
 
             aiUVTransform transform;
@@ -303,6 +318,8 @@ void read_sheen_material(aiMaterial* assimp_material, Material* material)
                 material->sheen_roughness_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
                 material->sheen_roughness_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
             }
+
+            material->material_type = MATERIAL_CLOTH;
         }
     }
 
@@ -320,11 +337,12 @@ void read_sheen_material(aiMaterial* assimp_material, Material* material)
 
     // Sheen Roughness Factor
     {
-        assimp_material->Get(AI_MATKEY_SHEEN_ROUGHNESS_FACTOR, material->sheen_roughness);
+        if (assimp_material->Get(AI_MATKEY_SHEEN_ROUGHNESS_FACTOR, material->sheen_roughness) == aiReturn_SUCCESS)
+            material->material_type = MATERIAL_CLOTH;
     }
 }
 
-void read_clear_coat_material(aiMaterial* assimp_material, Material* material)
+void read_clear_coat_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, int32_t>& texture_indices)
 {
     // Clear Coat Texture
     {
@@ -333,9 +351,9 @@ void read_clear_coat_material(aiMaterial* assimp_material, Material* material)
 
         if (texture_found == aiReturn_SUCCESS)
         {
-            set_texture_path(path, material->clear_coat_texture.path);
+            set_texture_path(mesh_path, path, material, material->clear_coat_texture.texture_idx, texture_indices);
 #if defined(MATERIAL_LOG)
-            printf("Clear Coat Path: %s \n", material->clear_coat_texture.path.c_str());
+            printf("Clear Coat Path: %s \n", material->textures[material, material->clear_coat_texture.texture_idx].c_str());
 #endif
 
             aiUVTransform transform;
@@ -350,16 +368,16 @@ void read_clear_coat_material(aiMaterial* assimp_material, Material* material)
         }
     }
 
-    // Clear Coat Roughness
+    // Clear Coat Roughness Texture
     {
         aiString path("");
         aiReturn texture_found = assimp_material->GetTexture(AI_MATKEY_CLEARCOAT_ROUGHNESS_TEXTURE, &path);
 
         if (texture_found == aiReturn_SUCCESS)
         {
-            set_texture_path(path, material->clear_coat_roughness_texture.path);
+            set_texture_path(mesh_path, path, material, material->clear_coat_roughness_texture.texture_idx, texture_indices);
 #if defined(MATERIAL_LOG)
-            printf("Clear Coat Roughness Path: %s \n", material->clear_coat_roughness_texture.path.c_str());
+            printf("Clear Coat Roughness Path: %s \n", material->textures[material, material->clear_coat_roughness_texture.texture_idx].c_str());
 #endif
 
             aiUVTransform transform;
@@ -369,48 +387,54 @@ void read_clear_coat_material(aiMaterial* assimp_material, Material* material)
                 material->clear_coat_roughness_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
                 material->clear_coat_roughness_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
             }
+
+            material->material_type = MATERIAL_CLEAR_COAT;
         }
     }
 
-    // Clear Coat Normal
+    // Clear Coat Normal Texture
     {
         aiString path("");
         aiReturn texture_found = assimp_material->GetTexture(AI_MATKEY_CLEARCOAT_NORMAL_TEXTURE, &path);
 
         if (texture_found == aiReturn_SUCCESS)
         {
-            set_texture_path(path, material->clear_coat_normal_texture.path);
+            set_texture_path(mesh_path, path, material, material->clear_coat_normal_texture.texture_idx, texture_indices);
 #if defined(MATERIAL_LOG)
-            printf("Clear Coat Normal Path: %s \n", material->clear_coat_normal_texture.path.c_str());
+            printf("Clear Coat Normal Path: %s \n", material->textures[material, material->clear_coat_normal_texture.texture_idx].c_str());
 #endif
 
             aiUVTransform transform;
 
             if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, AI_MATKEY_CLEARCOAT_NORMAL_TEXTURE, transform) == aiReturn_SUCCESS)
             {
-                material->clear_coat_normal_texture.offset   = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                material->clear_coat_normal_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
                 material->clear_coat_normal_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
             }
+
+            material->material_type = MATERIAL_CLEAR_COAT;
         }
     }
 
     // Clear Coat Factor
     {
-        assimp_material->Get(AI_MATKEY_CLEARCOAT_FACTOR, material->clear_coat);
+        if (assimp_material->Get(AI_MATKEY_CLEARCOAT_FACTOR, material->clear_coat) == aiReturn_SUCCESS)
+            material->material_type = MATERIAL_CLEAR_COAT;
     }
 
     // Clear Coat Roughness Factor
     {
-        assimp_material->Get(AI_MATKEY_CLEARCOAT_ROUGHNESS_FACTOR, material->clear_coat_roughness);
+        if (assimp_material->Get(AI_MATKEY_CLEARCOAT_ROUGHNESS_FACTOR, material->clear_coat_roughness) == aiReturn_SUCCESS)
+            material->material_type = MATERIAL_CLEAR_COAT;
     }
 }
 
-void read_anisotropy_material(aiMaterial* assimp_material, Material* material)
+void read_anisotropy_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, int32_t>& texture_indices)
 {
     // TODO
 }
 
-void read_transmission_material(aiMaterial* assimp_material, Material* material)
+void read_transmission_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, int32_t>& texture_indices)
 {
     // Transmission Texture
     {
@@ -419,9 +443,9 @@ void read_transmission_material(aiMaterial* assimp_material, Material* material)
 
         if (texture_found == aiReturn_SUCCESS)
         {
-            set_texture_path(path, material->transmission_texture.path);
+            set_texture_path(mesh_path, path, material, material->transmission_texture.texture_idx, texture_indices);
 #if defined(MATERIAL_LOG)
-            printf("Transmission Path: %s \n", material->transmission_texture.path.c_str());
+            printf("Transmission Path: %s \n", material->textures[material, material->transmission_texture.texture_idx].c_str());
 #endif
 
             aiUVTransform transform;
@@ -438,11 +462,12 @@ void read_transmission_material(aiMaterial* assimp_material, Material* material)
 
     // Transmission Factor
     {
-        assimp_material->Get(AI_MATKEY_TRANSMISSION_FACTOR, material->transmission);
+        if (assimp_material->Get(AI_MATKEY_TRANSMISSION_FACTOR, material->transmission) == aiReturn_SUCCESS)
+            material->surface_type = SURFACE_TRANSMISSIVE;
     }
 }
 
-void read_volume_material(aiMaterial* assimp_material, Material* material)
+void read_volume_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, int32_t>& texture_indices)
 {
     // Thickness Texture
     {
@@ -451,16 +476,16 @@ void read_volume_material(aiMaterial* assimp_material, Material* material)
 
         if (texture_found == aiReturn_SUCCESS)
         {
-            set_texture_path(path, material->thickness_texture.path);
+            set_texture_path(mesh_path, path, material, material->thickness_texture.texture_idx, texture_indices);
 #if defined(MATERIAL_LOG)
-            printf("Thickness Path: %s \n", material->thickness_texture.path.c_str());
+            printf("Thickness Path: %s \n", material->textures[material, material->thickness_texture.texture_idx].c_str());
 #endif
 
             aiUVTransform transform;
 
             if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, AI_MATKEY_VOLUME_THICKNESS_TEXTURE, transform) == aiReturn_SUCCESS)
             {
-                material->thickness_texture.offset   = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+                material->thickness_texture.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
                 material->thickness_texture.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
             }
 
@@ -470,12 +495,14 @@ void read_volume_material(aiMaterial* assimp_material, Material* material)
 
     // Thickness Factor
     {
-        assimp_material->Get(AI_MATKEY_VOLUME_THICKNESS_FACTOR, material->thickness_factor);
+        if (assimp_material->Get(AI_MATKEY_VOLUME_THICKNESS_FACTOR, material->thickness_factor) == aiReturn_SUCCESS)
+            material->surface_type = SURFACE_TRANSMISSIVE;
     }
 
     // Attenuation Distance
     {
-        assimp_material->Get(AI_MATKEY_VOLUME_ATTENUATION_DISTANCE, material->attenuation_distance);
+        if (assimp_material->Get(AI_MATKEY_VOLUME_ATTENUATION_DISTANCE, material->attenuation_distance) == aiReturn_SUCCESS)
+            material->surface_type = SURFACE_TRANSMISSIVE;
     }
 
     // Attenuation Color
@@ -484,7 +511,10 @@ void read_volume_material(aiMaterial* assimp_material, Material* material)
         aiReturn  property_found = assimp_material->Get(AI_MATKEY_VOLUME_ATTENUATION_COLOR, attenuation_color);
 
         if (property_found == aiReturn_SUCCESS)
-            material->attenuation_color   = glm::vec3(attenuation_color.r, attenuation_color.g, attenuation_color.b);
+        {
+            material->attenuation_color = glm::vec3(attenuation_color.r, attenuation_color.g, attenuation_color.b);
+            material->surface_type      = SURFACE_TRANSMISSIVE;
+        }
     }
 }
 
@@ -506,6 +536,8 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
     if (!absolute_file_path.is_absolute())
         absolute_file_path = std::filesystem::path(std::filesystem::current_path().string() + "/" + file);
 
+    std::string path_to_mesh = filesystem::get_file_path(absolute_file_path.string());
+
     printf("Importing Mesh...\n\n");
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -525,10 +557,11 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
         mesh.submeshes.resize(scene->mNumMeshes);
         mesh.materials.resize(scene->mNumMaterials);
 
-        uint32_t              vertex_count = 0;
-        uint32_t              index_count  = 0;
-        uint32_t              unnamed_mats = 1;
-        std::vector<uint32_t> temp_indices;
+        uint32_t                                 vertex_count = 0;
+        uint32_t                                 index_count  = 0;
+        uint32_t                                 unnamed_mats = 1;
+        std::vector<uint32_t>                    temp_indices;
+        std::unordered_map<std::string, int32_t> texture_indices;
 
         // Read materials.
         for (int i = 0; i < scene->mNumMaterials; i++)
@@ -536,9 +569,6 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
             mesh.materials[i] = std::unique_ptr<Material>(new Material());
 
             auto& material = mesh.materials[i];
-
-            material->surface_type  = SURFACE_OPAQUE;
-            material->material_type = MATERIAL_STANDARD;
 
             aiMaterial* assimp_material = scene->mMaterials[i];
 
@@ -555,19 +585,23 @@ bool import_mesh(const std::string& file, Mesh& mesh, MeshImportOptions options)
                 mat_name += std::to_string(unnamed_mats++);
             }
 
-            read_standard_material(assimp_material, material.get(), is_gltf, options);
+            material->name          = mat_name;
+            material->surface_type  = SURFACE_OPAQUE;
+            material->material_type = MATERIAL_STANDARD;
 
-            read_sheen_material(assimp_material, material.get());
+            read_standard_material(path_to_mesh, assimp_material, material.get(), texture_indices, is_gltf, options);
 
-            read_clear_coat_material(assimp_material, material.get());
+            read_sheen_material(path_to_mesh, assimp_material, material.get(), texture_indices);
 
-            read_anisotropy_material(assimp_material, material.get());
+            read_clear_coat_material(path_to_mesh, assimp_material, material.get(), texture_indices);
 
-            read_transmission_material(assimp_material, material.get());
+            read_anisotropy_material(path_to_mesh, assimp_material, material.get(), texture_indices);
+
+            read_transmission_material(path_to_mesh, assimp_material, material.get(), texture_indices);
 
             read_ior_material(assimp_material, material.get());
 
-            read_volume_material(assimp_material, material.get());
+            read_volume_material(path_to_mesh, assimp_material, material.get(), texture_indices);
         }
 
         // Read submesh data.

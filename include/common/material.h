@@ -41,32 +41,32 @@ enum MaterialType
 
 struct TextureInfo
 {
-    std::string path;
-    bool        srgb        = false;
-    uint32_t    channel_idx = 0;
-    glm::vec2   offset      = glm::vec2(0.0f);
-    glm::vec2   scale       = glm::vec2(1.0f);
+    bool      srgb        = false;
+    int32_t   texture_idx = -1;
+    uint32_t  channel_idx = 0;
+    glm::vec2 offset      = glm::vec2(0.0f);
+    glm::vec2 scale       = glm::vec2(1.0f);
 };
 
 struct Material
 {
-    SurfaceType  surface_type;
-    MaterialType material_type;
-    bool         is_alpha_tested;
-    bool         is_double_sided;
+    std::string              name;
+    SurfaceType              surface_type;
+    MaterialType             material_type;
+    bool                     is_alpha_tested;
+    bool                     is_double_sided;
+    std::vector<std::string> textures;
 
     // Standard
     glm::vec3   base_color;
     float       metallic;
     float       roughness;
+    glm::vec3   emissive_factor;
     TextureInfo base_color_texture;
     TextureInfo roughness_texture;
     TextureInfo metallic_texture;
     TextureInfo normal_texture;
     TextureInfo displacement_texture;
-
-    // Emissive
-    glm::vec3   emissive_factor;
     TextureInfo emissive_texture;
 
     // Sheen
@@ -96,8 +96,8 @@ struct Material
 
     // Volume
     float       thickness_factor;
-    TextureInfo thickness_texture;
     float       attenuation_distance;
     glm::vec3   attenuation_color;
+    TextureInfo thickness_texture;
 };
 } // namespace ast
