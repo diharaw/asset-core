@@ -9,20 +9,44 @@
     offset += size;                                 \
     stream.seekg(offset);
 
-#define JSON_PARSE_VECTOR(src, dst, name, vec_size) \
-    if (src.find(#name) != src.end())               \
-    {                                               \
-        auto vec = src[#name];                      \
-        int  i   = 0;                               \
-                                                    \
-        if (vec.size() == vec_size)                 \
-        {                                           \
-            for (auto& value : vec)                 \
-            {                                       \
-                dst[i] = value;                     \
-                i++;                                \
-            }                                       \
-        }                                           \
+#define PARSE_DEFAULT(json, structure, dst, default_value) \
+    if (json.find(#dst) != json.end())                     \
+    {                                                      \
+        structure.dst = json[#dst];                        \
+    }                                                      \
+    else                                                   \
+    {                                                      \
+        structure.dst = default_value;                     \
+    }
+
+#define PARSE_CUSTOM(json, structure, dst, parse_func, default_value) \
+    if (json.find(#dst) != json.end())                                \
+    {                                                                 \
+        structure.dst = parse_func(json[#dst]);                       \
+    }                                                                 \
+    else                                                              \
+    {                                                                 \
+        structure.dst = default_value;                                \
+    }
+
+#define PARSE_DEFAULT_PTR(json, structure, dst, default_value) \
+    if (json.find(#dst) != json.end())                         \
+    {                                                          \
+        structure->dst = json[#dst];                           \
+    }                                                          \
+    else                                                       \
+    {                                                          \
+        structure->dst = default_value;                        \
+    }
+
+#define PARSE_CUSTOM_PTR(json, structure, dst, parse_func, default_value) \
+    if (json.find(#dst) != json.end())                                    \
+    {                                                                     \
+        structure->dst = parse_func(json[#dst]);                          \
+    }                                                                     \
+    else                                                                  \
+    {                                                                     \
+        structure->dst = default_value;                                   \
     }
 
 namespace ast
@@ -35,6 +59,9 @@ std::shared_ptr<SceneNode> deserialize_point_light_node(const nlohmann::json& js
 std::shared_ptr<SceneNode> deserialize_camera_node(const nlohmann::json& json);
 std::shared_ptr<SceneNode> deserialize_ibl_node(const nlohmann::json& json);
 std::shared_ptr<SceneNode> deserialize_scene_node(const nlohmann::json& json);
+glm::vec2                  deserialize_vec2(const nlohmann::json& json);
+glm::vec3                  deserialize_vec3(const nlohmann::json& json);
+TextureInfo                deserialize_texture_info(const nlohmann::json& json);
 
 bool load_image(const std::string& path, Image& image)
 {
@@ -136,7 +163,6 @@ bool load_mesh(const std::string& path, Mesh& mesh)
     {
         bin_materials.resize(mesh_header.material_count);
         mesh.materials.resize(mesh_header.material_count);
-        mesh.material_paths.resize(mesh_header.material_count);
         READ_AND_OFFSET(f, (char*)&bin_materials[0], sizeof(BINMeshMaterialJson) * bin_materials.size(), offset);
     }
 
@@ -151,9 +177,7 @@ bool load_mesh(const std::string& path, Mesh& mesh)
         else
             material_path = parent_path + relative_path;
 
-        mesh.material_paths[i] = material_path;
-
-        if (!load_material(material_path, mesh.materials[i]))
+        if (!load_material(material_path, *mesh.materials[i]))
         {
             std::cout << "Failed to load material: " << bin_materials[i].material << std::endl;
             return false;
@@ -174,22 +198,25 @@ bool load_material(const std::string& path, Material& material)
     i >> j;
 
     std::string material_type;
-    std::string shading_model;
+    std::string surface_type;
 
-    if (j.find("name") != j.end())
-        material.name = j["name"];
-    else
-        material.name = "untitled";
+    PARSE_DEFAULT(j, material, name, "untitled");
 
-    if (j.find("double_sided") != j.end())
-        material.double_sided = j["double_sided"];
-    else
-        material.double_sided = false;
+    if (j.find("surface_type") != j.end())
+    {
+        surface_type = j["surface_type"];
 
-    if (j.find("alpha_mask") != j.end())
-        material.alpha_mask = j["alpha_mask"];
+        for (int i = 0; i < 3; i++)
+        {
+            if (kSurfaceType[i] == surface_type)
+            {
+                material.surface_type = (SurfaceType)i;
+                break;
+            }
+        }
+    }
     else
-        material.alpha_mask = false;
+        material.surface_type = SURFACE_OPAQUE;
 
     if (j.find("material_type") != j.end())
     {
@@ -205,152 +232,68 @@ bool load_material(const std::string& path, Material& material)
         }
     }
     else
-        material.material_type = MATERIAL_OPAQUE;
+        material.material_type = MATERIAL_STANDARD;
 
-    if (j.find("shading_model") != j.end())
-    {
-        shading_model = j["shading_model"];
-
-        for (int i = 0; i < 3; i++)
-        {
-            if (kShadingModel[i] == shading_model)
-            {
-                material.shading_model = (ShadingModel)i;
-                break;
-            }
-        }
-    }
-    else
-        material.shading_model = SHADING_MODEL_STANDARD;
+    PARSE_DEFAULT(j, material, is_double_sided, false);
+    PARSE_DEFAULT(j, material, is_alpha_tested, false);
 
     if (j.find("textures") != j.end())
     {
-        auto json_textures = j["textures"];
+        auto json_texture_paths = j["textures"];
 
-        for (auto& json_texture : json_textures)
-        {
-            Texture texture;
-
-            if (json_texture.find("srgb") != json_texture.end())
-                texture.srgb = json_texture["srgb"];
-            else
-                texture.srgb = true;
-
-            if (json_texture.find("path") != json_texture.end())
-            {
-                std::string relative_path = json_texture["path"];
-                std::string parent_path   = filesystem::get_file_path(path);
-                std::string material_path = "";
-
-                if (parent_path.length() == 0)
-                    texture.path = relative_path;
-                else
-                    texture.path = parent_path + relative_path;
-            }
-
-            if (json_texture.find("type") != json_texture.end())
-            {
-                std::string tex_type = json_texture["type"];
-
-                for (int i = 0; i < 9; i++)
-                {
-                    if (kTextureType[i] == tex_type)
-                    {
-                        texture.type = (TextureType)i;
-                        break;
-                    }
-                }
-            }
-
-            if (json_texture.find("channel_index") != json_texture.end())
-                texture.channel_index = json_texture["channel_index"];
-            else
-                texture.channel_index = 0;
-
-            material.textures.push_back(texture);
-        }
+        for (auto& json_texture_path : json_texture_paths)
+            material.textures.push_back(json_texture_path);
     }
 
-    if (j.find("properties") != j.end())
+    // Standard
     {
-        auto json_properties = j["properties"];
+        PARSE_CUSTOM(j, material, base_color, deserialize_vec3, glm::vec3(1.0f));
+        PARSE_DEFAULT(j, material, metallic, 0.0f);
+        PARSE_DEFAULT(j, material, roughness, 1.0f);
+        PARSE_CUSTOM(j, material, emissive_factor, deserialize_vec3, glm::vec3(0.0f));
+        PARSE_CUSTOM(j, material, base_color_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, roughness_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, metallic_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, normal_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, displacement_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, emissive_texture, deserialize_texture_info, TextureInfo());
+    }
 
-        for (auto& json_property : json_properties)
-        {
-            MaterialProperty property;
-            std::string      type  = "";
-            bool             found = false;
+    // Sheen
+    {
+        PARSE_CUSTOM(j, material, sheen_color, deserialize_vec3, glm::vec3(0.0f));
+        PARSE_DEFAULT(j, material, sheen_roughness, 0.0f);
+        PARSE_CUSTOM(j, material, sheen_color_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, sheen_roughness_texture, deserialize_texture_info, TextureInfo());
+    }
 
-            if (json_property.find("type") != json_property.end())
-            {
-                type = json_property["type"];
+    // Clear Coat
+    {
+        PARSE_DEFAULT(j, material, clear_coat, 0.0f);
+        PARSE_DEFAULT(j, material, clear_coat_roughness, 0.0f);
+        PARSE_CUSTOM(j, material, clear_coat_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, clear_coat_roughness_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, clear_coat_normal_texture, deserialize_texture_info, TextureInfo());
+    }
 
-                if (type == kPropertyType[PROPERTY_ALBEDO])
-                {
-                    property.type = PROPERTY_ALBEDO;
+    // Anisotropy
+    {
+        PARSE_DEFAULT(j, material, anisotropy, 0.0f);
+        PARSE_CUSTOM(j, material, anisotropy_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, anisotropy_directions_texture, deserialize_texture_info, TextureInfo());
+    }
 
-                    if (json_property.find("value") != json_property.end())
-                    {
-                        auto vec = json_property["value"];
-                        int  i   = 0;
+    // IOR
+    {
+        PARSE_DEFAULT(j, material, ior, 1.5f);
+    }
 
-                        if (vec.size() != 4)
-                            continue;
-
-                        for (auto& value : vec)
-                        {
-                            property.vec4_value[i] = value;
-                            i++;
-                        }
-
-                        found = true;
-                    }
-                }
-                else if (type == kPropertyType[PROPERTY_EMISSIVE])
-                {
-                    property.type = PROPERTY_EMISSIVE;
-
-                    if (json_property.find("value") != json_property.end())
-                    {
-                        auto vec = json_property["value"];
-                        int  i   = 0;
-
-                        if (vec.size() != 4)
-                            continue;
-
-                        for (auto& value : vec)
-                        {
-                            property.vec4_value[i] = value;
-                            i++;
-                        }
-
-                        found = true;
-                    }
-                }
-                else if (type == kPropertyType[PROPERTY_METALLIC])
-                {
-                    property.type = PROPERTY_METALLIC;
-
-                    if (json_property.find("value") != json_property.end())
-                    {
-                        property.float_value = json_property["value"];
-                        found                = true;
-                    }
-                }
-                else if (type == kPropertyType[PROPERTY_ROUGHNESS])
-                {
-                    property.type = PROPERTY_ROUGHNESS;
-
-                    if (json_property.find("value") != json_property.end())
-                        property.float_value = json_property["value"];
-
-                    found = true;
-                }
-            }
-
-            if (found)
-                material.properties.push_back(property);
-        }
+    // Volume
+    {
+        PARSE_DEFAULT(j, material, thickness_factor, 0.0f);
+        PARSE_DEFAULT(j, material, attenuation_distance, INFINITY);
+        PARSE_CUSTOM(j, material, attenuation_color, deserialize_vec3, glm::vec3(0.0f));
+        PARSE_CUSTOM(j, material, thickness_texture, deserialize_texture_info, TextureInfo());
     }
 
     return true;
@@ -360,9 +303,9 @@ void deserialize_transform_node(const nlohmann::json& json, std::shared_ptr<Scen
 {
     std::shared_ptr<TransformNode> transform_node = std::static_pointer_cast<TransformNode>(node);
 
-    JSON_PARSE_VECTOR(json, transform_node->position, position, 3);
-    JSON_PARSE_VECTOR(json, transform_node->rotation, rotation, 3);
-    JSON_PARSE_VECTOR(json, transform_node->scale, scale, 3);
+    PARSE_CUSTOM_PTR(json, transform_node, position, deserialize_vec3, glm::vec3(0.0f));
+    PARSE_CUSTOM_PTR(json, transform_node, rotation, deserialize_vec3, glm::vec3(0.0f));
+    PARSE_CUSTOM_PTR(json, transform_node, scale, deserialize_vec3, glm::vec3(0.0f));
 }
 
 std::shared_ptr<TransformNode> deserialize_root_node(const nlohmann::json& json)
@@ -380,14 +323,9 @@ std::shared_ptr<SceneNode> deserialize_mesh_node(const nlohmann::json& json)
 
     deserialize_transform_node(json, node);
 
-    if (json.find("mesh") != json.end())
-        node->mesh = json["mesh"];
-
-    if (json.find("material_override") != json.end())
-        node->material_override = json["material_override"];
-
-    if (json.find("casts_shadow") != json.end())
-        node->casts_shadow = json["casts_shadow"];
+    PARSE_DEFAULT_PTR(json, node, mesh, "");
+    PARSE_DEFAULT_PTR(json, node, material_override, "");
+    PARSE_DEFAULT_PTR(json, node, casts_shadow, true);
 
     return std::static_pointer_cast<SceneNode>(node);
 }
@@ -398,17 +336,11 @@ std::shared_ptr<SceneNode> deserialize_directional_light_node(const nlohmann::js
 
     deserialize_transform_node(json, node);
 
-    if (json.find("intensity") != json.end())
-        node->intensity = json["intensity"];
-
-    if (json.find("radius") != json.end())
-        node->radius = json["radius"];
-
-    if (json.find("casts_shadows") != json.end())
-        node->casts_shadows = json["casts_shadows"];
-
-    JSON_PARSE_VECTOR(json, node->color, color, 3);
-    JSON_PARSE_VECTOR(json, node->rotation, rotation, 3);
+    PARSE_DEFAULT_PTR(json, node, intensity, 0.0f);
+    PARSE_DEFAULT_PTR(json, node, radius, 0.0f);
+    PARSE_DEFAULT_PTR(json, node, casts_shadows, false);
+    PARSE_CUSTOM_PTR(json, node, color, deserialize_vec3, glm::vec3(1.0f));
+    PARSE_CUSTOM_PTR(json, node, rotation, deserialize_vec3, glm::vec3(0.0f));
 
     return std::static_pointer_cast<SceneNode>(node);
 }
@@ -419,24 +351,14 @@ std::shared_ptr<SceneNode> deserialize_spot_light_node(const nlohmann::json& jso
 
     deserialize_transform_node(json, node);
 
-    if (json.find("inner_cone_angle") != json.end())
-        node->inner_cone_angle = json["inner_cone_angle"];
-
-    if (json.find("outer_cone_angle") != json.end())
-        node->outer_cone_angle = json["outer_cone_angle"];
-
-    if (json.find("radius") != json.end())
-        node->radius = json["radius"];
-
-    if (json.find("intensity") != json.end())
-        node->intensity = json["intensity"];
-
-    if (json.find("casts_shadows") != json.end())
-        node->casts_shadows = json["casts_shadows"];
-
-    JSON_PARSE_VECTOR(json, node->color, color, 3);
-    JSON_PARSE_VECTOR(json, node->position, position, 3);
-    JSON_PARSE_VECTOR(json, node->rotation, rotation, 3);
+    PARSE_DEFAULT_PTR(json, node, inner_cone_angle, 0.0f);
+    PARSE_DEFAULT_PTR(json, node, outer_cone_angle, 0.0f);
+    PARSE_DEFAULT_PTR(json, node, radius, 0.0f);
+    PARSE_DEFAULT_PTR(json, node, intensity, 0.0f);
+    PARSE_DEFAULT_PTR(json, node, casts_shadows, false);
+    PARSE_CUSTOM_PTR(json, node, color, deserialize_vec3, glm::vec3(1.0f));
+    PARSE_CUSTOM_PTR(json, node, position, deserialize_vec3, glm::vec3(0.0f));
+    PARSE_CUSTOM_PTR(json, node, rotation, deserialize_vec3, glm::vec3(0.0f));
 
     return std::static_pointer_cast<SceneNode>(node);
 }
@@ -447,17 +369,11 @@ std::shared_ptr<SceneNode> deserialize_point_light_node(const nlohmann::json& js
 
     deserialize_transform_node(json, node);
 
-    if (json.find("radius") != json.end())
-        node->radius = json["radius"];
-
-    if (json.find("intensity") != json.end())
-        node->intensity = json["intensity"];
-
-    if (json.find("casts_shadows") != json.end())
-        node->casts_shadows = json["casts_shadows"];
-
-    JSON_PARSE_VECTOR(json, node->color, color, 3);
-    JSON_PARSE_VECTOR(json, node->position, position, 3);
+    PARSE_DEFAULT_PTR(json, node, radius, 0.0f);
+    PARSE_DEFAULT_PTR(json, node, intensity, 0.0f);
+    PARSE_DEFAULT_PTR(json, node, casts_shadows, false);
+    PARSE_CUSTOM_PTR(json, node, color, deserialize_vec3, glm::vec3(1.0f));
+    PARSE_CUSTOM_PTR(json, node, position, deserialize_vec3, glm::vec3(0.0f));
 
     return std::static_pointer_cast<SceneNode>(node);
 }
@@ -468,14 +384,9 @@ std::shared_ptr<SceneNode> deserialize_camera_node(const nlohmann::json& json)
 
     deserialize_transform_node(json, node);
 
-    if (json.find("near_plane") != json.end())
-        node->near_plane = json["near_plane"];
-
-    if (json.find("far_plane") != json.end())
-        node->far_plane = json["far_plane"];
-
-    if (json.find("fov") != json.end())
-        node->fov = json["fov"];
+    PARSE_DEFAULT_PTR(json, node, near_plane, 1.0f);
+    PARSE_DEFAULT_PTR(json, node, far_plane, 100.0f);
+    PARSE_DEFAULT_PTR(json, node, fov, 60.0f);
 
     return std::static_pointer_cast<SceneNode>(node);
 }
@@ -484,8 +395,7 @@ std::shared_ptr<SceneNode> deserialize_ibl_node(const nlohmann::json& json)
 {
     std::shared_ptr<IBLNode> node = std::make_shared<IBLNode>();
 
-    if (json.find("image") != json.end())
-        node->image = json["image"];
+    PARSE_DEFAULT_PTR(json, node, image, "");
 
     return std::static_pointer_cast<SceneNode>(node);
 }
@@ -531,8 +441,7 @@ std::shared_ptr<SceneNode> deserialize_scene_node(const nlohmann::json& json)
 
     node->type = type;
 
-    if (json.find("name") != json.end())
-        node->name = json["name"];
+    PARSE_DEFAULT_PTR(json, node, name, "");
 
     if (json.find("custom_data") != json.end())
         node->custom_data = json["custom_data"];
@@ -548,6 +457,55 @@ std::shared_ptr<SceneNode> deserialize_scene_node(const nlohmann::json& json)
     return node;
 }
 
+glm::vec2 deserialize_vec2(const nlohmann::json& json)
+{
+    glm::vec2 vec;
+
+    int i = 0;
+
+    if (json.size() == 2)
+    {
+        for (auto& value : json)
+        {
+            vec[i] = value;
+            i++;
+        }
+    }
+
+    return vec;
+}
+
+glm::vec3 deserialize_vec3(const nlohmann::json& json)
+{
+    glm::vec3 vec;
+
+    int i = 0;
+
+    if (json.size() == 3)
+    {
+        for (auto& value : json)
+        {
+            vec[i] = value;
+            i++;
+        }
+    }
+
+    return vec;
+}
+
+TextureInfo deserialize_texture_info(const nlohmann::json& json)
+{
+    TextureInfo texture_info;
+
+    PARSE_DEFAULT(json, texture_info, srgb, false);
+    PARSE_DEFAULT(json, texture_info, texture_idx, -1);
+    PARSE_DEFAULT(json, texture_info, channel_idx, 0);
+    PARSE_CUSTOM(json, texture_info, offset, deserialize_vec2, glm::vec3(0.0f));
+    PARSE_CUSTOM(json, texture_info, scale, deserialize_vec2, glm::vec3(1.0f));
+
+    return texture_info;
+}
+
 bool load_scene(const std::string& path, Scene& scene)
 {
     std::ifstream i(path);
@@ -558,11 +516,8 @@ bool load_scene(const std::string& path, Scene& scene)
     nlohmann::json j;
     i >> j;
 
-    if (j.find("name") != j.end())
-        scene.name = j["name"];
-
-    if (j.find("scene_graph") != j.end())
-        scene.scene_graph = deserialize_scene_node(j["scene_graph"]);
+    PARSE_DEFAULT(j, scene, name, "");
+    PARSE_CUSTOM(j, scene, scene_graph, deserialize_scene_node, nullptr);
 
     return true;
 }
