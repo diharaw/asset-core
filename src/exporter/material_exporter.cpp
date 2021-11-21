@@ -88,7 +88,7 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
         doc["name"]            = desc.name;
         doc["surface_type"]    = kSurfaceType[desc.surface_type];
         doc["material_type"]   = kMaterialType[desc.material_type];
-        doc["is_alpha_tested"] = desc.is_alpha_tested;
+        doc["alpha_mode"]      = kAlphaMode[desc.alpha_mode];
         doc["is_double_sided"] = desc.is_double_sided;
 
         auto texture_array = doc.array();
