@@ -55,15 +55,15 @@ enum AlphaMode
 struct TextureRef
 {
     int32_t  texture_idx = -1;
-    uint32_t channel_idx = 0;
+    uint32_t  channel_idx = 0;
+    glm::vec2 offset      = glm::vec2(0.0f);
+    glm::vec2 scale       = glm::vec2(1.0f);
 };
 
 struct TextureInfo
 {
     std::string path;
     bool        srgb   = false;
-    glm::vec2   offset = glm::vec2(0.0f);
-    glm::vec2   scale  = glm::vec2(1.0f);
 };
 
 struct Material

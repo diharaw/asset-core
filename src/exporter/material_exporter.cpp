@@ -35,8 +35,6 @@ nlohmann::json to_json(TextureInfo texture_info)
 
     json["path"]   = texture_info.path;
     json["srgb"]   = texture_info.srgb;
-    json["offset"] = to_json(texture_info.offset);
-    json["scale"]  = to_json(texture_info.scale);
 
     return json;
 }
@@ -47,6 +45,8 @@ nlohmann::json to_json(TextureRef texture_ref)
 
     json["texture_idx"] = texture_ref.texture_idx;
     json["channel_idx"] = texture_ref.channel_idx;
+    json["offset"]      = to_json(texture_ref.offset);
+    json["scale"]       = to_json(texture_ref.scale);
 
     return json;
 }
@@ -132,9 +132,7 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
 
             dst_texture_info.path   = output_texture_path_relative_to_material.string();
             dst_texture_info.srgb   = src_texture_info.srgb;
-            dst_texture_info.offset = src_texture_info.offset;
-            dst_texture_info.scale  = src_texture_info.scale;
-
+            
             texture_array.push_back(to_json(dst_texture_info));
         }
 

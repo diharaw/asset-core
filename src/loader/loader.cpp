@@ -510,10 +510,9 @@ TextureInfo deserialize_texture_info(const nlohmann::json& json)
 {
     TextureInfo texture_info;
 
+    PARSE_DEFAULT(json, texture_info, path, "");
     PARSE_DEFAULT(json, texture_info, srgb, false);
-    PARSE_CUSTOM(json, texture_info, offset, deserialize_vec2, glm::vec3(0.0f));
-    PARSE_CUSTOM(json, texture_info, scale, deserialize_vec2, glm::vec3(1.0f));
-
+    
     return texture_info;
 }
 
@@ -523,6 +522,8 @@ TextureRef deserialize_texture_ref(const nlohmann::json& json)
 
     PARSE_DEFAULT(json, texture_ref, texture_idx, -1);
     PARSE_DEFAULT(json, texture_ref, channel_idx, 0);
+    PARSE_CUSTOM(json, texture_ref, offset, deserialize_vec2, glm::vec3(0.0f));
+    PARSE_CUSTOM(json, texture_ref, scale, deserialize_vec2, glm::vec3(1.0f));
 
     return texture_ref;
 }

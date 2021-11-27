@@ -11,7 +11,7 @@
 
 namespace ast
 {
-bool find_texture(aiMaterial* assimp_material, aiTextureType texture_type, uint32_t index, std::string base_path, Material* material, TextureRef& out_texture_ref, std::unordered_map<std::string, int32_t>& texture_indices)
+bool find_texture(aiMaterial* assimp_material, aiTextureType texture_type, uint32_t index, std::string base_path, Material* material, TextureRef& out_texture_ref, std::unordered_map<std::string, TextureRef>& texture_refs)
 {
     aiString ai_path("");
     aiReturn texture_found = assimp_material->GetTexture(texture_type, index, &ai_path);
@@ -27,25 +27,26 @@ bool find_texture(aiMaterial* assimp_material, aiTextureType texture_type, uint3
 
     out_path = base_path + out_path;
 
-    if (texture_indices.find(out_path) != texture_indices.end())
-        out_texture_ref.texture_idx = texture_indices[out_path];
+    if (texture_refs.find(out_path) != texture_refs.end())
+        out_texture_ref = texture_refs[out_path];
     else
     {
         out_texture_ref.texture_idx = material->textures.size();
-        texture_indices[out_path]   = out_texture_ref.texture_idx;
-
+        
         aiUVTransform transform;
+
+        if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, texture_type, index, transform) == aiReturn_SUCCESS)
+        {
+            out_texture_ref.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
+            out_texture_ref.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
+        }
+
+        texture_refs[out_path] = out_texture_ref;
 
         TextureInfo texture_info;
 
         texture_info.path = out_path;
         texture_info.srgb = (texture_type == aiTextureType_BASE_COLOR || texture_type == aiTextureType_DIFFUSE) ? true : false;
-
-        if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, texture_type, index, transform) == aiReturn_SUCCESS)
-        {
-            texture_info.offset = glm::vec2(transform.mTranslation.x, transform.mTranslation.y);
-            texture_info.scale  = glm::vec2(transform.mScaling.x, transform.mScaling.y);
-        }
 
         material->textures.push_back(texture_info);
     }
@@ -53,14 +54,14 @@ bool find_texture(aiMaterial* assimp_material, aiTextureType texture_type, uint3
     return true;
 }
 
-void read_standard_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, int32_t>& texture_indices, bool is_gltf, MeshImportOptions& options)
+void read_standard_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, TextureRef>& texture_refs, bool is_gltf, MeshImportOptions& options)
 {
     // Base Color
     {
-        bool base_color_texture_found = find_texture(assimp_material, aiTextureType_BASE_COLOR, 0, mesh_path, material, material->base_color_texture, texture_indices);
+        bool base_color_texture_found = find_texture(assimp_material, aiTextureType_BASE_COLOR, 0, mesh_path, material, material->base_color_texture, texture_refs);
 
         if (!base_color_texture_found)
-            base_color_texture_found = find_texture(assimp_material, aiTextureType_DIFFUSE, 0, mesh_path, material, material->base_color_texture, texture_indices);
+            base_color_texture_found = find_texture(assimp_material, aiTextureType_DIFFUSE, 0, mesh_path, material, material->base_color_texture, texture_refs);
 
 #if defined(MATERIAL_LOG)
         if (base_color_texture_found)
@@ -92,8 +93,8 @@ void read_standard_material(std::string mesh_path, aiMaterial* assimp_material, 
             if (options.is_orca_mesh)
                 target_texture_type = aiTextureType_SPECULAR;
 
-            bool roughness_metallic_texture_found = find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->roughness_texture, texture_indices);
-            find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->metallic_texture, texture_indices);
+            bool roughness_metallic_texture_found = find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->roughness_texture, texture_refs);
+            find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->metallic_texture, texture_refs);
 
 #if defined(MATERIAL_LOG)
             if (roughness_metallic_texture_found)
@@ -119,7 +120,7 @@ void read_standard_material(std::string mesh_path, aiMaterial* assimp_material, 
         else
         {
             aiString roughness_path("");
-            bool     roughness_texture_found = find_texture(assimp_material, aiTextureType_SHININESS, 0, mesh_path, material, material->roughness_texture, texture_indices);
+            bool     roughness_texture_found = find_texture(assimp_material, aiTextureType_SHININESS, 0, mesh_path, material, material->roughness_texture, texture_refs);
 
 #if defined(MATERIAL_LOG)
             if (roughness_texture_found)
@@ -130,7 +131,7 @@ void read_standard_material(std::string mesh_path, aiMaterial* assimp_material, 
                 material->roughness = 1.0f;
 
             aiString metallic_path("");
-            bool     metallic_texture_found = find_texture(assimp_material, aiTextureType_AMBIENT, 0, mesh_path, material, material->metallic_texture, texture_indices);
+            bool     metallic_texture_found = find_texture(assimp_material, aiTextureType_AMBIENT, 0, mesh_path, material, material->metallic_texture, texture_refs);
 
 #if defined(MATERIAL_LOG)
             if (metallic_texture_found)
@@ -151,7 +152,7 @@ void read_standard_material(std::string mesh_path, aiMaterial* assimp_material, 
             target_texture_type = aiTextureType_HEIGHT;
 
         aiString normal_path("");
-        bool     normal_texture_found = find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->normal_texture, texture_indices);
+        bool     normal_texture_found = find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->normal_texture, texture_refs);
 
 #if defined(MATERIAL_LOG)
         if (normal_texture_found)
@@ -167,12 +168,12 @@ void read_standard_material(std::string mesh_path, aiMaterial* assimp_material, 
             aiTextureType target_texture_type = aiTextureType_DISPLACEMENT;
 
             aiString displacement_path("");
-            bool     displacement_texture_found = find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->displacement_texture, texture_indices);
+            bool     displacement_texture_found = find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->displacement_texture, texture_refs);
 
             if (options.displacement_as_normal)
             {
                 target_texture_type        = aiTextureType_HEIGHT;
-                displacement_texture_found = find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->displacement_texture, texture_indices);
+                displacement_texture_found = find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->displacement_texture, texture_refs);
             }
 
 #if defined(MATERIAL_LOG)
@@ -187,12 +188,12 @@ void read_standard_material(std::string mesh_path, aiMaterial* assimp_material, 
         // Try to find Emissive texture
         aiTextureType target_texture_type = aiTextureType_EMISSION_COLOR;
         aiString      emissive_path("");
-        bool          emissive_texture_found = find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->emissive_texture, texture_indices);
+        bool          emissive_texture_found = find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->emissive_texture, texture_refs);
 
         if (emissive_texture_found != aiReturn_SUCCESS)
         {
             target_texture_type    = aiTextureType_EMISSIVE;
-            emissive_texture_found = find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->emissive_texture, texture_indices);
+            emissive_texture_found = find_texture(assimp_material, target_texture_type, 0, mesh_path, material, material->emissive_texture, texture_refs);
         }
 
 #if defined(MATERIAL_LOG)
@@ -213,12 +214,12 @@ void read_standard_material(std::string mesh_path, aiMaterial* assimp_material, 
     }
 }
 
-void read_sheen_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, int32_t>& texture_indices)
+void read_sheen_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, TextureRef>& texture_refs)
 {
     // Sheen Color Texture
     {
         aiString path("");
-        bool     texture_found = find_texture(assimp_material, AI_MATKEY_SHEEN_COLOR_TEXTURE, mesh_path, material, material->sheen_color_texture, texture_indices);
+        bool     texture_found = find_texture(assimp_material, AI_MATKEY_SHEEN_COLOR_TEXTURE, mesh_path, material, material->sheen_color_texture, texture_refs);
 
         if (texture_found)
         {
@@ -232,7 +233,7 @@ void read_sheen_material(std::string mesh_path, aiMaterial* assimp_material, Mat
     // Sheen Roughness Texture
     {
         aiString path("");
-        bool     texture_found = find_texture(assimp_material, AI_MATKEY_SHEEN_ROUGHNESS_TEXTURE, mesh_path, material, material->sheen_roughness_texture, texture_indices);
+        bool     texture_found = find_texture(assimp_material, AI_MATKEY_SHEEN_ROUGHNESS_TEXTURE, mesh_path, material, material->sheen_roughness_texture, texture_refs);
 
         if (texture_found)
         {
@@ -262,12 +263,12 @@ void read_sheen_material(std::string mesh_path, aiMaterial* assimp_material, Mat
     }
 }
 
-void read_clear_coat_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, int32_t>& texture_indices)
+void read_clear_coat_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, TextureRef>& texture_refs)
 {
     // Clear Coat Texture
     {
         aiString path("");
-        bool     texture_found = find_texture(assimp_material, AI_MATKEY_CLEARCOAT_TEXTURE, mesh_path, material, material->clear_coat_texture, texture_indices);
+        bool     texture_found = find_texture(assimp_material, AI_MATKEY_CLEARCOAT_TEXTURE, mesh_path, material, material->clear_coat_texture, texture_refs);
 
         if (texture_found)
         {
@@ -281,7 +282,7 @@ void read_clear_coat_material(std::string mesh_path, aiMaterial* assimp_material
     // Clear Coat Roughness Texture
     {
         aiString path("");
-        bool     texture_found = find_texture(assimp_material, AI_MATKEY_CLEARCOAT_ROUGHNESS_TEXTURE, mesh_path, material, material->clear_coat_roughness_texture, texture_indices);
+        bool     texture_found = find_texture(assimp_material, AI_MATKEY_CLEARCOAT_ROUGHNESS_TEXTURE, mesh_path, material, material->clear_coat_roughness_texture, texture_refs);
 
         if (texture_found)
         {
@@ -295,7 +296,7 @@ void read_clear_coat_material(std::string mesh_path, aiMaterial* assimp_material
     // Clear Coat Normal Texture
     {
         aiString path("");
-        bool     texture_found = find_texture(assimp_material, AI_MATKEY_CLEARCOAT_NORMAL_TEXTURE, mesh_path, material, material->clear_coat_normal_texture, texture_indices);
+        bool     texture_found = find_texture(assimp_material, AI_MATKEY_CLEARCOAT_NORMAL_TEXTURE, mesh_path, material, material->clear_coat_normal_texture, texture_refs);
 
         if (texture_found)
         {
@@ -319,17 +320,17 @@ void read_clear_coat_material(std::string mesh_path, aiMaterial* assimp_material
     }
 }
 
-void read_anisotropy_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, int32_t>& texture_indices)
+void read_anisotropy_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, TextureRef>& texture_refs)
 {
     // TODO
 }
 
-void read_transmission_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, int32_t>& texture_indices)
+void read_transmission_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, TextureRef>& texture_refs)
 {
     // Transmission Texture
     {
         aiString path("");
-        bool     texture_found = find_texture(assimp_material, AI_MATKEY_TRANSMISSION_TEXTURE, mesh_path, material, material->transmission_texture, texture_indices);
+        bool     texture_found = find_texture(assimp_material, AI_MATKEY_TRANSMISSION_TEXTURE, mesh_path, material, material->transmission_texture, texture_refs);
 
         if (texture_found)
         {
@@ -347,12 +348,12 @@ void read_transmission_material(std::string mesh_path, aiMaterial* assimp_materi
     }
 }
 
-void read_volume_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, int32_t>& texture_indices)
+void read_volume_material(std::string mesh_path, aiMaterial* assimp_material, Material* material, std::unordered_map<std::string, TextureRef>& texture_refs)
 {
     // Thickness Texture
     {
         aiString path("");
-        bool     texture_found = find_texture(assimp_material, AI_MATKEY_VOLUME_THICKNESS_TEXTURE, mesh_path, material, material->thickness_texture, texture_indices);
+        bool     texture_found = find_texture(assimp_material, AI_MATKEY_VOLUME_THICKNESS_TEXTURE, mesh_path, material, material->thickness_texture, texture_refs);
 
         if (texture_found)
         {
@@ -431,7 +432,7 @@ bool import_mesh(const std::string& file, MeshImportResult& import_result, MeshI
         uint32_t                                 index_count  = 0;
         uint32_t                                 unnamed_mats = 1;
         std::vector<uint32_t>                    temp_indices;
-        std::unordered_map<std::string, int32_t> texture_indices;
+        std::unordered_map<std::string, TextureRef> texture_refs;
 
         // Read materials.
         for (int i = 0; i < scene->mNumMaterials; i++)
@@ -479,19 +480,19 @@ bool import_mesh(const std::string& file, MeshImportResult& import_result, MeshI
 
             assimp_material->Get(AI_MATKEY_TWOSIDED, material->is_double_sided);
 
-            read_standard_material(path_to_mesh, assimp_material, material.get(), texture_indices, is_gltf, options);
+            read_standard_material(path_to_mesh, assimp_material, material.get(), texture_refs, is_gltf, options);
 
-            read_sheen_material(path_to_mesh, assimp_material, material.get(), texture_indices);
+            read_sheen_material(path_to_mesh, assimp_material, material.get(), texture_refs);
 
-            read_clear_coat_material(path_to_mesh, assimp_material, material.get(), texture_indices);
+            read_clear_coat_material(path_to_mesh, assimp_material, material.get(), texture_refs);
 
-            read_anisotropy_material(path_to_mesh, assimp_material, material.get(), texture_indices);
+            read_anisotropy_material(path_to_mesh, assimp_material, material.get(), texture_refs);
 
-            read_transmission_material(path_to_mesh, assimp_material, material.get(), texture_indices);
+            read_transmission_material(path_to_mesh, assimp_material, material.get(), texture_refs);
 
             read_ior_material(assimp_material, material.get());
 
-            read_volume_material(path_to_mesh, assimp_material, material.get(), texture_indices);
+            read_volume_material(path_to_mesh, assimp_material, material.get(), texture_refs);
         }
 
         // Read submesh data.
