@@ -62,6 +62,7 @@ std::shared_ptr<SceneNode> deserialize_scene_node(const nlohmann::json& json);
 glm::vec2                  deserialize_vec2(const nlohmann::json& json);
 glm::vec3                  deserialize_vec3(const nlohmann::json& json);
 TextureInfo                deserialize_texture_info(const nlohmann::json& json);
+TextureRef                 deserialize_texture_ref(const nlohmann::json& json);
 
 bool load_image(const std::string& path, Image& image)
 {
@@ -177,11 +178,7 @@ bool load_mesh(const std::string& path, Mesh& mesh)
         else
             material_path = parent_path + relative_path;
 
-        if (!load_material(material_path, *mesh.materials[i]))
-        {
-            std::cout << "Failed to load material: " << bin_materials[i].material << std::endl;
-            return false;
-        }
+        mesh.materials.push_back(material_path);
     }
 
     return true;
@@ -255,10 +252,10 @@ bool load_material(const std::string& path, Material& material)
 
     if (j.find("textures") != j.end())
     {
-        auto json_texture_paths = j["textures"];
+        auto json_texture_infos = j["textures"];
 
-        for (auto& json_texture_path : json_texture_paths)
-            material.textures.push_back(json_texture_path);
+        for (auto& json_texture_info : json_texture_infos)
+            material.textures.push_back(deserialize_texture_info(json_texture_info));
     }
 
     // Standard
@@ -267,36 +264,36 @@ bool load_material(const std::string& path, Material& material)
         PARSE_DEFAULT(j, material, metallic, 0.0f);
         PARSE_DEFAULT(j, material, roughness, 1.0f);
         PARSE_CUSTOM(j, material, emissive_factor, deserialize_vec3, glm::vec3(0.0f));
-        PARSE_CUSTOM(j, material, base_color_texture, deserialize_texture_info, TextureInfo());
-        PARSE_CUSTOM(j, material, roughness_texture, deserialize_texture_info, TextureInfo());
-        PARSE_CUSTOM(j, material, metallic_texture, deserialize_texture_info, TextureInfo());
-        PARSE_CUSTOM(j, material, normal_texture, deserialize_texture_info, TextureInfo());
-        PARSE_CUSTOM(j, material, displacement_texture, deserialize_texture_info, TextureInfo());
-        PARSE_CUSTOM(j, material, emissive_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, base_color_texture, deserialize_texture_ref, TextureRef());
+        PARSE_CUSTOM(j, material, roughness_texture, deserialize_texture_ref, TextureRef());
+        PARSE_CUSTOM(j, material, metallic_texture, deserialize_texture_ref, TextureRef());
+        PARSE_CUSTOM(j, material, normal_texture, deserialize_texture_ref, TextureRef());
+        PARSE_CUSTOM(j, material, displacement_texture, deserialize_texture_ref, TextureRef());
+        PARSE_CUSTOM(j, material, emissive_texture, deserialize_texture_ref, TextureRef());
     }
 
     // Sheen
     {
         PARSE_CUSTOM(j, material, sheen_color, deserialize_vec3, glm::vec3(0.0f));
         PARSE_DEFAULT(j, material, sheen_roughness, 0.0f);
-        PARSE_CUSTOM(j, material, sheen_color_texture, deserialize_texture_info, TextureInfo());
-        PARSE_CUSTOM(j, material, sheen_roughness_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, sheen_color_texture, deserialize_texture_ref, TextureRef());
+        PARSE_CUSTOM(j, material, sheen_roughness_texture, deserialize_texture_ref, TextureRef());
     }
 
     // Clear Coat
     {
         PARSE_DEFAULT(j, material, clear_coat, 0.0f);
         PARSE_DEFAULT(j, material, clear_coat_roughness, 0.0f);
-        PARSE_CUSTOM(j, material, clear_coat_texture, deserialize_texture_info, TextureInfo());
-        PARSE_CUSTOM(j, material, clear_coat_roughness_texture, deserialize_texture_info, TextureInfo());
-        PARSE_CUSTOM(j, material, clear_coat_normal_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, clear_coat_texture, deserialize_texture_ref, TextureRef());
+        PARSE_CUSTOM(j, material, clear_coat_roughness_texture, deserialize_texture_ref, TextureRef());
+        PARSE_CUSTOM(j, material, clear_coat_normal_texture, deserialize_texture_ref, TextureRef());
     }
 
     // Anisotropy
     {
         PARSE_DEFAULT(j, material, anisotropy, 0.0f);
-        PARSE_CUSTOM(j, material, anisotropy_texture, deserialize_texture_info, TextureInfo());
-        PARSE_CUSTOM(j, material, anisotropy_directions_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, anisotropy_texture, deserialize_texture_ref, TextureRef());
+        PARSE_CUSTOM(j, material, anisotropy_directions_texture, deserialize_texture_ref, TextureRef());
     }
 
     // IOR
@@ -309,7 +306,7 @@ bool load_material(const std::string& path, Material& material)
         PARSE_DEFAULT(j, material, thickness_factor, 0.0f);
         PARSE_DEFAULT(j, material, attenuation_distance, INFINITY);
         PARSE_CUSTOM(j, material, attenuation_color, deserialize_vec3, glm::vec3(0.0f));
-        PARSE_CUSTOM(j, material, thickness_texture, deserialize_texture_info, TextureInfo());
+        PARSE_CUSTOM(j, material, thickness_texture, deserialize_texture_ref, TextureRef());
     }
 
     return true;
@@ -514,12 +511,20 @@ TextureInfo deserialize_texture_info(const nlohmann::json& json)
     TextureInfo texture_info;
 
     PARSE_DEFAULT(json, texture_info, srgb, false);
-    PARSE_DEFAULT(json, texture_info, texture_idx, -1);
-    PARSE_DEFAULT(json, texture_info, channel_idx, 0);
     PARSE_CUSTOM(json, texture_info, offset, deserialize_vec2, glm::vec3(0.0f));
     PARSE_CUSTOM(json, texture_info, scale, deserialize_vec2, glm::vec3(1.0f));
 
     return texture_info;
+}
+
+TextureRef deserialize_texture_ref(const nlohmann::json& json)
+{
+    TextureRef texture_ref;
+
+    PARSE_DEFAULT(json, texture_ref, texture_idx, -1);
+    PARSE_DEFAULT(json, texture_ref, channel_idx, 0);
+
+    return texture_ref;
 }
 
 bool load_scene(const std::string& path, Scene& scene)

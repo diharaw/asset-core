@@ -13,5 +13,5 @@ struct MeshExportOption
     bool        output_metadata       = false;
 };
 
-extern bool export_mesh(const Mesh& desc, const MeshExportOption& options);
+extern bool export_mesh(const MeshImportResult& import_result, const MeshExportOption& options);
 } // namespace ast

@@ -44,6 +44,22 @@ struct Mesh
     std::vector<SkeletalVertex>            skeletal_vertices;
     std::vector<uint32_t>                  indices;
     std::vector<SubMesh>                   submeshes;
+    std::vector<std::string> materials;
+    glm::vec3                              max_extents;
+    glm::vec3                              min_extents;
+};
+
+// --------------------------------------------------------------------------------
+// Mesh Import Result
+// --------------------------------------------------------------------------------
+
+struct MeshImportResult
+{
+    std::string                            name;
+    std::vector<Vertex>                    vertices;
+    std::vector<SkeletalVertex>            skeletal_vertices;
+    std::vector<uint32_t>                  indices;
+    std::vector<SubMesh>                   submeshes;
     std::vector<std::unique_ptr<Material>> materials;
     glm::vec3                              max_extents;
     glm::vec3                              min_extents;

@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
         std::string            input;
         ast::MeshImportOptions import_options;
         ast::MeshExportOption  export_options;
-        ast::Mesh              mesh;
+        ast::MeshImportResult  import_result;
 
         int32_t input_idx = 99999;
 
@@ -79,9 +79,9 @@ int main(int argc, char* argv[])
             }
         }
 
-        if (ast::import_mesh(input, mesh, import_options))
+        if (ast::import_mesh(input, import_result, import_options))
         {
-            if (!ast::export_mesh(mesh, export_options))
+            if (!ast::export_mesh(import_result, export_options))
             {
                 printf("ERROR: Failed to export mesh!\n\n");
                 return 1;

@@ -33,11 +33,20 @@ nlohmann::json to_json(TextureInfo texture_info)
 {
     nlohmann::json json;
 
+    json["path"]        = texture_info.path;
     json["srgb"]        = texture_info.srgb;
-    json["texture_idx"] = texture_info.texture_idx;
-    json["channel_idx"] = texture_info.channel_idx;
     json["offset"]      = to_json(texture_info.offset);
     json["scale"]       = to_json(texture_info.scale);
+
+    return json;
+}
+
+nlohmann::json to_json(TextureRef texture_ref)
+{
+    nlohmann::json json;
+
+    json["texture_idx"] = texture_ref.texture_idx;
+    json["channel_idx"] = texture_ref.channel_idx;
 
     return json;
 }
@@ -95,11 +104,13 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
 
         for (int i = 0; i < desc.textures.size(); i++)
         {
-            std::string source_texture_path = desc.textures[i];
+            auto src_texture_info = desc.textures[i];
+
+            std::string source_texture_path = src_texture_info.path;
 
             std::string absolute_path_to_output_texture = path_to_textures_folder_absolute_string;
             absolute_path_to_output_texture += "/";
-            absolute_path_to_output_texture += filesystem::get_filename(desc.textures[i]);
+            absolute_path_to_output_texture += filesystem::get_filename(src_texture_info.path);
             absolute_path_to_output_texture += ".ast";
 
             std::filesystem::path output_texture_path_relative_to_material = std::filesystem::relative(absolute_path_to_output_texture, path_to_materials_folder_absolute_string);
@@ -117,7 +128,14 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
                 export_texture(source_texture_path, absolute_path_to_textures_folder, is_normal_map ? true : false, options.use_compression, is_normal_map ? options.normal_map_flip_green : false);
             }
 
-            texture_array.push_back(output_texture_path_relative_to_material.string());
+            TextureInfo dst_texture_info;
+                
+            dst_texture_info.path = output_texture_path_relative_to_material.string();
+            dst_texture_info.srgb = src_texture_info.srgb;
+            dst_texture_info.offset = src_texture_info.offset;
+            dst_texture_info.scale = src_texture_info.scale;
+
+            texture_array.push_back(to_json(dst_texture_info));
         }
 
         doc["textures"] = texture_array;

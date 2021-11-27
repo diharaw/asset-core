@@ -15,7 +15,7 @@
 
 namespace ast
 {
-bool export_mesh(const Mesh& desc, const MeshExportOption& options)
+bool export_mesh(const MeshImportResult& import_result, const MeshExportOption& options)
 {
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -58,7 +58,7 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
 
     std::string output_path = output_root_folder_path_absolute.string();
     output_path += "/mesh/";
-    output_path += desc.name;
+    output_path += import_result.name;
     output_path += ".ast";
 
     std::fstream f(output_path, std::ios::out | std::ios::binary);
@@ -78,16 +78,16 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
         BINMeshFileHeader header;
 
         // Copy Name
-        strcpy(&header.name[0], desc.name.c_str());
-        header.name[desc.name.size()] = '\0';
+        strcpy(&header.name[0], import_result.name.c_str());
+        header.name[import_result.name.size()] = '\0';
 
-        header.index_count           = desc.indices.size();
-        header.vertex_count          = desc.vertices.size();
-        header.skeletal_vertex_count = desc.skeletal_vertices.size();
-        header.material_count        = desc.materials.size();
-        header.mesh_count            = desc.submeshes.size();
-        header.max_extents           = desc.max_extents;
-        header.min_extents           = desc.min_extents;
+        header.index_count           = import_result.indices.size();
+        header.vertex_count          = import_result.vertices.size();
+        header.skeletal_vertex_count = import_result.skeletal_vertices.size();
+        header.material_count        = import_result.materials.size();
+        header.mesh_count            = import_result.submeshes.size();
+        header.max_extents           = import_result.max_extents;
+        header.min_extents           = import_result.min_extents;
 
         size_t offset = 0;
 
@@ -98,35 +98,35 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
         WRITE_AND_OFFSET(f, (char*)&header, sizeof(BINMeshFileHeader), offset);
 
         // Write vertices
-        if (desc.vertices.size() > 0)
+        if (import_result.vertices.size() > 0)
         {
-            WRITE_AND_OFFSET(f, (char*)&desc.vertices[0], sizeof(Vertex) * desc.vertices.size(), offset);
+            WRITE_AND_OFFSET(f, (char*)&import_result.vertices[0], sizeof(Vertex) * import_result.vertices.size(), offset);
         }
 
         // Write skeletal vertices
-        if (desc.skeletal_vertices.size() > 0)
+        if (import_result.skeletal_vertices.size() > 0)
         {
-            WRITE_AND_OFFSET(f, (char*)&desc.skeletal_vertices[0], sizeof(SkeletalVertex) * desc.skeletal_vertices.size(), offset);
+            WRITE_AND_OFFSET(f, (char*)&import_result.skeletal_vertices[0], sizeof(SkeletalVertex) * import_result.skeletal_vertices.size(), offset);
         }
 
         // Write indices
-        if (desc.indices.size() > 0)
+        if (import_result.indices.size() > 0)
         {
-            WRITE_AND_OFFSET(f, (char*)&desc.indices[0], sizeof(uint32_t) * desc.indices.size(), offset);
+            WRITE_AND_OFFSET(f, (char*)&import_result.indices[0], sizeof(uint32_t) * import_result.indices.size(), offset);
         }
 
         // Write mesh headers
-        if (desc.submeshes.size() > 0)
+        if (import_result.submeshes.size() > 0)
         {
-            WRITE_AND_OFFSET(f, (char*)&desc.submeshes[0], sizeof(SubMesh) * desc.submeshes.size(), offset);
+            WRITE_AND_OFFSET(f, (char*)&import_result.submeshes[0], sizeof(SubMesh) * import_result.submeshes.size(), offset);
         }
 
         // Export materials
         std::vector<BINMeshMaterialJson> mats;
 
-        for (int i = 0; i < desc.materials.size(); i++)
+        for (int i = 0; i < import_result.materials.size(); i++)
         {
-            auto material = desc.materials[i].get();
+            auto material = import_result.materials[i].get();
 
             MaterialExportOptions mat_exp_options;
 
@@ -159,15 +159,15 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
         {
             nlohmann::json doc;
 
-            doc["name"]           = desc.name;
-            doc["vertex_count"]   = desc.vertices.size();
-            doc["index_count"]    = desc.indices.size();
-            doc["submesh_count"]  = desc.submeshes.size();
-            doc["material_count"] = desc.materials.size();
+            doc["name"]           = import_result.name;
+            doc["vertex_count"]   = import_result.vertices.size();
+            doc["index_count"]    = import_result.indices.size();
+            doc["submesh_count"]  = import_result.submeshes.size();
+            doc["material_count"] = import_result.materials.size();
 
             auto submesh_array = doc.array();
 
-            for (auto& submesh_desc : desc.submeshes)
+            for (auto& submesh_desc : import_result.submeshes)
             {
                 nlohmann::json submesh;
 
@@ -199,19 +199,19 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
 
             auto material_array = doc.array();
 
-            for (int mat_id = 0; mat_id < desc.materials.size(); mat_id++)
+            for (int mat_id = 0; mat_id < import_result.materials.size(); mat_id++)
             {
                 nlohmann::json material;
 
                 material["index"] = mat_id;
-                material["path"]  = "../material/" + desc.materials[mat_id]->name + ".json";
+                material["path"]  = "../material/" + import_result.materials[mat_id]->name + ".json";
 
                 material_array.push_back(material);
             }
 
             doc["materials"] = material_array;
 
-            std::string output_path = output_root_folder_path_absolute.string() + "/" + desc.name + "_metadata.json";
+            std::string output_path = output_root_folder_path_absolute.string() + "/" + import_result.name + "_metadata.json";
 
             std::string output_str = doc.dump(4);
 
@@ -229,7 +229,7 @@ bool export_mesh(const Mesh& desc, const MeshExportOption& options)
         auto                          finish = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> time   = finish - start;
 
-        printf("Successfully exported mesh(%s) in %f seconds\n\n", desc.name.c_str(), time.count());
+        printf("Successfully exported mesh(%s) in %f seconds\n\n", import_result.name.c_str(), time.count());
 
         return true;
     }
