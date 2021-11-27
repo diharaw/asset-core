@@ -525,14 +525,14 @@ bool import_mesh(const std::string& file, MeshImportResult& import_result, MeshI
         // Read vertex data.
         for (int i = 0; i < scene->mNumMeshes; i++)
         {
-            temp_mesh                     = scene->mMeshes[i];
+            temp_mesh                              = scene->mMeshes[i];
             import_result.submeshes[i].max_extents = glm::vec3(temp_mesh->mVertices[0].x, temp_mesh->mVertices[0].y, temp_mesh->mVertices[0].z);
             import_result.submeshes[i].min_extents = glm::vec3(temp_mesh->mVertices[0].x, temp_mesh->mVertices[0].y, temp_mesh->mVertices[0].z);
 
             for (int k = 0; k < scene->mMeshes[i]->mNumVertices; k++)
             {
                 import_result.vertices[vertex_index].position = glm::vec3(temp_mesh->mVertices[k].x, temp_mesh->mVertices[k].y, temp_mesh->mVertices[k].z);
-                glm::vec3 n                          = glm::vec3(temp_mesh->mNormals[k].x, temp_mesh->mNormals[k].y, temp_mesh->mNormals[k].z);
+                glm::vec3 n                                   = glm::vec3(temp_mesh->mNormals[k].x, temp_mesh->mNormals[k].y, temp_mesh->mNormals[k].z);
                 import_result.vertices[vertex_index].normal   = n;
 
                 if (temp_mesh->mTangents)
