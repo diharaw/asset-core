@@ -32,7 +32,7 @@ bool find_texture(aiMaterial* assimp_material, aiTextureType texture_type, uint3
     else
     {
         out_texture_ref.texture_idx = material->textures.size();
-        
+
         aiUVTransform transform;
 
         if (assimp_material->Get(_AI_MATKEY_UVTRANSFORM_BASE, texture_type, index, transform) == aiReturn_SUCCESS)
@@ -428,10 +428,10 @@ bool import_mesh(const std::string& file, MeshImportResult& import_result, MeshI
         import_result.submeshes.resize(scene->mNumMeshes);
         import_result.materials.resize(scene->mNumMaterials);
 
-        uint32_t                                 vertex_count = 0;
-        uint32_t                                 index_count  = 0;
-        uint32_t                                 unnamed_mats = 1;
-        std::vector<uint32_t>                    temp_indices;
+        uint32_t                                    vertex_count = 0;
+        uint32_t                                    index_count  = 0;
+        uint32_t                                    unnamed_mats = 1;
+        std::vector<uint32_t>                       temp_indices;
         std::unordered_map<std::string, TextureRef> texture_refs;
 
         // Read materials.
@@ -456,10 +456,10 @@ bool import_mesh(const std::string& file, MeshImportResult& import_result, MeshI
                 mat_name += std::to_string(unnamed_mats++);
             }
 
-            material->name          = mat_name;
-            material->surface_type  = SURFACE_OPAQUE;
-            material->material_type = MATERIAL_STANDARD;
-            material->is_alpha_tested    = false;
+            material->name            = mat_name;
+            material->surface_type    = SURFACE_OPAQUE;
+            material->material_type   = MATERIAL_STANDARD;
+            material->is_alpha_tested = false;
 
             if (is_gltf)
             {

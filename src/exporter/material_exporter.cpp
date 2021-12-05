@@ -33,8 +33,8 @@ nlohmann::json to_json(TextureInfo texture_info)
 {
     nlohmann::json json;
 
-    json["path"]   = texture_info.path;
-    json["srgb"]   = texture_info.srgb;
+    json["path"] = texture_info.path;
+    json["srgb"] = texture_info.srgb;
 
     return json;
 }
@@ -130,9 +130,9 @@ bool export_material(const Material& desc, const MaterialExportOptions& options)
 
             TextureInfo dst_texture_info;
 
-            dst_texture_info.path   = output_texture_path_relative_to_material.string();
-            dst_texture_info.srgb   = src_texture_info.srgb;
-            
+            dst_texture_info.path = output_texture_path_relative_to_material.string();
+            dst_texture_info.srgb = src_texture_info.srgb;
+
             texture_array.push_back(to_json(dst_texture_info));
         }
 

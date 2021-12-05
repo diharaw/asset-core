@@ -497,7 +497,7 @@ TextureInfo deserialize_texture_info(const nlohmann::json& json)
 
     PARSE_DEFAULT(json, texture_info, path, "");
     PARSE_DEFAULT(json, texture_info, srgb, false);
-    
+
     return texture_info;
 }
 
