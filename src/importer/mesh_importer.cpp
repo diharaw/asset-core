@@ -459,7 +459,7 @@ bool import_mesh(const std::string& file, MeshImportResult& import_result, MeshI
             material->name          = mat_name;
             material->surface_type  = SURFACE_OPAQUE;
             material->material_type = MATERIAL_STANDARD;
-            material->alpha_mode    = ALPHA_MODE_OPAQUE;
+            material->is_alpha_tested    = false;
 
             if (is_gltf)
             {
@@ -469,12 +469,8 @@ bool import_mesh(const std::string& file, MeshImportResult& import_result, MeshI
                 {
                     std::string alpha_mode = assimp_alpha_mode.C_Str();
 
-                    if (alpha_mode == "OPAQUE")
-                        material->alpha_mode = ALPHA_MODE_OPAQUE;
-                    else if (alpha_mode == "BLEND")
-                        material->alpha_mode = ALPHA_MODE_BLEND;
-                    else if (alpha_mode == "MASK")
-                        material->alpha_mode = ALPHA_MODE_MASK;
+                    if (alpha_mode == "MASK")
+                        material->is_alpha_tested = true;
                 }
             }
 

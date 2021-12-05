@@ -22,12 +22,6 @@ static const std::string kMaterialType[] = {
     "MATERIAL_SUBSURFACE"
 };
 
-static const std::string kAlphaMode[] = {
-    "ALHPA_MODE_OPAQUE",
-    "ALHPA_MODE_BLEND",
-    "ALHPA_MODE_MASK"
-};
-
 enum SurfaceType
 {
     SURFACE_OPAQUE,      // Surfaces with no alpha-blending.
@@ -43,13 +37,6 @@ enum MaterialType
     MATERIAL_CLEAR_COAT,
     MATERIAL_TRANSLUCENT,
     MATERIAL_SUBSURFACE
-};
-
-enum AlphaMode
-{
-    ALPHA_MODE_OPAQUE,
-    ALPHA_MODE_BLEND,
-    ALPHA_MODE_MASK
 };
 
 struct TextureRef
@@ -71,7 +58,7 @@ struct Material
     std::string              name;
     SurfaceType              surface_type;
     MaterialType             material_type;
-    AlphaMode                alpha_mode;
+    bool                     is_alpha_tested;
     bool                     is_double_sided;
     std::vector<TextureInfo> textures;
 

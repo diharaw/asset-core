@@ -232,22 +232,7 @@ bool load_material(const std::string& path, Material& material)
     else
         material.material_type = MATERIAL_STANDARD;
 
-    if (j.find("alpha_mode") != j.end())
-    {
-        alpha_mode = j["alpha_mode"];
-
-        for (int i = 0; i < 4; i++)
-        {
-            if (kAlphaMode[i] == alpha_mode)
-            {
-                material.alpha_mode = (AlphaMode)i;
-                break;
-            }
-        }
-    }
-    else
-        material.alpha_mode = ALPHA_MODE_OPAQUE;
-
+    PARSE_DEFAULT(j, material, is_alpha_tested, false);
     PARSE_DEFAULT(j, material, is_double_sided, false);
 
     if (j.find("textures") != j.end())
