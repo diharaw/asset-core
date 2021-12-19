@@ -112,7 +112,7 @@ void serialize_directional_light_node(std::shared_ptr<SceneNode> node, nlohmann:
     rotation.push_back(light_node->rotation[2]);
 
     json["rotation"]      = rotation;
-    json["radius"]        = light_node->radius;
+    json["area"]        = light_node->area;
     json["intensity"]     = light_node->intensity;
     json["casts_shadows"] = light_node->casts_shadows;
 }
@@ -146,7 +146,8 @@ void serialize_spot_light_node(std::shared_ptr<SceneNode> node, nlohmann::json& 
 
     json["inner_cone_angle"] = light_node->inner_cone_angle;
     json["outer_cone_angle"] = light_node->outer_cone_angle;
-    json["radius"]           = light_node->radius;
+    json["area"]             = light_node->area;
+    json["range"]           = light_node->range;
     json["intensity"]        = light_node->intensity;
     json["casts_shadows"]    = light_node->casts_shadows;
 }
@@ -171,7 +172,8 @@ void serialize_point_light_node(std::shared_ptr<SceneNode> node, nlohmann::json&
 
     json["position"] = position;
 
-    json["radius"]        = light_node->radius;
+    json["area"]          = light_node->area;
+    json["range"]         = light_node->range;
     json["intensity"]     = light_node->intensity;
     json["casts_shadows"] = light_node->casts_shadows;
 }

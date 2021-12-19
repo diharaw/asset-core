@@ -65,7 +65,7 @@ struct DirectionalLightNode : public TransformNode
 {
     glm::vec3 color;
     float     intensity;
-    float     radius;
+    float     area;
     bool      casts_shadows;
 };
 
@@ -74,7 +74,8 @@ struct SpotLightNode : public TransformNode
     glm::vec3 color;
     float     inner_cone_angle;
     float     outer_cone_angle;
-    float     radius;
+    float     area;
+    float     range;
     float     intensity;
     bool      casts_shadows;
 };
@@ -82,7 +83,8 @@ struct SpotLightNode : public TransformNode
 struct PointLightNode : public TransformNode
 {
     glm::vec3 color;
-    float     radius;
+    float     area;
+    float     range;
     float     intensity;
     bool      casts_shadows;
 };

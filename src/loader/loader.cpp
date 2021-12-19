@@ -335,7 +335,7 @@ std::shared_ptr<SceneNode> deserialize_directional_light_node(const nlohmann::js
     deserialize_transform_node(json, node);
 
     PARSE_DEFAULT_PTR(json, node, intensity, 0.0f);
-    PARSE_DEFAULT_PTR(json, node, radius, 0.0f);
+    PARSE_DEFAULT_PTR(json, node, area, 0.0f);
     PARSE_DEFAULT_PTR(json, node, casts_shadows, false);
     PARSE_CUSTOM_PTR(json, node, color, deserialize_vec3, glm::vec3(1.0f));
     PARSE_CUSTOM_PTR(json, node, rotation, deserialize_vec3, glm::vec3(0.0f));
@@ -351,7 +351,8 @@ std::shared_ptr<SceneNode> deserialize_spot_light_node(const nlohmann::json& jso
 
     PARSE_DEFAULT_PTR(json, node, inner_cone_angle, 0.0f);
     PARSE_DEFAULT_PTR(json, node, outer_cone_angle, 0.0f);
-    PARSE_DEFAULT_PTR(json, node, radius, 0.0f);
+    PARSE_DEFAULT_PTR(json, node, area, 0.0f);
+    PARSE_DEFAULT_PTR(json, node, range, 0.0f);
     PARSE_DEFAULT_PTR(json, node, intensity, 0.0f);
     PARSE_DEFAULT_PTR(json, node, casts_shadows, false);
     PARSE_CUSTOM_PTR(json, node, color, deserialize_vec3, glm::vec3(1.0f));
@@ -367,7 +368,8 @@ std::shared_ptr<SceneNode> deserialize_point_light_node(const nlohmann::json& js
 
     deserialize_transform_node(json, node);
 
-    PARSE_DEFAULT_PTR(json, node, radius, 0.0f);
+    PARSE_DEFAULT_PTR(json, node, area, 0.0f);
+    PARSE_DEFAULT_PTR(json, node, range, 0.0f);
     PARSE_DEFAULT_PTR(json, node, intensity, 0.0f);
     PARSE_DEFAULT_PTR(json, node, casts_shadows, false);
     PARSE_CUSTOM_PTR(json, node, color, deserialize_vec3, glm::vec3(1.0f));
